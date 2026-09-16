@@ -1,0 +1,732 @@
+<!DOCTYPE html>
+<html lang="fr" class="h-full">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ECOLE MEDIA — Gestion des Inscrits</title>
+  <script src="https://www.gstatic.com/antigravity/web/dev/tailwindcss.min.js"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+  <style>
+    body { font-family: 'Inter', system-ui, -apple-system, sans-serif; }
+    .bg-ecole-orange { background-color: #f39c12; }
+    .text-ecole-orange { color: #f39c12; }
+    .border-ecole-orange { border-color: #f39c12; }
+    .bg-sidebar-navy { background-color: #16222f; }
+    .bg-sidebar-active { background-color: #1e334a; }
+    .bg-table-header { background-color: #1e3966; }
+    .bg-app-gray { background-color: #eef2f6; }
+    .btn-navy { background-color: #162e56; }
+    .btn-navy:hover { background-color: #102342; }
+    .btn-cyan { background-color: #0284c7; }
+    .btn-cyan:hover { background-color: #0369a1; }
+    /* Custom scrollbar */
+    ::-webkit-scrollbar { width: 6px; height: 6px; }
+    ::-webkit-scrollbar-track { background: #f1f5f9; }
+    ::-webkit-scrollbar-thumb { background: #cbd5e1; rounded: 4px; }
+  </style>
+</head>
+<body class="bg-app-gray text-slate-800 h-full flex flex-col antialiased overflow-hidden">
+
+  <!-- ================================================================= -->
+  <!-- TOP HEADER (Orange Band)                                          -->
+  <!-- ================================================================= -->
+  <header class="bg-ecole-orange text-white h-14 flex items-center justify-between px-4 z-30 shadow-sm flex-shrink-0">
+    <div class="flex items-center space-x-4">
+      <button onclick="toggleSidebar()" class="p-1 hover:bg-black/10 rounded transition text-white" title="Menu">
+        <svg class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M4 6h16M4 12h16M4 18h16"/>
+        </svg>
+      </button>
+      <button class="flex items-center gap-1.5 text-sm font-semibold hover:bg-black/10 px-2 py-1 rounded transition">
+        <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"/>
+        </svg>
+        <span>Guide</span>
+      </button>
+    </div>
+
+    <div class="flex items-center space-x-3">
+      <span class="font-bold text-sm tracking-wide">Diarra Dolourou Mathieu</span>
+      <button class="p-1 hover:bg-black/10 rounded transition text-white" title="Paramètres">
+        <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"/>
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
+        </svg>
+      </button>
+    </div>
+  </header>
+
+  <!-- ================================================================= -->
+  <!-- MAIN WRAPPER (Sidebar + Main Content)                            -->
+  <!-- ================================================================= -->
+  <div class="flex flex-1 overflow-hidden">
+
+    <!-- SIDEBAR -->
+    <aside id="sidebar" class="bg-sidebar-navy text-slate-300 w-64 flex-shrink-0 flex flex-col justify-between overflow-y-auto transition-all duration-200">
+      <div>
+        <!-- Logo Brand Area -->
+        <div class="p-4 border-b border-slate-700/50 flex items-center justify-between">
+          <div class="flex items-center space-x-2">
+            <div>
+              <div class="flex items-baseline gap-1">
+                <span class="text-teal-400 font-extrabold text-xl tracking-tighter">ECOLE</span>
+                <span class="text-ecole-orange text-lg">🎓</span>
+              </div>
+              <div class="text-ecole-orange font-bold text-xs tracking-widest -mt-1 pl-0.5">__MEDIA</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Online Status -->
+        <div class="px-4 py-2 text-xs text-slate-400 flex items-center gap-1.5 border-b border-slate-800">
+          <span>Statut</span>
+          <span class="w-2 h-2 rounded-full bg-emerald-500 inline-block animate-pulse"></span>
+          <span class="text-slate-300 font-medium">En ligne</span>
+        </div>
+
+        <!-- Sidebar Navigation Menu -->
+        <nav class="py-2 text-xs font-medium space-y-0.5">
+          <a href="#" class="flex items-center justify-between px-4 py-2.5 text-slate-300 hover:bg-slate-800/60 hover:text-white transition">
+            <div class="flex items-center gap-3">
+              <svg class="w-4 h-4 text-ecole-orange" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"/></svg>
+              <span>Panneaux d'accueil</span>
+            </div>
+            <svg class="w-3.5 h-3.5 text-slate-500" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg>
+          </a>
+
+          <a href="#" class="flex items-center justify-between px-4 py-2.5 text-slate-300 hover:bg-slate-800/60 hover:text-white transition">
+            <div class="flex items-center gap-3">
+              <svg class="w-4 h-4 text-ecole-orange" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4"/></svg>
+              <span>Paramétrages</span>
+            </div>
+            <svg class="w-3.5 h-3.5 text-slate-500" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg>
+          </a>
+
+          <a href="#" class="flex items-center justify-between px-4 py-2.5 text-slate-300 hover:bg-slate-800/60 hover:text-white transition">
+            <div class="flex items-center gap-3">
+              <svg class="w-4 h-4 text-ecole-orange" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z"/></svg>
+              <span>Utilisateur</span>
+            </div>
+            <svg class="w-3.5 h-3.5 text-slate-500" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg>
+          </a>
+
+          <a href="#" class="flex items-center justify-between px-4 py-2.5 text-slate-300 hover:bg-slate-800/60 hover:text-white transition">
+            <div class="flex items-center gap-3">
+              <svg class="w-4 h-4 text-ecole-orange" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
+              <span>école</span>
+            </div>
+            <svg class="w-3.5 h-3.5 text-slate-500" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg>
+          </a>
+
+          <a href="#" class="flex items-center justify-between px-4 py-2.5 text-slate-300 hover:bg-slate-800/60 hover:text-white transition">
+            <div class="flex items-center gap-3">
+              <svg class="w-4 h-4 text-ecole-orange" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"/></svg>
+              <span>Pédagogie</span>
+            </div>
+            <svg class="w-3.5 h-3.5 text-slate-500" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg>
+          </a>
+
+          <a href="#" class="flex items-center justify-between px-4 py-2.5 text-slate-300 hover:bg-slate-800/60 hover:text-white transition">
+            <div class="flex items-center gap-3">
+              <svg class="w-4 h-4 text-ecole-orange" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/></svg>
+              <span>Gestion des notes</span>
+            </div>
+            <svg class="w-3.5 h-3.5 text-slate-500" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg>
+          </a>
+
+          <!-- ACTIVE MENU: INSCRIPTION -->
+          <div class="pt-1">
+            <a href="#" class="flex items-center justify-between px-4 py-2.5 text-ecole-orange font-semibold bg-slate-900/80 border-l-4 border-ecole-orange transition">
+              <div class="flex items-center gap-3">
+                <svg class="w-4 h-4 text-ecole-orange" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"/></svg>
+                <span>Inscription</span>
+              </div>
+              <svg class="w-3.5 h-3.5 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
+            </a>
+            <!-- Submenu -->
+            <div class="bg-black/20 py-1 space-y-0.5">
+              <a href="#" class="block pl-11 pr-4 py-2 text-xs font-semibold text-white bg-sidebar-active border-l-2 border-sky-400">
+                Gestion des inscrits
+              </a>
+              <a href="#" class="block pl-11 pr-4 py-2 text-xs text-slate-400 hover:text-slate-200 hover:bg-slate-800/40">
+                Élèves actualisés
+              </a>
+            </div>
+          </div>
+
+          <a href="#" class="flex items-center justify-between px-4 py-2.5 text-slate-300 hover:bg-slate-800/60 hover:text-white transition">
+            <div class="flex items-center gap-3">
+              <svg class="w-4 h-4 text-ecole-orange" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4"/></svg>
+              <span>Transferts</span>
+            </div>
+            <svg class="w-3.5 h-3.5 text-slate-500" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg>
+          </a>
+
+          <a href="#" class="flex items-center justify-between px-4 py-2.5 text-slate-300 hover:bg-slate-800/60 hover:text-white transition">
+            <div class="flex items-center gap-3">
+              <svg class="w-4 h-4 text-ecole-orange" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v6a2 2 0 002 2zm7-5a2 2 0 11-4 0 2 2 0 014 0z"/></svg>
+              <span>Comptabilité</span>
+            </div>
+            <svg class="w-3.5 h-3.5 text-slate-500" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg>
+          </a>
+        </nav>
+      </div>
+
+      <div class="p-3 text-[10px] text-slate-500 border-t border-slate-800 text-center">
+        ScolaPro &bull; v2.4 Multi-Tenant
+      </div>
+    </aside>
+
+    <!-- ================================================================= -->
+    <!-- MAIN CONTENT VIEWPORT                                             -->
+    <!-- ================================================================= -->
+    <main class="flex-1 overflow-y-auto p-3 sm:p-5 space-y-4">
+
+      <!-- TOP HORIZONTAL TAB BAR -->
+      <div class="bg-white rounded-t-lg shadow-sm border-b border-slate-200 overflow-x-auto flex text-xs font-bold uppercase tracking-wider text-slate-600">
+        <button class="px-5 py-3 text-ecole-orange border-b-2 border-ecole-orange bg-slate-50/50 whitespace-nowrap">
+          GESTION DES INSCRITS
+        </button>
+        <button class="px-5 py-3 hover:text-slate-900 hover:bg-slate-50 transition whitespace-nowrap">
+          REPARTITION PAR IMPORTATION
+        </button>
+        <button class="px-5 py-3 hover:text-slate-900 hover:bg-slate-50 transition whitespace-nowrap">
+          MES INSCRITS
+        </button>
+        <button class="px-5 py-3 hover:text-slate-900 hover:bg-slate-50 transition whitespace-nowrap">
+          DOC. INSCRIPTION
+        </button>
+        <button class="px-5 py-3 hover:text-slate-900 hover:bg-slate-50 transition whitespace-nowrap">
+          STATS SCOLARITE
+        </button>
+        <button class="px-5 py-3 hover:text-slate-900 hover:bg-slate-50 transition whitespace-nowrap">
+          INDESIRABLES
+        </button>
+      </div>
+
+      <!-- MAIN CARD CONTAINER -->
+      <div class="bg-white rounded-lg shadow-sm border border-slate-200 p-4 sm:p-5 space-y-5">
+
+        <!-- Title & Action Buttons Row -->
+        <div class="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
+          <!-- Page Title with Accent Bar & Circular Arrow -->
+          <div class="flex items-center space-x-2.5">
+            <span class="w-1 h-7 bg-ecole-orange rounded-full inline-block"></span>
+            <div class="w-6 h-6 rounded-full border-2 border-slate-700 flex items-center justify-center text-slate-700">
+              <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M14 5l7 7m0 0l-7 7m7-7H3"/>
+              </svg>
+            </div>
+            <h1 class="text-xl font-black text-slate-800 tracking-tight">Liste des inscrits</h1>
+          </div>
+
+          <!-- Top Action Buttons (Excel, Export, Actu, Affectation) -->
+          <div class="flex flex-wrap items-center gap-2">
+            <button onclick="exportSimulation('Excel')" class="px-3 py-1.5 border border-slate-300 hover:bg-slate-50 text-slate-700 text-xs font-semibold rounded shadow-sm flex items-center gap-1.5 transition">
+              <svg class="w-3.5 h-3.5 text-slate-600" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z"/></svg>
+              <span>Excel</span>
+            </button>
+            <button onclick="exportSimulation('Export CSV/XLS')" class="px-3 py-1.5 border border-slate-300 hover:bg-slate-50 text-slate-700 text-xs font-semibold rounded shadow-sm flex items-center gap-1.5 transition">
+              <span class="text-emerald-600 font-extrabold text-xs">XLS</span>
+              <span>Export</span>
+            </button>
+            <button onclick="syncSimulation()" class="px-3 py-1.5 border border-slate-300 hover:bg-slate-50 text-slate-700 text-xs font-semibold rounded shadow-sm flex items-center gap-1.5 transition">
+              <svg class="w-3.5 h-3.5 text-slate-600" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg>
+              <span>Actu Logiciel</span>
+            </button>
+            <button onclick="alertAffectation()" class="px-3 py-1.5 border border-slate-300 hover:bg-slate-50 text-slate-700 text-xs font-semibold rounded shadow-sm flex items-center gap-1.5 transition">
+              <svg class="w-3.5 h-3.5 text-slate-600" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
+              <span>Affectation élève/classe</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- Secondary Operational Buttons (+ Ajouter, Modification Matricule, Comparer DESPS) -->
+        <div class="flex flex-wrap items-center gap-2 pt-1">
+          <button onclick="openAddModal()" class="btn-navy text-white text-xs font-bold px-4 py-2 rounded shadow-sm hover:opacity-95 flex items-center gap-1.5 transition">
+            <span class="text-sm leading-none font-bold">+</span>
+            <span>Ajouter</span>
+          </button>
+          <button onclick="openMatriculeModal()" class="btn-navy text-white text-xs font-semibold px-3 py-2 rounded shadow-sm hover:opacity-95 flex items-center gap-1.5 transition">
+            <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/></svg>
+            <span>Modification Matricule</span>
+          </button>
+          <button onclick="compareDesps()" class="btn-cyan text-white text-xs font-semibold px-3.5 py-2 rounded shadow-sm hover:opacity-95 flex items-center gap-1.5 transition">
+            <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4"/></svg>
+            <span>Comparer DESPS</span>
+          </button>
+        </div>
+
+        <!-- ============================================================= -->
+        <!-- 5 KPI METRIC CARDS                                            -->
+        <!-- ============================================================= -->
+        <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
+          <!-- Card 1: Total en classe -->
+          <div class="bg-white border border-slate-200 rounded-lg p-3 flex items-center space-x-3 shadow-sm hover:border-slate-300 transition">
+            <div class="w-10 h-10 rounded-full bg-slate-100 flex items-center justify-center text-slate-600 flex-shrink-0">
+              <svg class="w-5 h-5 text-slate-700" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"/>
+              </svg>
+            </div>
+            <div>
+              <div id="stat-total" class="text-2xl font-black text-slate-800 leading-tight">1071</div>
+              <div class="text-[11px] font-medium text-slate-500">Total en classe</div>
+            </div>
+          </div>
+
+          <!-- Card 2: Affectés -->
+          <div class="bg-white border border-slate-200 rounded-lg p-3 flex items-center space-x-3 shadow-sm hover:border-slate-300 transition">
+            <div class="w-10 h-10 rounded-full bg-emerald-50 flex items-center justify-center text-emerald-600 flex-shrink-0">
+              <svg class="w-5 h-5 text-emerald-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7"/>
+              </svg>
+            </div>
+            <div>
+              <div id="stat-aff" class="text-2xl font-black text-emerald-600 leading-tight">871</div>
+              <div class="text-[11px] font-medium text-slate-500">Affectés</div>
+            </div>
+          </div>
+
+          <!-- Card 3: Non affectés -->
+          <div class="bg-white border border-slate-200 rounded-lg p-3 flex items-center space-x-3 shadow-sm hover:border-slate-300 transition">
+            <div class="w-10 h-10 rounded-full bg-red-50 flex items-center justify-center text-red-500 flex-shrink-0">
+              <svg class="w-5 h-5 text-red-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M6 18L18 6M6 6l12 12"/>
+              </svg>
+            </div>
+            <div>
+              <div id="stat-nonaff" class="text-2xl font-black text-red-500 leading-tight">200</div>
+              <div class="text-[11px] font-medium text-slate-500">Non affectés</div>
+            </div>
+          </div>
+
+          <!-- Card 4: Sans genre -->
+          <div class="bg-white border border-slate-200 rounded-lg p-3 flex items-center space-x-3 shadow-sm hover:border-slate-300 transition">
+            <div class="w-10 h-10 rounded-full bg-amber-50 flex items-center justify-center text-amber-500 flex-shrink-0">
+              <span class="text-lg font-bold text-amber-500">&#9893;</span>
+            </div>
+            <div>
+              <div id="stat-sansgenre" class="text-2xl font-black text-amber-500 leading-tight">0</div>
+              <div class="text-[11px] font-medium text-slate-500">Sans genre</div>
+            </div>
+          </div>
+
+          <!-- Card 5: Sans naissance -->
+          <div class="bg-white border border-slate-200 rounded-lg p-3 flex items-center space-x-3 shadow-sm hover:border-slate-300 transition">
+            <div class="w-10 h-10 rounded-full bg-orange-50 flex items-center justify-center text-orange-500 flex-shrink-0">
+              <span class="text-base font-bold text-orange-500">🎂</span>
+            </div>
+            <div>
+              <div id="stat-sansnaissance" class="text-2xl font-black text-orange-500 leading-tight">0</div>
+              <div class="text-[11px] font-medium text-slate-500">Sans naissance</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- ============================================================= -->
+        <!-- FILTER PILLS & SEARCH BAR                                     -->
+        <!-- ============================================================= -->
+        <div class="flex flex-col lg:flex-row lg:items-center justify-between gap-3 pt-2">
+          <!-- Filter Tags / Badges -->
+          <div class="flex flex-wrap items-center gap-2 text-xs">
+            <button onclick="setFilter('all')" id="btn-filter-all" class="filter-pill bg-slate-800 text-white font-semibold px-3 py-1.5 rounded-full flex items-center gap-2 shadow-sm transition">
+              <span>Tous</span>
+              <span class="bg-slate-600 text-white text-[10px] px-1.5 py-0.2 rounded-full font-bold">1151</span>
+            </button>
+            <button onclick="setFilter('assigned')" id="btn-filter-assigned" class="filter-pill bg-slate-100 hover:bg-slate-200 text-slate-700 font-medium px-3 py-1.5 rounded-full flex items-center gap-2 transition">
+              <span>Classe renseignée</span>
+              <span class="bg-slate-300 text-slate-700 text-[10px] px-1.5 py-0.2 rounded-full font-bold">1071</span>
+            </button>
+            <button onclick="setFilter('nogenre')" id="btn-filter-nogenre" class="filter-pill bg-slate-100 hover:bg-slate-200 text-slate-700 font-medium px-3 py-1.5 rounded-full flex items-center gap-2 transition">
+              <span>Genre non renseigné</span>
+              <span class="bg-slate-300 text-slate-700 text-[10px] px-1.5 py-0.2 rounded-full font-bold">0</span>
+            </button>
+            <button onclick="setFilter('unassigned')" id="btn-filter-unassigned" class="filter-pill bg-slate-100 hover:bg-slate-200 text-slate-700 font-medium px-3 py-1.5 rounded-full flex items-center gap-2 transition">
+              <span>Classe non renseignée</span>
+              <span class="bg-slate-300 text-slate-700 text-[10px] px-1.5 py-0.2 rounded-full font-bold">80</span>
+            </button>
+          </div>
+
+          <!-- Search Input -->
+          <div class="relative w-full sm:w-72">
+            <span class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-slate-400">
+              <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
+              </svg>
+            </span>
+            <input type="text" id="search-input" oninput="filterTable()" placeholder="Rechercher par nom ou matricule." 
+              class="w-full pl-9 pr-3 py-1.5 bg-slate-50 border border-slate-300 rounded-full text-xs text-slate-800 placeholder-slate-400 focus:outline-none focus:border-slate-500 focus:bg-white transition">
+          </div>
+        </div>
+
+        <!-- ============================================================= -->
+        <!-- TABLE CONTROLS (Rows per page selector)                       -->
+        <!-- ============================================================= -->
+        <div class="flex items-center justify-between pt-1">
+          <div class="flex items-center space-x-2 text-xs text-slate-600">
+            <select id="page-size" class="border border-slate-300 rounded px-2.5 py-1 text-xs font-semibold bg-white text-slate-700">
+              <option value="100" selected>100</option>
+              <option value="50">50</option>
+              <option value="25">25</option>
+              <option value="10">10</option>
+            </select>
+            <span class="text-slate-400 text-xs">élèves affichés par page</span>
+          </div>
+
+          <div class="text-xs text-slate-500 font-medium">
+            Affichage de <span id="filtered-count" class="font-bold text-slate-800">10</span> inscrits
+          </div>
+        </div>
+
+        <!-- ============================================================= -->
+        <!-- DATA TABLE (Exact colors, columns & buttons as image)         -->
+        <!-- ============================================================= -->
+        <div class="overflow-x-auto border border-slate-200 rounded-md">
+          <table class="w-full text-left text-xs border-collapse">
+            <thead class="bg-table-header text-white text-[11px] font-bold uppercase tracking-wider">
+              <tr>
+                <th class="py-3 px-3 text-center w-12">N°</th>
+                <th class="py-3 px-4">NOM ET PRÉNOM</th>
+                <th class="py-3 px-4">MATRICULE</th>
+                <th class="py-3 px-3 text-center">SEXE</th>
+                <th class="py-3 px-3 text-center">RED.</th>
+                <th class="py-3 px-3 text-center">STATUT</th>
+                <th class="py-3 px-3 text-center">NIVEAU</th>
+                <th class="py-3 px-4 text-center">CLASSE</th>
+                <th class="py-3 px-3 text-center w-20">ACTIONS</th>
+              </tr>
+            </thead>
+            <tbody id="students-table-body" class="divide-y divide-slate-100 text-slate-700">
+              <!-- Dynamically populated rows matching sample image -->
+            </tbody>
+          </table>
+        </div>
+
+        <!-- Pagination Bar -->
+        <div class="flex items-center justify-between pt-2 text-xs text-slate-500">
+          <div>Page <strong class="text-slate-800">1</strong> sur <strong>12</strong></div>
+          <div class="flex space-x-1">
+            <button class="px-2.5 py-1 border border-slate-300 rounded hover:bg-slate-50 text-slate-600 disabled:opacity-40" disabled>&laquo; Précédent</button>
+            <button class="px-2.5 py-1 bg-table-header text-white rounded font-bold">1</button>
+            <button class="px-2.5 py-1 border border-slate-300 rounded hover:bg-slate-50 text-slate-600">2</button>
+            <button class="px-2.5 py-1 border border-slate-300 rounded hover:bg-slate-50 text-slate-600">3</button>
+            <button class="px-2.5 py-1 border border-slate-300 rounded hover:bg-slate-50 text-slate-600">...</button>
+            <button class="px-2.5 py-1 border border-slate-300 rounded hover:bg-slate-50 text-slate-600">Suivant &raquo;</button>
+          </div>
+        </div>
+
+      </div>
+    </main>
+  </div>
+
+  <!-- ================================================================= -->
+  <!-- MODAL : AJOUTER UN ÉLÈVE INSCRIT                                  -->
+  <!-- ================================================================= -->
+  <div id="add-modal" class="hidden fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4 overflow-y-auto">
+    <div class="bg-white rounded-xl shadow-2xl max-w-2xl w-full border border-slate-200 overflow-hidden my-8 animate-in fade-in zoom-in duration-150">
+      <div class="bg-table-header text-white px-5 py-3.5 flex justify-between items-center">
+        <div class="flex items-center gap-2">
+          <span class="text-ecole-orange font-bold text-base">+</span>
+          <h3 class="font-bold text-sm uppercase tracking-wide">Inscription d'un nouvel élève</h3>
+        </div>
+        <button onclick="closeAddModal()" class="text-slate-300 hover:text-white text-xl font-bold">&times;</button>
+      </div>
+
+      <form onsubmit="submitNewStudent(event)" class="p-5 space-y-4 text-xs">
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <div>
+            <label class="block text-slate-700 font-semibold mb-1">Nom de famille <span class="text-red-500">*</span></label>
+            <input type="text" id="m-nom" required placeholder="Ex: KOUADIO" class="w-full border border-slate-300 rounded px-3 py-1.5 focus:border-indigo-600 focus:outline-none uppercase">
+          </div>
+          <div>
+            <label class="block text-slate-700 font-semibold mb-1">Prénoms <span class="text-red-500">*</span></label>
+            <input type="text" id="m-prenoms" required placeholder="Ex: Jean-Eudes Marc" class="w-full border border-slate-300 rounded px-3 py-1.5 focus:border-indigo-600 focus:outline-none uppercase">
+          </div>
+        </div>
+
+        <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+          <div>
+            <label class="block text-slate-700 font-semibold mb-1">Matricule MENA <span class="text-red-500">*</span></label>
+            <input type="text" id="m-matricule" required placeholder="Ex: 23819402X" class="w-full border border-slate-300 rounded px-3 py-1.5 font-mono focus:border-indigo-600 focus:outline-none uppercase">
+          </div>
+          <div>
+            <label class="block text-slate-700 font-semibold mb-1">Sexe <span class="text-red-500">*</span></label>
+            <select id="m-sexe" required class="w-full border border-slate-300 rounded px-3 py-1.5 bg-white focus:outline-none">
+              <option value="M">Masculin (M)</option>
+              <option value="F">Féminin (F)</option>
+            </select>
+          </div>
+          <div>
+            <label class="block text-slate-700 font-semibold mb-1">Statut d'affectation</label>
+            <select id="m-statut" class="w-full border border-slate-300 rounded px-3 py-1.5 bg-white focus:outline-none">
+              <option value="AFF">Affecté par l'État (AFF)</option>
+              <option value="NON AFF">Non affecté (Privé direct)</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+          <div>
+            <label class="block text-slate-700 font-semibold mb-1">Date de naissance</label>
+            <input type="date" id="m-dob" value="2012-05-14" class="w-full border border-slate-300 rounded px-3 py-1.5 focus:outline-none">
+          </div>
+          <div>
+            <label class="block text-slate-700 font-semibold mb-1">Niveau</label>
+            <select id="m-niveau" onchange="updateClassOptions(this.value)" class="w-full border border-slate-300 rounded px-3 py-1.5 bg-white focus:outline-none font-bold">
+              <option value="6EME">6EME</option>
+              <option value="5EME">5EME</option>
+              <option value="4EME" selected>4EME</option>
+              <option value="3EME">3EME</option>
+              <option value="2NDE">2NDE</option>
+              <option value="1ERE">1ERE</option>
+              <option value="TLE">TLE</option>
+            </select>
+          </div>
+          <div>
+            <label class="block text-slate-700 font-semibold mb-1">Classe d'affectation</label>
+            <select id="m-classe" class="w-full border border-slate-300 rounded px-3 py-1.5 bg-white focus:outline-none font-bold">
+              <option value="4EME 5">4EME 5</option>
+              <option value="4EME 1">4EME 1</option>
+              <option value="4EME 2">4EME 2</option>
+              <option value="Non assigné">Non assigné</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-2 border-t border-slate-100">
+          <div>
+            <label class="block text-slate-700 font-semibold mb-1">Nom & Prénoms du Tuteur</label>
+            <input type="text" id="m-tuteur" placeholder="Ex: KOUADIO Yao Michel" class="w-full border border-slate-300 rounded px-3 py-1.5 focus:outline-none">
+          </div>
+          <div>
+            <label class="block text-slate-700 font-semibold mb-1">Téléphone Tuteur (D4)</label>
+            <input type="tel" id="m-phone" placeholder="Ex: +225 07 00 11 22" class="w-full border border-slate-300 rounded px-3 py-1.5 focus:outline-none font-mono">
+          </div>
+        </div>
+
+        <div class="flex items-center gap-2 pt-1">
+          <input type="checkbox" id="m-red" class="rounded border-slate-300 text-table-header focus:ring-0">
+          <label for="m-red" class="text-slate-700 font-medium">Élève redoublant dans ce niveau</label>
+        </div>
+
+        <div class="flex justify-end gap-2 pt-4 border-t border-slate-200">
+          <button type="button" onclick="closeAddModal()" class="px-4 py-2 border border-slate-300 rounded text-slate-600 hover:bg-slate-50 font-medium">Annuler</button>
+          <button type="submit" class="btn-navy text-white px-5 py-2 rounded font-bold shadow hover:opacity-90">
+            Valider l'Inscription
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Toast Notification -->
+  <div id="toast" class="fixed bottom-5 right-5 bg-slate-900 text-white px-4 py-2.5 rounded-lg shadow-xl text-xs flex items-center gap-2 transform transition-all duration-300 translate-y-20 opacity-0 pointer-events-none z-50">
+    <span class="text-emerald-400 font-bold text-sm">✓</span>
+    <span id="toast-message">Action effectuée</span>
+  </div>
+
+  <!-- ================================================================= -->
+  <!-- APPLICATION JAVASCRIPT LOGIC                                      -->
+  <!-- ================================================================= -->
+  <script>
+    // Initial dataset replicating the image
+    let students = [
+      { id: 1, nomPrenom: "AGUIA CHO ANNE FRANCETTE", matricule: "22829438N", sexe: "F", red: "", statut: "AFF", niveau: "4EME", classe: "4EME 5" },
+      { id: 2, nomPrenom: "AKE AKE JEAN JAURES", matricule: "22887108U", sexe: "M", red: "", statut: "AFF", niveau: "3EME", classe: "3EME 5" },
+      { id: 3, nomPrenom: "KOFFI YAO ERIC", matricule: "21940182K", sexe: "M", red: "OUI", statut: "AFF", niveau: "4EME", classe: "4EME 2" },
+      { id: 4, nomPrenom: "BAMBA FATOUMATA ALIMATA", matricule: "22910394P", sexe: "F", red: "", statut: "AFF", niveau: "6EME", classe: "6EME 1" },
+      { id: 5, nomPrenom: "TRAORE SOULEYMANE", matricule: "20849201A", sexe: "M", red: "", statut: "NON AFF", niveau: "3EME", classe: "3EME 1" },
+      { id: 6, nomPrenom: "COULIBALY AWA GRACE", matricule: "22784910C", sexe: "F", red: "", statut: "AFF", niveau: "5EME", classe: "5EME 3" },
+      { id: 7, nomPrenom: "DIALLO AMADOU TIDIANE", matricule: "21894021T", sexe: "M", red: "", statut: "AFF", niveau: "4EME", classe: "4EME 5" },
+      { id: 8, nomPrenom: "N'GUESSAN KOUAME DANIEL", matricule: "22984019D", sexe: "M", red: "", statut: "AFF", niveau: "TLE D", classe: "TLE D 2" },
+      { id: 9, nomPrenom: "SANOGO MARIAM KADY", matricule: "23019284S", sexe: "F", red: "", statut: "NON AFF", niveau: "2NDE", classe: "2NDE A" },
+      { id: 10, nomPrenom: "YAO ADJOUA CHRISTELLE", matricule: "22849102Y", sexe: "F", red: "OUI", statut: "AFF", niveau: "3EME", classe: "3EME 5" }
+    ];
+
+    let currentFilter = 'all';
+
+    function renderTable() {
+      const tbody = document.getElementById('students-table-body');
+      tbody.innerHTML = '';
+
+      const query = document.getElementById('search-input').value.toLowerCase().trim();
+
+      const filtered = students.filter(st => {
+        const matchesQuery = st.nomPrenom.toLowerCase().includes(query) || st.matricule.toLowerCase().includes(query);
+        if (!matchesQuery) return false;
+
+        if (currentFilter === 'assigned') return st.classe && st.classe !== 'Non assigné';
+        if (currentFilter === 'unassigned') return !st.classe || st.classe === 'Non assigné';
+        if (currentFilter === 'nogenre') return !st.sexe;
+        return true;
+      });
+
+      document.getElementById('filtered-count').innerText = filtered.length;
+
+      filtered.forEach((st, idx) => {
+        const tr = document.createElement('tr');
+        tr.className = "hover:bg-sky-50/60 transition border-b border-slate-100";
+
+        // Badges styles exactly like screenshot:
+        // Sexe: Pink for F, Blue for M
+        const sexeBadge = st.sexe === 'F' 
+          ? `<span class="font-bold text-pink-600">F</span>` 
+          : `<span class="font-bold text-blue-600">M</span>`;
+
+        // Statut: AFF in green, NON AFF in red
+        const statutBadge = st.statut === 'AFF'
+          ? `<span class="bg-emerald-100/90 text-emerald-700 font-bold px-2 py-0.5 rounded text-[10px]">AFF</span>`
+          : `<span class="bg-red-100/90 text-red-600 font-bold px-2 py-0.5 rounded text-[10px]">NON AFF</span>`;
+
+        tr.innerHTML = `
+          <td class="py-2.5 px-3 text-center text-slate-500 font-medium">${idx + 1}</td>
+          <td class="py-2.5 px-4 font-semibold text-slate-800">${st.nomPrenom}</td>
+          <td class="py-2.5 px-4 font-mono text-slate-500 font-medium">${st.matricule}</td>
+          <td class="py-2.5 px-3 text-center">${sexeBadge}</td>
+          <td class="py-2.5 px-3 text-center font-bold text-slate-600">${st.red || ''}</td>
+          <td class="py-2.5 px-3 text-center">${statutBadge}</td>
+          <td class="py-2.5 px-3 text-center font-semibold text-slate-700">${st.niveau}</td>
+          <td class="py-2.5 px-4 text-center font-semibold text-slate-800">${st.classe}</td>
+          <td class="py-2.5 px-3 text-center">
+            <button onclick="editStudent(${st.id})" class="p-1.5 bg-sky-100 hover:bg-sky-200 text-sky-700 rounded border border-sky-300/80 transition inline-flex items-center justify-center shadow-xs" title="Modifier l'inscription">
+              <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"/>
+              </svg>
+            </button>
+          </td>
+        `;
+        tbody.appendChild(tr);
+      });
+    }
+
+    function filterTable() {
+      renderTable();
+    }
+
+    function setFilter(filterType) {
+      currentFilter = filterType;
+      const pills = document.querySelectorAll('.filter-pill');
+      pills.forEach(p => {
+        p.classList.remove('bg-slate-800', 'text-white');
+        p.classList.add('bg-slate-100', 'text-slate-700');
+        const badge = p.querySelector('span:last-child');
+        if (badge) {
+          badge.classList.remove('bg-slate-600', 'text-white');
+          badge.classList.add('bg-slate-300', 'text-slate-700');
+        }
+      });
+
+      const activeBtn = document.getElementById('btn-filter-' + filterType);
+      if (activeBtn) {
+        activeBtn.classList.remove('bg-slate-100', 'text-slate-700');
+        activeBtn.classList.add('bg-slate-800', 'text-white');
+        const badge = activeBtn.querySelector('span:last-child');
+        if (badge) {
+          badge.classList.remove('bg-slate-300', 'text-slate-700');
+          badge.classList.add('bg-slate-600', 'text-white');
+        }
+      }
+      renderTable();
+    }
+
+    function openAddModal() {
+      document.getElementById('add-modal').classList.remove('hidden');
+    }
+
+    function closeAddModal() {
+      document.getElementById('add-modal').classList.add('hidden');
+    }
+
+    function updateClassOptions(niveau) {
+      const select = document.getElementById('m-classe');
+      select.innerHTML = '';
+      const classes = [niveau + " 1", niveau + " 2", niveau + " 3", niveau + " 4", niveau + " 5", "Non assigné"];
+      classes.forEach(c => {
+        const opt = document.createElement('option');
+        opt.value = c;
+        opt.innerText = c;
+        select.appendChild(opt);
+      });
+    }
+
+    function submitNewStudent(e) {
+      e.preventDefault();
+      const nom = document.getElementById('m-nom').value.trim().toUpperCase();
+      const prenoms = document.getElementById('m-prenoms').value.trim().toUpperCase();
+      const matricule = document.getElementById('m-matricule').value.trim().toUpperCase();
+      const sexe = document.getElementById('m-sexe').value;
+      const statut = document.getElementById('m-statut').value;
+      const niveau = document.getElementById('m-niveau').value;
+      const classe = document.getElementById('m-classe').value;
+      const isRed = document.getElementById('m-red').checked;
+
+      const newStudent = {
+        id: students.length + 1,
+        nomPrenom: nom + " " + prenoms,
+        matricule: matricule,
+        sexe: sexe,
+        red: isRed ? "OUI" : "",
+        statut: statut,
+        niveau: niveau,
+        classe: classe
+      };
+
+      students.unshift(newStudent);
+      closeAddModal();
+      renderTable();
+      showToast("L'élève " + newStudent.nomPrenom + " a été inscrit avec succès !");
+    }
+
+    function editStudent(id) {
+      const st = students.find(s => s.id === id);
+      if (st) {
+        showToast("Édition de l'inscription pour " + st.nomPrenom);
+      }
+    }
+
+    function openMatriculeModal() {
+      const mat = prompt("Entrez le matricule à rechercher/modifier :");
+      if (mat) {
+        showToast("Recherche du matricule " + mat + " en cours...");
+      }
+    }
+
+    function compareDesps() {
+      showToast("Module de comparaison avec les listes DESPS (Ministère) activé.");
+    }
+
+    function exportSimulation(format) {
+      showToast("Génération du fichier " + format + " en cours...");
+    }
+
+    function syncSimulation() {
+      showToast("Synchronisation des données académiques terminée !");
+    }
+
+    function alertAffectation() {
+      showToast("Module d'affectation masse élève/classe ouvert.");
+    }
+
+    function toggleSidebar() {
+      const sidebar = document.getElementById('sidebar');
+      sidebar.classList.toggle('-ml-64');
+    }
+
+    function showToast(msg) {
+      const toast = document.getElementById('toast');
+      document.getElementById('toast-message').innerText = msg;
+      toast.classList.remove('translate-y-20', 'opacity-0', 'pointer-events-none');
+      setTimeout(() => {
+        toast.classList.add('translate-y-20', 'opacity-0', 'pointer-events-none');
+      }, 3500);
+    }
+
+    // Initialize
+    window.addEventListener('DOMContentLoaded', () => {
+      renderTable();
+    });
+  </script>
+</body>
+</html>

@@ -1,0 +1,30 @@
+﻿{
+  "name": "scolapro",
+  "version": "2.5.0",
+  "description": "Plateforme SaaS Multi-Tenant de Gestion Scolaire & Financière (UEMOA / MENA)",
+  "author": "INNOVA GROUP",
+  "license": "UNLICENSED",
+  "private": true,
+  "main": "server.js",
+  "type": "commonjs",
+  "engines": {
+    "node": ">=22.5.0"
+  },
+  "scripts": {
+    "start": "node server.js",
+    "dev": "node --watch server.js",
+    "test": "node --test tests/**/*.test.js",
+    "lint": "node --check server.js db.js config.js",
+    "db:sanitize": "node -e \"require('./db.js').sanitizeProductionDatabase()\""
+  },
+  "keywords": [
+    "saas",
+    "edtech",
+    "multi-tenant",
+    "school-management",
+    "fintech",
+    "africa",
+    "uemoa",
+    "syscohada"
+  ]
+}
