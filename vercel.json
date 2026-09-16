@@ -6,11 +6,6 @@
   "cleanUrls": true,
   "trailingSlash": false,
   "rewrites": [
-    { "source": "/platform", "destination": "/index.html" },
-    { "source": "/platform/(.*)", "destination": "/index.html" },
-    { "source": "/foundation", "destination": "/index.html" },
-    { "source": "/foundation/(.*)", "destination": "/index.html" },
-    { "source": "/school", "destination": "/index.html" },
-    { "source": "/school/(.*)", "destination": "/index.html" }
+    { "source": "/(.*)", "destination": "/index.html" }
   ]
 }
