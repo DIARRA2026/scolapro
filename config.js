@@ -29,8 +29,8 @@
 
     // Intégration Supabase (Injectée via serveur ou configuration d'infrastructure)
     SUPABASE: {
-      URL: '',
-      ANON_KEY: ''
+      URL: 'https://vfwqvtokfwevjharycnm.supabase.co',
+      ANON_KEY: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZmd3F2dG9rZndldmpoYXJ5Y25tIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODk1MDg3NDQsImV4cCI6MjEwNTA4NDc0NH0.ozzvuJC52aIT8LETpyF4mENaOm2DhONA9O6kfiE3Isc'
     },
 
     // Multi-Tenant & Établissement par Défaut
