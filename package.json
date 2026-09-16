@@ -1,4 +1,4 @@
-﻿{
+{
   "name": "scolapro",
   "version": "2.5.0",
   "description": "Plateforme SaaS Multi-Tenant de Gestion Scolaire & Financière (UEMOA / MENA)",
@@ -8,9 +8,10 @@
   "main": "server.js",
   "type": "commonjs",
   "engines": {
-    "node": ">=22.5.0"
+    "node": ">=18.0.0"
   },
   "scripts": {
+    "build": "echo 'ScolaPro static build ready'",
     "start": "node server.js",
     "dev": "node --watch server.js",
     "test": "node --test tests/**/*.test.js",
