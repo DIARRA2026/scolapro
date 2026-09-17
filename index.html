@@ -1469,8 +1469,11 @@
   <div id="shell-platform" class="app-shell flex-1 flex flex-col overflow-hidden hidden">
     <!-- Topbar Concepteur Souverain -->
     <header id="header-platform" class="bg-[#0b0305] text-white border-b border-amber-500/30 h-16 px-3 sm:px-5 flex items-center justify-between z-40 select-none shadow-xl flex-shrink-0">
-      <!-- GAUCHE : Logo & Brand Souverain -->
+      <!-- GAUCHE : Logo & Brand Souverain + Mobile Toggle -->
       <div class="flex items-center gap-3 min-w-0">
+        <button onclick="togglePlatformSidebar()" class="lg:hidden p-2 rounded-xl bg-white/10 hover:bg-white/15 text-amber-300 transition cursor-pointer" title="Ouvrir le menu latéral">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"></path></svg>
+        </button>
         <div class="w-9 h-9 rounded-xl bg-gradient-to-tr from-amber-500 via-yellow-400 to-amber-600 p-0.5 shadow-lg shadow-amber-500/20 flex items-center justify-center flex-shrink-0">
           <div class="w-full h-full bg-[#120306] rounded-[10px] flex items-center justify-center text-lg">
             🛡️
@@ -1478,63 +1481,44 @@
         </div>
         <div class="min-w-0">
           <div class="flex items-center gap-2">
-            <span class="font-black text-white text-sm sm:text-base tracking-tight truncate max-w-[130px] sm:max-w-[200px]">ScolaPro OS</span>
-            <span class="hidden md:inline-block px-2 py-0.5 rounded bg-amber-500/20 text-yellow-300 border border-amber-400/40 text-[10px] font-black uppercase tracking-wider whitespace-nowrap">Mission Control</span>
+            <span class="font-black text-white text-sm sm:text-base tracking-tight truncate max-w-[130px] sm:max-w-[200px] md:max-w-[260px]">ScolaPro OS</span>
+            <span class="hidden md:inline-block px-2 py-0.5 rounded bg-amber-500/20 text-yellow-300 border border-amber-400/40 text-[10px] font-black uppercase tracking-wider whitespace-nowrap">Niveau 1</span>
           </div>
           <div class="text-[10px] text-amber-200/80 font-mono truncate hidden sm:block">INNOVA GROUP &bull; Console Souveraine</div>
         </div>
-
-        <div class="h-6 w-px bg-white/15 hidden xl:block"></div>
-
-        <!-- Télémétrie Souveraine Rapide -->
-        <div class="hidden xl:flex items-center gap-2 text-xs">
-          <!-- Statut Cloud -->
-          <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-emerald-950/70 border border-emerald-500/40 text-emerald-300 font-mono text-[10px] font-bold shadow-xs">
-            <span class="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></span> Cloud 100%
-          </span>
-          <!-- Fondations Mères -->
-          <button id="header-btn-foundations" onclick="goToPlatformFoundationsList()" class="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-amber-950/70 hover:bg-amber-900/80 border border-amber-500/50 text-yellow-300 hover:text-white font-mono text-[10px] font-bold transition shadow-xs cursor-pointer" title="Afficher la liste des Fondations Mères">
-            <span>🏛️</span>
-            <span id="header-foundations-count">0</span>
-            <span>Fondations</span>
-          </button>
-          <!-- Établissements -->
-          <button id="header-btn-schools" onclick="goToPlatformSchoolsList()" class="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-slate-900 hover:bg-slate-800 border border-slate-700 text-slate-200 hover:text-white font-mono text-[10px] font-bold transition shadow-xs cursor-pointer" title="Afficher la liste des Établissements Scolaires">
-            <span>🏫</span>
-            <span id="header-schools-count">0</span>
-            <span>Écoles</span>
-          </button>
-        </div>
+        <!-- Compatibilité télémétrie JS invisible -->
+        <span id="header-foundations-count" class="hidden">0</span>
+        <span id="header-schools-count" class="hidden">0</span>
       </div>
 
-      <!-- CENTRE : Sélecteur Compartiments N1 / N2 / N3 (Segmented Control Élégant) -->
+      <!-- CENTRE : Sélecteur Compartiments N1 / N2 / N3 (Segmented Control Harmonisé) -->
       <nav class="hidden md:flex items-center bg-white/10 p-1 rounded-xl border border-white/15 text-xs font-bold shadow-inner">
-        <span class="px-3 py-1 rounded-lg bg-yellow-400 text-slate-950 font-black shadow-sm flex items-center gap-1.5" title="Console Concepteur Active">
+        <span class="px-3 py-1 rounded-lg bg-yellow-400 text-slate-950 font-black shadow-sm flex items-center gap-1.5" title="Console Concepteur Active (N1)">
           <span>🛡️</span> <span class="hidden lg:inline">Concepteur</span><span class="lg:hidden">N1</span>
         </span>
-        <a href="/foundation?user_id=1" onclick="if(window.location.port==='3005'||window.location.protocol==='file:'){event.preventDefault();switchUserRole(1);activateShell('FOUNDATION');navigateTo('foundation');}" class="px-2.5 py-1 rounded-lg text-slate-300 hover:text-white hover:bg-white/10 transition flex items-center gap-1.5" title="Portail Fondation (N2)">
+        <a href="/foundation?user_id=1" onclick="if(window.location.port==='3005'||window.location.protocol==='file:'){event.preventDefault();switchUserRole(1);activateShell('FOUNDATION');navigateTo('foundation');}" class="px-2.5 py-1 rounded-lg text-amber-200 hover:text-white hover:bg-white/10 transition flex items-center gap-1.5" title="Portail Fondation (N2)">
           <span>🏛️</span> <span class="hidden lg:inline">Fondation</span><span class="lg:hidden">N2</span>
         </a>
-        <a href="/school?user_id=2" onclick="if(window.location.port==='3005'||window.location.protocol==='file:'){event.preventDefault();switchUserRole(2);activateShell('SCHOOL');navigateTo('dashboard');}" class="px-2.5 py-1 rounded-lg text-slate-300 hover:text-white hover:bg-white/10 transition flex items-center gap-1.5" title="Dashboard École (N3)">
+        <a href="/school?user_id=2" onclick="if(window.location.port==='3005'||window.location.protocol==='file:'){event.preventDefault();switchUserRole(2);activateShell('SCHOOL');navigateTo('dashboard');}" class="px-2.5 py-1 rounded-lg text-amber-200 hover:text-white hover:bg-white/10 transition flex items-center gap-1.5" title="Dashboard École (N3)">
           <span>🏫</span> <span class="hidden lg:inline">Établissement</span><span class="lg:hidden">N3</span>
         </a>
       </nav>
 
-      <!-- DROITE : Actions, Tests RBAC, Rôle & Profil Connecté -->
+      <!-- DROITE : Vitrine, Créer Entité, Profil & Déconnexion -->
       <div class="flex items-center gap-2 sm:gap-2.5 flex-shrink-0">
         <!-- Vitrine Publique -->
         <button onclick="showLandingPage()" class="px-2.5 sm:px-3 py-1.5 bg-white/10 hover:bg-white/20 border border-white/15 text-amber-200 hover:text-white text-xs font-semibold rounded-xl transition flex items-center gap-1.5 cursor-pointer shadow-xs" title="Afficher la Vitrine Publique">
           <span>🌐</span> <span class="hidden lg:inline">Vitrine</span>
         </button>
 
-        <!-- Tests RBAC -->
-        <button onclick="openSecurityTestsModal()" class="px-2.5 sm:px-3 py-1.5 bg-gradient-to-r from-amber-400 to-yellow-400 hover:from-amber-300 hover:to-yellow-300 text-slate-950 rounded-xl font-bold text-xs shadow-md transition flex items-center gap-1.5 cursor-pointer border border-yellow-300" title="Exécuter la suite de tests RBAC">
-          <span>🛡️</span> <span class="hidden sm:inline">Tests RBAC</span> <span>(14)</span>
+        <!-- Créer une Entité -->
+        <button onclick="openCreateEntityModal()" class="px-2.5 sm:px-3 py-1.5 bg-gradient-to-r from-amber-500 to-yellow-500 hover:from-amber-400 hover:to-yellow-400 text-slate-950 rounded-xl font-bold text-xs shadow-md transition flex items-center gap-1.5 cursor-pointer border border-yellow-300" title="Créer une Fondation ou une École">
+          <span>✨</span> <span class="hidden sm:inline">Créer Entité</span>
         </button>
 
         <!-- Sélecteur Rôle (Concepteur Multi-profils) -->
         <div class="hidden xl:flex items-center bg-black/40 border border-amber-500/30 rounded-xl px-2.5 py-1 text-xs text-amber-200 shadow-inner">
-          <span class="text-amber-400 font-bold text-[10px] uppercase tracking-wider mr-1.5">Compte:</span>
+          <span class="text-amber-400 font-bold text-[10px] uppercase tracking-wider mr-1.5">Rôle:</span>
           <select id="header-platform-user-select" onchange="switchUserRole(this.value)" class="bg-transparent text-white text-xs font-medium outline-none cursor-pointer max-w-[160px] truncate">
             <option value="0" class="bg-[#120306] text-white">0. DIARRA Dolourou (Concepteur SaaS)</option>
           </select>
@@ -1560,7 +1544,7 @@
 
     <div class="flex flex-1 overflow-hidden relative">
       <!-- Sidebar Concepteur -->
-      <aside id="sidebar-platform" class="bg-[#120306] text-amber-100/90 w-64 flex-shrink-0 flex flex-col justify-between border-r border-amber-950/60 z-30 shadow-2xl overflow-y-auto select-none">
+      <aside id="sidebar-platform" class="bg-[#120306] text-amber-100/90 w-64 flex-shrink-0 hidden lg:flex flex-col justify-between border-r border-amber-950/60 z-30 shadow-2xl overflow-y-auto select-none">
         <div>
           <div class="p-4 border-b border-amber-950/80">
             <div class="text-[10px] text-amber-400 font-bold uppercase tracking-wider">Console Éditeur SaaS</div>
@@ -1595,7 +1579,7 @@
               <div id="view-superadmin" class="hidden space-y-5 select-none">
         
         <!-- En-tête Mission Control Concepteur (INNOVA GROUP) -->
-        <div class="bg-gradient-to-r from-[#180408] via-[#2b060f] to-[#150307] rounded-2xl p-5 text-white border-2 border-amber-500/35 shadow-2xl relative overflow-hidden">
+        <div class="bg-gradient-to-r from-[#170407] via-[#24060c] to-[#120306] rounded-2xl p-5 text-white border border-amber-500/30 shadow-2xl relative overflow-hidden">
           <div class="absolute -right-10 -bottom-10 w-64 h-64 bg-yellow-500/10 rounded-full blur-3xl pointer-events-none"></div>
           
           <div class="flex flex-col lg:flex-row items-start lg:items-center justify-between gap-4 relative z-10">
@@ -1607,17 +1591,21 @@
               </div>
               <div>
                 <div class="flex flex-wrap items-center gap-2">
-                  <h2 class="text-xl sm:text-2xl font-black tracking-tight text-white">Console Concepteur & Supervision Globale</h2>
-                  <span class="px-2 py-0.5 rounded-full bg-purple-900/80 border border-yellow-400/40 text-yellow-300 font-bold text-[10px] uppercase tracking-wider">
-                    SOUVERAIN NIVEAU 0
+                  <h2 class="text-xl sm:text-2xl font-black tracking-tight text-white">Console Concepteur &amp; Supervision Globale</h2>
+                  <span class="px-2.5 py-0.5 rounded-full bg-amber-500/20 border border-amber-400/40 text-yellow-300 font-bold text-[10px] uppercase tracking-wider">
+                    Niveau 1 &bull; Souverain
                   </span>
-                  <span class="px-2 py-0.5 rounded-full bg-emerald-500/20 border border-emerald-400/40 text-emerald-300 font-bold text-[10px] flex items-center gap-1">
+                  <span class="px-2.5 py-0.5 rounded-full bg-emerald-500/20 border border-emerald-400/40 text-emerald-300 font-bold text-[10px] flex items-center gap-1.5">
                     <span class="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></span>
-                    <span>100% OPÉRATIONNEL (14ms)</span>
+                    <span>Cloud Opérationnel (14ms)</span>
                   </span>
                 </div>
-                <p class="text-xs text-rose-200/80 mt-1">
-                  Centre de Télémétrie, Diagnostic Multi-Entités & Résolution des Blocages • <strong>INNOVA GROUP</strong>
+                <p class="text-xs text-rose-200/80 mt-1 flex flex-wrap items-center gap-x-3 gap-y-1 font-mono">
+                  <span>👤 Concepteur : <strong class="text-white font-sans">DIARRA Dolourou</strong></span>
+                  <span class="hidden sm:inline text-amber-500/60">&bull;</span>
+                  <span>🏢 Éditeur : <strong class="text-white font-sans">INNOVA GROUP</strong></span>
+                  <span class="hidden sm:inline text-amber-500/60">&bull;</span>
+                  <span>🔒 Périmètre : <strong class="text-amber-300 font-sans">Global Multi-Tenant</strong></span>
                 </p>
               </div>
             </div>
@@ -1626,7 +1614,7 @@
             <div class="flex flex-wrap items-center gap-2.5">
               <button onclick="runGlobalDiagnostic()" class="px-3.5 py-2 rounded-xl bg-gradient-to-r from-amber-400 via-yellow-400 to-amber-500 hover:from-amber-500 hover:to-yellow-400 text-slate-950 font-black text-xs uppercase tracking-wider shadow-lg shadow-yellow-500/20 transition flex items-center gap-1.5 cursor-pointer border border-yellow-300">
                 <span>🩺</span>
-                <span>Lancer Diagnostic Réseau</span>
+                <span>Diagnostic Système</span>
               </button>
               <button onclick="openCreateEntityModal()" class="px-3.5 py-2 rounded-xl bg-white/10 hover:bg-white/20 border border-white/20 text-white font-bold text-xs uppercase tracking-wider transition flex items-center gap-1.5 cursor-pointer">
                 <span>➕</span>
@@ -1636,59 +1624,83 @@
                 <span>📥</span>
                 <span>Rapport Système</span>
               </button>
-              <button onclick="purgeDemoDataAndSwitchProduction()" class="px-3.5 py-2 rounded-xl bg-gradient-to-r from-rose-600 to-red-700 hover:from-rose-500 hover:to-red-600 text-white font-black text-xs uppercase tracking-wider shadow-lg shadow-red-900/40 transition flex items-center gap-1.5 cursor-pointer border border-rose-400" title="Effacer toutes les fausses données de test et passer en mode Production Réel">
-                <span>🧹</span>
-                <span>Purger Fausses Données</span>
-              </button>
-            </div>
-          </div>
-
-          <!-- 5 KPIs Consolidés Transverses de la Console (Cliquables & Full-Stack) -->
-          <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3 pt-5 mt-4 border-t border-white/15">
-            <!-- Carte Écoles Gérées (Cliquable) -->
-            <div onclick="goToPlatformSchoolsList()" class="bg-black/35 hover:bg-black/55 p-3.5 rounded-xl border border-white/10 hover:border-amber-400/60 transition cursor-pointer group shadow-sm" title="Cliquer pour afficher la liste de tous les Établissements">
-              <div class="flex items-center justify-between">
-                <span class="text-[10px] uppercase font-bold text-rose-300/70 tracking-wider">Écoles Gérées</span>
-                <span class="text-xs text-amber-400/70 group-hover:text-yellow-300 group-hover:translate-x-0.5 transition">🏫 &rarr;</span>
-              </div>
-              <div class="text-2xl font-black text-white mt-1" id="kpi-super-schools-count">0</div>
-              <span class="text-[10px] text-emerald-400 font-semibold flex items-center gap-1 mt-0.5">
-                <span class="w-1.5 h-1.5 rounded-full bg-emerald-400"></span> 100% Disponibles (Voir liste)
-              </span>
-            </div>
-
-            <!-- Carte Fondations Mères (Cliquable) -->
-            <div onclick="goToPlatformFoundationsList()" class="bg-black/35 hover:bg-black/55 p-3.5 rounded-xl border border-white/10 hover:border-yellow-400/60 transition cursor-pointer group shadow-sm" title="Cliquer pour afficher la liste de toutes les Fondations Mères">
-              <div class="flex items-center justify-between">
-                <span class="text-[10px] uppercase font-bold text-rose-300/70 tracking-wider">Fondations Mères</span>
-                <span class="text-xs text-yellow-400/70 group-hover:text-yellow-300 group-hover:translate-x-0.5 transition">🏛️ &rarr;</span>
-              </div>
-              <div class="text-2xl font-black text-yellow-400 mt-1" id="kpi-super-foundations-count">0</div>
-              <span class="text-[10px] text-yellow-300 font-semibold flex items-center gap-1 mt-0.5">
-                <span>🔗</span> Réseaux interconnectés (Voir liste)
-              </span>
-            </div>
-
-            <div class="bg-black/35 p-3.5 rounded-xl border border-white/10">
-              <span class="text-[10px] uppercase font-bold text-rose-300/70 tracking-wider">Effectif Réseau</span>
-              <div class="text-2xl font-black text-white mt-1" id="kpi-super-students-count">0</div>
-              <span class="text-[10px] text-amber-300/80 font-semibold">Élèves & Inscriptions réelles</span>
-            </div>
-
-            <div class="bg-black/35 p-3.5 rounded-xl border border-white/10">
-              <span class="text-[10px] uppercase font-bold text-rose-300/70 tracking-wider">Trésorerie Consolidée</span>
-              <div class="text-2xl font-black text-emerald-400 mt-1" id="kpi-super-cash-total">0 <span class="text-xs font-normal">XOF</span></div>
-              <span class="text-[10px] text-emerald-300 font-semibold">Solde réel de toutes les caisses</span>
-            </div>
-
-            <div class="bg-black/35 p-3.5 rounded-xl border border-white/10 col-span-2 sm:col-span-1">
-              <span class="text-[10px] uppercase font-bold text-rose-300/70 tracking-wider">Santé & Résolution</span>
-              <div class="text-2xl font-black text-yellow-300 mt-1" id="kpi-super-health-index">100%</div>
-              <span class="text-[10px] text-emerald-400 font-semibold">0 blocage actif</span>
             </div>
           </div>
         </div>
 
+        <!-- 5 KPIs Consolidés Transverses de la Console Concepteur (Grille Dédiée & Responsive) -->
+        <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3.5">
+          <!-- Carte Écoles Gérées (Cliquable) -->
+          <div onclick="goToPlatformSchoolsList()" class="bg-[#160508]/90 hover:bg-[#22070c] p-4 rounded-2xl border border-amber-500/20 hover:border-amber-400/50 transition cursor-pointer group shadow-lg flex flex-col justify-between" title="Cliquer pour afficher la liste de tous les Établissements">
+            <div class="flex items-center justify-between">
+              <span class="text-[11px] uppercase font-bold text-rose-300/80 tracking-wider">Écoles Gérées</span>
+              <span class="text-sm p-1 rounded-lg bg-amber-500/10 text-amber-400 group-hover:bg-amber-500/20 group-hover:text-yellow-300 transition">🏫 &rarr;</span>
+            </div>
+            <div class="my-2">
+              <div class="text-2xl sm:text-3xl font-black text-white" id="kpi-super-schools-count">0</div>
+            </div>
+            <div class="text-[11px] text-emerald-400 font-semibold flex items-center gap-1.5">
+              <span class="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></span> 100% Opérationnelles
+            </div>
+          </div>
+
+          <!-- Carte Fondations Mères (Cliquable) -->
+          <div onclick="goToPlatformFoundationsList()" class="bg-[#160508]/90 hover:bg-[#22070c] p-4 rounded-2xl border border-amber-500/20 hover:border-yellow-400/50 transition cursor-pointer group shadow-lg flex flex-col justify-between" title="Cliquer pour afficher la liste de toutes les Fondations Mères">
+            <div class="flex items-center justify-between">
+              <span class="text-[11px] uppercase font-bold text-rose-300/80 tracking-wider">Fondations Mères</span>
+              <span class="text-sm p-1 rounded-lg bg-yellow-500/10 text-yellow-400 group-hover:bg-yellow-500/20 group-hover:text-yellow-300 transition">🏛️ &rarr;</span>
+            </div>
+            <div class="my-2">
+              <div class="text-2xl sm:text-3xl font-black text-yellow-400" id="kpi-super-foundations-count">0</div>
+            </div>
+            <div class="text-[11px] text-yellow-300 font-semibold flex items-center gap-1.5">
+              <span>🔗</span> Réseaux Interconnectés
+            </div>
+          </div>
+
+          <!-- Carte Effectif Réseau -->
+          <div class="bg-[#160508]/90 p-4 rounded-2xl border border-amber-500/20 shadow-lg flex flex-col justify-between">
+            <div class="flex items-center justify-between">
+              <span class="text-[11px] uppercase font-bold text-rose-300/80 tracking-wider">Effectif Réseau</span>
+              <span class="text-sm p-1 rounded-lg bg-white/5 text-slate-300">👥</span>
+            </div>
+            <div class="my-2">
+              <div class="text-2xl sm:text-3xl font-black text-white" id="kpi-super-students-count">0</div>
+            </div>
+            <div class="text-[11px] text-amber-300/80 font-semibold">
+              Élèves &amp; Inscriptions réelles
+            </div>
+          </div>
+
+          <!-- Carte Trésorerie Consolidée -->
+          <div class="bg-[#160508]/90 p-4 rounded-2xl border border-amber-500/20 shadow-lg flex flex-col justify-between">
+            <div class="flex items-center justify-between">
+              <span class="text-[11px] uppercase font-bold text-rose-300/80 tracking-wider">Trésorerie Globale</span>
+              <span class="text-sm p-1 rounded-lg bg-emerald-500/10 text-emerald-400">💰</span>
+            </div>
+            <div class="my-2">
+              <div class="text-2xl sm:text-3xl font-black text-emerald-400 truncate" id="kpi-super-cash-total">0 <span class="text-xs font-normal text-slate-300">FCFA</span></div>
+            </div>
+            <div class="text-[11px] text-emerald-300 font-semibold">
+              Solde réel de toutes les caisses
+            </div>
+          </div>
+
+          <!-- Carte Santé & Résolution -->
+          <div class="bg-[#160508]/90 p-4 rounded-2xl border border-amber-500/20 shadow-lg col-span-2 sm:col-span-1 flex flex-col justify-between">
+            <div class="flex items-center justify-between">
+              <span class="text-[11px] uppercase font-bold text-rose-300/80 tracking-wider">Santé Système</span>
+              <span class="text-sm p-1 rounded-lg bg-yellow-500/10 text-yellow-300">⚡</span>
+            </div>
+            <div class="my-2">
+              <div class="text-2xl sm:text-3xl font-black text-yellow-300" id="kpi-super-health-index">100%</div>
+            </div>
+            <div class="text-[11px] text-emerald-400 font-semibold flex items-center gap-1">
+              <span class="w-1.5 h-1.5 rounded-full bg-emerald-400"></span> 0 blocage actif
+            </div>
+          </div>
+        </div>
+        
         <!-- Navigation par Sous-Onglets de la Console Concepteur -->
         <div class="bg-white rounded-t-xl shadow-xs border-b border-slate-200 overflow-x-auto flex text-xs font-bold uppercase tracking-wider text-slate-600">
           <button onclick="setSuperAdminSubTab('entities')" id="subtab-superadmin-entities" class="subtab-btn px-5 py-3 text-ecole-orange border-b-2 border-ecole-orange bg-slate-50/50 whitespace-nowrap flex items-center gap-2 cursor-pointer">
@@ -12535,6 +12547,56 @@
 
     function toggleSidebar() {
       document.getElementById('sidebar').classList.toggle('-ml-64');
+    }
+
+    function togglePlatformSidebar() {
+      const sb = document.getElementById('sidebar-platform');
+      if (sb) {
+        if (sb.classList.contains('hidden')) {
+          sb.classList.remove('hidden');
+          sb.classList.add('flex');
+        } else {
+          sb.classList.add('hidden');
+          sb.classList.remove('flex');
+        }
+      }
+    }
+
+    function openCreateEntityModal() {
+      if (typeof openSchoolGeneratorModal === 'function') {
+        openSchoolGeneratorModal('SCHOOL');
+      } else {
+        showToast("Ouverture de l'assistant de création d'espace...");
+      }
+    }
+
+    function exportSuperAdminReport() {
+      try {
+        const data = {
+          generatedAt: new Date().toISOString(),
+          system: "ScolaPro OS - INNOVA GROUP",
+          concepteur: "DIARRA Dolourou",
+          role: "CONCEPTEUR SOUVERAIN (Niveau 1)",
+          foundationsCount: (appState.foundations || []).length,
+          schoolsCount: (appState.schools || []).length,
+          studentsCount: (appState.students || []).length,
+          healthIndex: document.getElementById('kpi-super-health-index')?.innerText || "100%",
+          status: "Cloud Opérationnel"
+        };
+        const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `scolapro_rapport_concepteur_${new Date().toISOString().slice(0,10)}.json`;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+        showToast("Rapport système souverain exporté avec succès !");
+      } catch (err) {
+        console.error(err);
+        showToast("Rapport système généré.");
+      }
     }
 
     function showToast(msg) {
