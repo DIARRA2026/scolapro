@@ -1,0 +1,303 @@
+<!DOCTYPE html>
+<html lang="fr" class="h-full">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Connexion Sécurisée | ScolaPro SaaS</title>
+  <style>
+    :root {
+      --color-primary: #dc2626;
+      --color-primary-dark: #991b1b;
+      --color-gold: #facc15;
+      --color-gold-dark: #ca8a04;
+      --color-bg-dark: #0f0406;
+      --color-card-bg: #1b0609;
+      --color-border: rgba(220, 38, 38, 0.3);
+      --color-text: #f8fafc;
+      --color-text-muted: #fda4af;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; }
+    body {
+      background-color: var(--color-bg-dark);
+      color: var(--color-text);
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 1.5rem;
+    }
+    .card {
+      background: var(--color-card-bg);
+      border: 1px solid var(--color-border);
+      border-radius: 1.5rem;
+      padding: 2.5rem;
+      width: 100%;
+      max-width: 440px;
+      box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.7), 0 0 40px rgba(220, 38, 38, 0.15);
+    }
+    .header {
+      text-align: center;
+      margin-bottom: 2rem;
+    }
+    .logo {
+      font-size: 2.5rem;
+      margin-bottom: 0.5rem;
+    }
+    .title {
+      font-size: 1.5rem;
+      font-weight: 800;
+      letter-spacing: -0.025em;
+      color: #fff;
+    }
+    .subtitle {
+      font-size: 0.85rem;
+      color: var(--color-text-muted);
+      margin-top: 0.25rem;
+    }
+    .badge {
+      display: inline-block;
+      margin-top: 0.5rem;
+      font-size: 0.7rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      padding: 0.2rem 0.6rem;
+      border-radius: 9999px;
+      background: rgba(250, 204, 21, 0.15);
+      color: var(--color-gold);
+      border: 1px solid rgba(250, 204, 21, 0.3);
+    }
+    .form-group {
+      margin-bottom: 1.25rem;
+    }
+    label {
+      display: block;
+      font-size: 0.8rem;
+      font-weight: 600;
+      color: #fecdd3;
+      margin-bottom: 0.4rem;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+    input {
+      width: 100%;
+      padding: 0.75rem 1rem;
+      border-radius: 0.75rem;
+      border: 1px solid rgba(220, 38, 38, 0.4);
+      background: rgba(0, 0, 0, 0.4);
+      color: #fff;
+      font-size: 0.95rem;
+      outline: none;
+      transition: border-color 0.2s, box-shadow 0.2s;
+    }
+    input:focus {
+      border-color: var(--color-gold);
+      box-shadow: 0 0 0 3px rgba(250, 204, 21, 0.2);
+    }
+    .btn {
+      width: 100%;
+      padding: 0.85rem;
+      border-radius: 0.75rem;
+      border: none;
+      background: linear-gradient(135deg, var(--color-primary), var(--color-primary-dark));
+      color: #fff;
+      font-size: 0.95rem;
+      font-weight: 700;
+      cursor: pointer;
+      box-shadow: 0 4px 15px rgba(220, 38, 38, 0.4);
+      transition: transform 0.1s, opacity 0.2s;
+    }
+    .btn:hover {
+      opacity: 0.95;
+    }
+    .btn:active {
+      transform: scale(0.98);
+    }
+    .alert {
+      padding: 0.75rem 1rem;
+      border-radius: 0.75rem;
+      font-size: 0.85rem;
+      margin-bottom: 1.25rem;
+      display: none;
+      line-height: 1.4;
+    }
+    .alert-error {
+      background: rgba(239, 68, 68, 0.2);
+      border: 1px solid rgba(239, 68, 68, 0.5);
+      color: #fca5a5;
+    }
+    .alert-info {
+      background: rgba(250, 204, 21, 0.15);
+      border: 1px solid rgba(250, 204, 21, 0.4);
+      color: #fef08a;
+    }
+    .hidden {
+      display: none !important;
+    }
+    .footer-note {
+      text-align: center;
+      margin-top: 1.5rem;
+      font-size: 0.75rem;
+      color: rgba(253, 164, 175, 0.6);
+    }
+  </style>
+</head>
+<body>
+  <div class="card">
+    <div class="header">
+      <div class="logo">🏛️</div>
+      <h1 class="title">ScolaPro</h1>
+      <p class="subtitle">Plateforme SaaS de Gestion Scolaire & Financière</p>
+      <div class="badge">Espace Sécurisé UEMOA / SYSCOHADA</div>
+    </div>
+
+    <div id="alertBox" class="alert alert-error"></div>
+
+    <!-- Formulaire de Connexion Standard -->
+    <form id="loginForm">
+      <div class="form-group">
+        <label for="email">Adresse e-mail professionnelle</label>
+        <input type="email" id="email" name="email" required autocomplete="username" placeholder="prenom.nom@scolapro.ci">
+      </div>
+      <div class="form-group">
+        <label for="password">Mot de passe</label>
+        <input type="password" id="password" name="password" required autocomplete="current-password" placeholder="••••••••••••">
+      </div>
+      <button type="submit" id="loginBtn" class="btn">Se connecter</button>
+    </form>
+
+    <!-- Formulaire de Changement Obligatoire de Mot de Passe -->
+    <form id="changePasswordForm" class="hidden">
+      <div class="alert alert-info" style="display: block; margin-bottom: 1rem;">
+        🔒 <strong>Première connexion :</strong> Vous devez obligatoirement définir un mot de passe personnel robuste (min. 12 caractères, 1 majuscule, 1 minuscule, 1 chiffre).
+      </div>
+      <div class="form-group">
+        <label for="newPassword">Nouveau mot de passe</label>
+        <input type="password" id="newPassword" name="newPassword" required autocomplete="new-password" placeholder="••••••••••••">
+      </div>
+      <div class="form-group">
+        <label for="confirmPassword">Confirmer le nouveau mot de passe</label>
+        <input type="password" id="confirmPassword" name="confirmPassword" required autocomplete="new-password" placeholder="••••••••••••">
+      </div>
+      <button type="submit" id="changePwdBtn" class="btn">Enregistrer et Continuer</button>
+    </form>
+
+    <div class="footer-note">
+      Éditeur : INNOVA GROUP &bull; Conforme APDP & ISO 27001
+    </div>
+  </div>
+
+  <script>
+    'use strict';
+
+    // Résolution sécurisée de l'URL de redirection post-connexion (Anti-Open-Redirect)
+    function resolveSafeNextUrl() {
+      const params = new URLSearchParams(window.location.search);
+      const next = params.get('next');
+      if (!next) return '/';
+      // Doit commencer par /, ne pas commencer par //, et contenir uniquement des caractères d'URI sûrs
+      if (/^\/[A-Za-z0-9/_.-]*$/.test(next) && !next.startsWith('//')) {
+        return next;
+      }
+      return '/';
+    }
+
+    const alertBox = document.getElementById('alertBox');
+    const loginForm = document.getElementById('loginForm');
+    const changePasswordForm = document.getElementById('changePasswordForm');
+    const loginBtn = document.getElementById('loginBtn');
+    const changePwdBtn = document.getElementById('changePwdBtn');
+
+    function showError(msg) {
+      alertBox.textContent = msg;
+      alertBox.className = 'alert alert-error';
+      alertBox.style.display = 'block';
+    }
+
+    function hideAlert() {
+      alertBox.style.display = 'none';
+    }
+
+    loginForm.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      hideAlert();
+      loginBtn.disabled = true;
+      loginBtn.textContent = 'Vérification en cours...';
+
+      const email = document.getElementById('email').value.trim();
+      const password = document.getElementById('password').value;
+
+      try {
+        const res = await fetch('/api/auth/login', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({ email, password })
+        });
+
+        const data = await res.json();
+        if (!res.ok || !data.success) {
+          throw new Error(data.error || 'Identifiants invalides.');
+        }
+
+        if (data.mustChangePassword) {
+          loginForm.classList.add('hidden');
+          changePasswordForm.classList.remove('hidden');
+          return;
+        }
+
+        window.location.href = resolveSafeNextUrl();
+      } catch (err) {
+        showError(err.message);
+      } finally {
+        loginBtn.disabled = false;
+        loginBtn.textContent = 'Se connecter';
+      }
+    });
+
+    changePasswordForm.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      hideAlert();
+
+      const newPassword = document.getElementById('newPassword').value;
+      const confirmPassword = document.getElementById('confirmPassword').value;
+
+      if (newPassword !== confirmPassword) {
+        showError('Les deux mots de passe ne correspondent pas.');
+        return;
+      }
+
+      if (newPassword.length < 12 || !/[A-Z]/.test(newPassword) || !/[a-z]/.test(newPassword) || !/[0-9]/.test(newPassword)) {
+        showError('Le mot de passe doit comporter au moins 12 caractères, une majuscule, une minuscule et un chiffre.');
+        return;
+      }
+
+      changePwdBtn.disabled = true;
+      changePwdBtn.textContent = 'Mise à jour...';
+
+      try {
+        const res = await fetch('/api/auth/password', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({ newPassword })
+        });
+
+        const data = await res.json();
+        if (!res.ok || !data.success) {
+          throw new Error(data.error || 'Échec de la mise à jour du mot de passe.');
+        }
+
+        window.location.href = resolveSafeNextUrl();
+      } catch (err) {
+        showError(err.message);
+      } finally {
+        changePwdBtn.disabled = false;
+        changePwdBtn.textContent = 'Enregistrer et Continuer';
+      }
+    });
+  </script>
+</body>
+</html>

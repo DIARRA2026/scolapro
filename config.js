@@ -27,20 +27,23 @@
     API_BASE_URL: window.location.origin,
     API_TIMEOUT_MS: 15000,
 
-    // Intégration Supabase (Injectée via serveur ou configuration d'infrastructure)
+    // AVERTISSEMENT DE SÉCURITÉ : Aucune clé sensible ne doit être présente dans ce fichier.
+    // Les clés anon Supabase éventuellement exposées dans l'historique git doivent être révoquées
+    // et régénérées sur la console d'administration de l'infrastructure.
+    // L'intégration Supabase éventuelle doit être hydratée de manière dynamique via /api/config.
     SUPABASE: {
-      URL: 'https://vfwqvtokfwevjharycnm.supabase.co',
-      ANON_KEY: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZmd3F2dG9rZndldmpoYXJ5Y25tIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODk1MDg3NDQsImV4cCI6MjEwNTA4NDc0NH0.ozzvuJC52aIT8LETpyF4mENaOm2DhONA9O6kfiE3Isc'
+      URL: '',
+      ANON_KEY: ''
     },
 
     // Multi-Tenant & Établissement par Défaut
     MULTI_TENANT: {
       ENABLED: true,
       DEFAULT_TYPE: 'SCHOOL',
-      DEFAULT_SCHOOL_ID: 1,
-      DEFAULT_SCHOOL_CODE: 'LYC-SAINTE-MARIE',
-      DEFAULT_FOUNDATION_ID: 1,
-      DEFAULT_FOUNDATION_CODE: 'FEA'
+      DEFAULT_SCHOOL_ID: null,
+      DEFAULT_SCHOOL_CODE: null,
+      DEFAULT_FOUNDATION_ID: null,
+      DEFAULT_FOUNDATION_CODE: null
     },
 
     // Fonctionnalités & Feature Flags
