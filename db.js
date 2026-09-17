@@ -947,6 +947,112 @@ function formatUser(u) {
 }
 
 // ---------------------------------------------------------------------
+// SÉRIALISATION ÉTABLISSEMENTS & FONDATIONS (snake_case DB -> camelCase API)
+// ---------------------------------------------------------------------
+
+/**
+ * Sérialise un lot d'établissements et calcule leurs compteurs vivants
+ * (élèves, classes, caisses, taux de recouvrement) par agrégation SQL au
+ * moment de la lecture. C'est ce lien — recalculé à chaque appel plutôt que
+ * lu depuis une colonne en cache jamais mise à jour — qui permet aux
+ * tableaux de bord Fondation (Niveau 2) et Concepteur (Niveau 1) de refléter
+ * fidèlement l'activité réelle de chaque établissement (Niveau 3).
+ * @param {object[]} rows lignes brutes issues de `SELECT * FROM schools`
+ * @returns {object[]}
+ */
+function formatSchools(rows) {
+  if (!rows || rows.length === 0) return [];
+  const ids = rows.map(r => r.id);
+  const inClause = ids.map(() => '?').join(',');
+
+  const studentStats = new Map();
+  db.prepare(`
+    SELECT school_id, COUNT(*) as count, SUM(fee_due) as due, SUM(fee_paid) as paid
+    FROM students WHERE school_id IN (${inClause}) GROUP BY school_id
+  `).all(...ids).forEach(r => studentStats.set(r.school_id, r));
+
+  const classStats = new Map();
+  db.prepare(`
+    SELECT school_id, COUNT(*) as count
+    FROM classes WHERE school_id IN (${inClause}) GROUP BY school_id
+  `).all(...ids).forEach(r => classStats.set(r.school_id, r));
+
+  const cashStats = new Map();
+  db.prepare(`
+    SELECT school_id, COUNT(*) as count, SUM(balance) as total
+    FROM cash_desks WHERE school_id IN (${inClause}) GROUP BY school_id
+  `).all(...ids).forEach(r => cashStats.set(r.school_id, r));
+
+  return rows.map(s => {
+    const st = studentStats.get(s.id);
+    const studentsCount = (st && st.count) || 0;
+    const totalDue = (st && st.due) || 0;
+    const totalPaid = (st && st.paid) || 0;
+    const recoveryRate = totalDue > 0
+      ? Math.round((totalPaid / totalDue) * 1000) / 10
+      : (studentsCount > 0 ? 100 : 0);
+    const cl = classStats.get(s.id);
+    const cd = cashStats.get(s.id);
+
+    return {
+      id: s.id,
+      code: s.code,
+      name: s.name,
+      shortName: s.short_name,
+      foundationId: (s.foundation_id !== null && s.foundation_id !== undefined) ? parseInt(s.foundation_id, 10) : null,
+      schoolType: s.school_type,
+      city: s.city,
+      address: s.address,
+      phone: s.phone,
+      email: s.email,
+      logo: s.logo,
+      currency: s.currency,
+      academicYear: s.academic_year,
+      studentsCount,
+      classesCount: (cl && cl.count) || 0,
+      cashDesksCount: (cd && cd.count) || 0,
+      cashBalance: (cd && cd.total) || 0,
+      recoveryRate,
+      isActive: !!s.is_active,
+      createdAt: s.created_at
+    };
+  });
+}
+
+/**
+ * Sérialise un unique établissement (voir {@link formatSchools}).
+ * @param {object|null} row
+ * @returns {object|null}
+ */
+function formatSchool(row) {
+  if (!row) return null;
+  return formatSchools([row])[0];
+}
+
+/**
+ * Sérialise une fondation mère en camelCase pour l'API.
+ * @param {object|null} f
+ * @returns {object|null}
+ */
+function formatFoundation(f) {
+  if (!f) return null;
+  return {
+    id: f.id,
+    code: f.code,
+    name: f.name,
+    sigle: f.sigle,
+    hq: f.hq,
+    president: f.president,
+    phone: f.phone,
+    email: f.email,
+    logo: f.logo,
+    description: f.description,
+    isActive: !!f.is_active,
+    createdAt: f.created_at
+  };
+}
+
+// ---------------------------------------------------------------------
 // LECTURE & GESTION DES ÉLÈVES (SCOPED)
 // ---------------------------------------------------------------------
 
@@ -1965,7 +2071,20 @@ function deleteUser(user, id) {
 
 function createSchool(user, data) {
   assertRank(user, 2); // Concepteur ou Fondateur
-  const fId = user.role === 'fondateur' ? user.foundationId : (data.foundationId ? parseInt(data.foundationId, 10) : 1);
+  // Le fondateur ne peut fonder que dans sa propre fondation. Le concepteur choisit
+  // explicitement : `foundationId` omis => rattachement par défaut (rétrocompatibilité),
+  // `foundationId` explicitement null/vide => établissement AUTONOME (aucune fondation).
+  // Un "|| 1" naïf aurait affilié à tort toute école "autonome" à la fondation #1.
+  let fId;
+  if (user.role === 'fondateur') {
+    fId = user.foundationId;
+  } else if (data.foundationId === undefined) {
+    fId = 1;
+  } else if (data.foundationId === null || data.foundationId === '') {
+    fId = null;
+  } else {
+    fId = parseInt(data.foundationId, 10);
+  }
 
   const code = String(data.code || `col-auto-${Date.now().toString().slice(-4)}`).trim().toLowerCase();
   const name = String(data.name || '').trim();
@@ -1973,8 +2092,8 @@ function createSchool(user, data) {
 
   const stmt = db.prepare(`
     INSERT INTO schools (
-      code, name, short_name, foundation_id, school_type, city, address, phone, email, currency
-    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 'XOF')
+      code, name, short_name, foundation_id, school_type, city, address, phone, email, logo, currency
+    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'XOF')
   `);
 
   const result = stmt.run(
@@ -1986,7 +2105,8 @@ function createSchool(user, data) {
     data.city || 'Abidjan',
     data.address || '',
     data.phone || '',
-    data.email || ''
+    data.email || '',
+    data.logo || '🏫'
   );
 
   const newId = Number(result.lastInsertRowid);
@@ -1997,12 +2117,12 @@ function createSchool(user, data) {
     module: 'Administration',
     target: `Établissement #${newId} (${name})`,
     oldVal: '',
-    newVal: `Code: ${code}, Fondation: #${fId}`,
+    newVal: `Code: ${code}, Fondation: ${fId ? '#' + fId : 'AUCUNE (établissement autonome)'}`,
     schoolId: newId,
     foundationId: fId
   });
 
-  return db.prepare('SELECT * FROM schools WHERE id = ?').get(newId);
+  return { success: true, school: formatSchool(db.prepare('SELECT * FROM schools WHERE id = ?').get(newId)) };
 }
 
 function createFoundation(user, data) {
@@ -2037,7 +2157,7 @@ function createFoundation(user, data) {
     foundationId: newId
   });
 
-  return db.prepare('SELECT * FROM foundations WHERE id = ?').get(newId);
+  return { success: true, foundation: formatFoundation(db.prepare('SELECT * FROM foundations WHERE id = ?').get(newId)) };
 }
 
 function deleteSchool(user, schoolId) {
@@ -2300,8 +2420,8 @@ function getFoundationConsolidatedData(user, foundationId) {
 
   return {
     success: true,
-    foundation,
-    schools,
+    foundation: formatFoundation(foundation),
+    schools: formatSchools(schools),
     stats: {
       schoolsCount: schools.length,
       totalStudents,
@@ -2322,19 +2442,21 @@ function getFoundationConsolidatedData(user, foundationId) {
 
 function getBootstrapData(user) {
   const allowed = readableSchoolIds(user);
-  let schools = [];
+  let rawSchools = [];
   if (allowed === 'ALL') {
-    schools = db.prepare('SELECT * FROM schools WHERE is_active = 1 ORDER BY id ASC').all();
+    rawSchools = db.prepare('SELECT * FROM schools WHERE is_active = 1 ORDER BY id ASC').all();
   } else if (allowed.length > 0) {
-    schools = db.prepare(`SELECT * FROM schools WHERE id IN (${allowed.map(() => '?').join(',')}) AND is_active = 1`).all(...allowed);
+    rawSchools = db.prepare(`SELECT * FROM schools WHERE id IN (${allowed.map(() => '?').join(',')}) AND is_active = 1`).all(...allowed);
   }
+  const schools = formatSchools(rawSchools);
 
-  let foundations = [];
+  let rawFoundations = [];
   if (user.role === 'concepteur') {
-    foundations = db.prepare('SELECT * FROM foundations ORDER BY id ASC').all();
+    rawFoundations = db.prepare('SELECT * FROM foundations ORDER BY id ASC').all();
   } else if (user.foundationId) {
-    foundations = db.prepare('SELECT * FROM foundations WHERE id = ?').all(user.foundationId);
+    rawFoundations = db.prepare('SELECT * FROM foundations WHERE id = ?').all(user.foundationId);
   }
+  const foundations = rawFoundations.map(formatFoundation);
 
   let students = [];
   try {
@@ -2375,7 +2497,9 @@ function getBootstrapData(user) {
     currentUser: user,
     schools,
     foundations,
-    activeSchool: user.schoolId ? lookupSchool(user.schoolId) : (schools[0] || null),
+    activeSchool: user.schoolId
+      ? (schools.find(s => s.id === parseInt(user.schoolId, 10)) || formatSchool(lookupSchool(user.schoolId)))
+      : (schools[0] || null),
     classes,
     students,
     cashDesks,

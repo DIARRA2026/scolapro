@@ -12875,6 +12875,7 @@
       let newId = (appState.schools && appState.schools.length ? Math.max(...appState.schools.map(s => s.id)) : 0) + 1;
       const isAffiliated = foundVal !== 'AUTONOME';
       const foundObj = isAffiliated ? (appState.foundations || []).find(f => f.id === parseInt(foundVal)) : null;
+      let createdSchool = null;
 
       try {
         const resp = await fetch('/api/schools', {
@@ -12896,6 +12897,7 @@
         if (resp.ok) {
           const data = await resp.json();
           if (data.school && data.school.id) {
+            createdSchool = data.school;
             newId = data.school.id;
           }
         }
@@ -12903,7 +12905,11 @@
         console.warn('Backend school creation offline fallback:', err.message);
       }
 
-      const newSchool = {
+      // On privilégie systématiquement l'objet renvoyé par le serveur (compteurs réels,
+      // calculés par agrégation) ; le repli local ne sert qu'en cas d'indisponibilité
+      // réseau et reflète honnêtement l'absence d'élèves/caisses tant que la synchronisation
+      // avec le serveur n'a pas eu lieu — jamais de chiffres inventés.
+      const newSchool = createdSchool || {
         id: newId,
         code: code,
         name: name,
@@ -12918,12 +12924,15 @@
         logo: logoIcon,
         currency: 'XOF',
         academicYear: year,
-        studentsCount: autoClasses ? 120 : 0,
-        classesCount: autoClasses ? 4 : 0,
-        cashDesksCount: 1,
+        studentsCount: 0,
+        classesCount: 0,
+        cashDesksCount: 0,
         recoveryRate: 0,
         isActive: true
       };
+      if (!newSchool.foundationName) {
+        newSchool.foundationName = foundObj ? foundObj.name : 'Établissement Autonome';
+      }
 
       if (!appState.schools) appState.schools = [];
       appState.schools.push(newSchool);
@@ -12976,6 +12985,7 @@
 
       let newId = (appState.foundations && appState.foundations.length ? Math.max(...appState.foundations.map(f => f.id)) : 0) + 1;
       const code = 'fondation-' + sigle.toLowerCase();
+      let createdFoundation = null;
 
       try {
         const resp = await fetch('/api/foundations', {
@@ -12995,6 +13005,7 @@
         if (resp.ok) {
           const data = await resp.json();
           if (data.foundation && data.foundation.id) {
+            createdFoundation = data.foundation;
             newId = data.foundation.id;
           }
         }
@@ -13002,7 +13013,7 @@
         console.warn('Backend foundation creation offline fallback:', err.message);
       }
 
-      const newFoundation = {
+      const newFoundation = createdFoundation || {
         id: newId,
         code: code,
         name: name,
@@ -14106,8 +14117,9 @@
             ? `<span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-100 text-emerald-800 border border-emerald-200"><span class="w-1.5 h-1.5 rounded-full bg-emerald-500"></span> Opérationnel</span>`
             : `<span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-rose-100 text-rose-800 border border-rose-200"><span class="w-1.5 h-1.5 rounded-full bg-rose-500"></span> Verrouillé</span>`;
 
+          const parentFoundationName = s.foundationName || (foundations.find(f => f.id === s.foundationId) || {}).name || 'Fondation';
           const typeBadge = isAffiliated
-            ? `<span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-blue-100 text-blue-800 border border-blue-200"><span>🏫</span> Affiliée</span><span class="text-[10px] text-slate-500 block truncate max-w-[140px] mt-0.5 font-medium" title="${esc(s.foundationName || '')}">${esc(s.foundationName || 'Fondation')}</span>`
+            ? `<span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-blue-100 text-blue-800 border border-blue-200"><span>🏫</span> Affiliée</span><span class="text-[10px] text-slate-500 block truncate max-w-[140px] mt-0.5 font-medium" title="${esc(parentFoundationName)}">${esc(parentFoundationName)}</span>`
             : `<span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-100 text-amber-900 border border-amber-200"><span>🎓</span> Autonome</span><span class="text-[10px] text-slate-400 block mt-0.5">Indépendante</span>`;
 
           rowsHtml += `
