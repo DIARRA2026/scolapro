@@ -2237,7 +2237,7 @@
           <div class="flex flex-col lg:flex-row items-start lg:items-center justify-between gap-5 relative z-10">
             <div class="flex items-center gap-4">
               <div class="w-16 h-16 rounded-2xl bg-gradient-to-tr from-blue-500 via-indigo-400 to-blue-600 p-0.5 shadow-xl shadow-blue-500/30 flex-shrink-0 flex items-center justify-center">
-                <div class="w-full h-full bg-[#081736] rounded-[14px] flex items-center justify-center text-3xl font-black text-blue-300" id="found-hero-logo">
+                <div class="w-full h-full bg-[#081736] rounded-[14px] flex items-center justify-center text-3xl font-black text-blue-300 overflow-hidden" id="found-hero-logo">
                   🏛️
                 </div>
               </div>
@@ -2269,9 +2269,13 @@
 
             <!-- Boutons d'Action Centrale -->
             <div class="flex flex-wrap items-center gap-2.5 w-full lg:w-auto">
+              <button onclick="openEditFoundationModal(appState.currentFoundationId)" class="px-3.5 py-2.5 bg-white/10 hover:bg-white/20 text-white rounded-xl font-bold text-xs uppercase tracking-wider transition flex items-center gap-1.5 cursor-pointer border border-white/20" title="Modifier le logo et les détails de la fondation">
+                <span>✏️</span>
+                <span>Modifier Fondation</span>
+              </button>
               <button onclick="openSchoolGeneratorModal('SCHOOL', appState.currentFoundationId || 1)" class="px-4 py-2.5 bg-gradient-to-r from-blue-500 via-indigo-500 to-blue-600 hover:from-blue-600 hover:to-indigo-600 text-white rounded-xl font-black text-xs uppercase tracking-wider shadow-lg shadow-blue-500/25 transition flex items-center gap-2 cursor-pointer border border-blue-400/40">
                 <span>➕</span>
-                <span>Affilier une Nouvelle École</span>
+                <span>Affilier une École</span>
               </button>
               <button onclick="openTenantModal()" class="px-3.5 py-2.5 bg-white/10 hover:bg-white/20 text-white rounded-xl font-bold text-xs uppercase tracking-wider transition flex items-center gap-1.5 cursor-pointer border border-white/20">
                 <span>🔄</span>
@@ -2433,7 +2437,7 @@
             <!-- Fil d'Ariane Fondation Mère -->
             <span id="header-foundation-pill" onclick="event.stopPropagation(); switchUserRole(1); activateShell('FOUNDATION'); navigateTo('foundation');" class="hidden font-black text-yellow-400 hover:text-white transition cursor-pointer text-[11px] px-1 py-0.2 bg-yellow-400/20 rounded">Fondation</span>
             <span id="header-foundation-sep" class="hidden text-yellow-400/50 font-bold">&gt;</span>
-            <span id="header-tenant-icon" class="text-xs">🏫</span>
+            <span id="header-tenant-icon" class="text-xs w-4 h-4 flex items-center justify-center overflow-hidden flex-shrink-0">🏫</span>
             <span id="header-school-name" class="text-yellow-200 font-bold tracking-tight max-w-[150px] lg:max-w-[220px] truncate">Aucun établissement actif</span>
             <span class="text-yellow-400/40 font-bold">•</span>
             <span id="header-year-label" class="bg-red-950/80 text-yellow-300 border border-yellow-400/40 px-1.5 py-0.5 rounded font-mono font-bold text-[10px] tracking-wide leading-none">2026-2027</span>
@@ -5877,7 +5881,12 @@
         <form onsubmit="handleHierarchicalSettingsSave('school', event)" class="space-y-4">
           <div class="flex items-center justify-between pb-2 border-b border-slate-100">
             <span class="font-bold text-slate-800 flex items-center gap-1.5"><span>🏫</span> Paramètres Locaux de l'Établissement</span>
-            <span class="px-2 py-0.5 rounded-full bg-amber-100 text-amber-900 font-mono font-bold text-[10px]">Périmètre Local</span>
+            <div class="flex items-center gap-2">
+              <button type="button" onclick="closeSettingsModal(); openEditSchoolModal(appState.currentSchoolId);" class="px-2.5 py-1 bg-amber-50 hover:bg-amber-100 text-amber-900 border border-amber-300 rounded-lg font-bold text-[10px] flex items-center gap-1 transition cursor-pointer">
+                <span>🎨</span> Modifier Logo & Identité
+              </button>
+              <span class="px-2 py-0.5 rounded-full bg-amber-100 text-amber-900 font-mono font-bold text-[10px]">Périmètre Local</span>
+            </div>
           </div>
 
           <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
@@ -5941,7 +5950,12 @@
         <form onsubmit="handleHierarchicalSettingsSave('foundation', event)" class="space-y-4">
           <div class="flex items-center justify-between pb-2 border-b border-slate-100">
             <span class="font-bold text-slate-800 flex items-center gap-1.5"><span>🏛️</span> Paramètres Consolidés du Groupe Éducatif</span>
-            <span class="px-2 py-0.5 rounded-full bg-blue-100 text-blue-900 font-mono font-bold text-[10px]">Périmètre Fondation</span>
+            <div class="flex items-center gap-2">
+              <button type="button" onclick="closeSettingsModal(); openEditFoundationModal(appState.currentFoundationId || (appState.foundations && appState.foundations[0] && appState.foundations[0].id));" class="px-2.5 py-1 bg-blue-50 hover:bg-blue-100 text-blue-900 border border-blue-300 rounded-lg font-bold text-[10px] flex items-center gap-1 transition cursor-pointer">
+                <span>🎨</span> Modifier Logo & Identité
+              </button>
+              <span class="px-2 py-0.5 rounded-full bg-blue-100 text-blue-900 font-mono font-bold text-[10px]">Périmètre Fondation</span>
+            </div>
           </div>
 
           <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
@@ -7450,22 +7464,30 @@
             <label class="font-bold text-slate-700 block">Logo & Emblème de l'École :</label>
             <div class="flex items-center gap-4">
               <!-- Prévisualisation en direct -->
-              <div id="gen-logo-preview" class="w-14 h-14 rounded-xl bg-gradient-to-br from-amber-400 to-yellow-500 p-0.5 shadow flex-shrink-0 flex items-center justify-center">
+              <div id="gen-logo-preview" class="w-16 h-16 rounded-xl bg-gradient-to-br from-amber-400 to-yellow-500 p-0.5 shadow-md flex-shrink-0 flex items-center justify-center overflow-hidden">
                 <div class="w-full h-full bg-[#1e0508] rounded-[10px] flex items-center justify-center text-2xl" id="gen-logo-preview-icon">
                   🏫
                 </div>
               </div>
 
-              <!-- Choix de badges prédéfinis -->
-              <div class="flex-1 space-y-1.5">
-                <div class="flex flex-wrap items-center gap-2">
-                  <button type="button" onclick="selectSchoolLogoPreset('🏫')" class="w-8 h-8 rounded-lg bg-slate-100 hover:bg-slate-200 border border-slate-300 flex items-center justify-center text-base cursor-pointer">🏫</button>
-                  <button type="button" onclick="selectSchoolLogoPreset('🏛️')" class="w-8 h-8 rounded-lg bg-slate-100 hover:bg-slate-200 border border-slate-300 flex items-center justify-center text-base cursor-pointer">🏛️</button>
-                  <button type="button" onclick="selectSchoolLogoPreset('🎓')" class="w-8 h-8 rounded-lg bg-slate-100 hover:bg-slate-200 border border-slate-300 flex items-center justify-center text-base cursor-pointer">🎓</button>
-                  <button type="button" onclick="selectSchoolLogoPreset('⭐')" class="w-8 h-8 rounded-lg bg-slate-100 hover:bg-slate-200 border border-slate-300 flex items-center justify-center text-base cursor-pointer">⭐</button>
-                  <button type="button" onclick="selectSchoolLogoPreset('📖')" class="w-8 h-8 rounded-lg bg-slate-100 hover:bg-slate-200 border border-slate-300 flex items-center justify-center text-base cursor-pointer">📖</button>
-                  <button type="button" onclick="selectSchoolLogoPreset('🦁')" class="w-8 h-8 rounded-lg bg-slate-100 hover:bg-slate-200 border border-slate-300 flex items-center justify-center text-base cursor-pointer">🦁</button>
-                  <button type="button" onclick="selectSchoolLogoPreset('🦅')" class="w-8 h-8 rounded-lg bg-slate-100 hover:bg-slate-200 border border-slate-300 flex items-center justify-center text-base cursor-pointer">🦅</button>
+              <!-- Choix de badges prédéfinis & Upload Image -->
+              <div class="flex-1 space-y-2">
+                <div class="flex items-center gap-2">
+                  <input type="file" id="gen-school-logo-file" accept="image/png,image/jpeg,image/webp,image/svg+xml" class="hidden" onchange="handleSchoolLogoFileUpload(event)">
+                  <button type="button" onclick="document.getElementById('gen-school-logo-file').click()" class="px-3 py-1.5 rounded-lg bg-amber-50 hover:bg-amber-100 text-amber-900 border border-amber-300 font-bold text-xs flex items-center gap-1.5 cursor-pointer shadow-xs transition">
+                    <span>📁</span>
+                    <span>Charger un logo image (PNG/JPG/WebP/SVG)</span>
+                  </button>
+                </div>
+                <div class="flex flex-wrap items-center gap-1.5">
+                  <span class="text-[10.5px] text-slate-400 mr-1">Ou choisir un badge :</span>
+                  <button type="button" onclick="selectSchoolLogoPreset('🏫')" class="w-7 h-7 rounded-lg bg-slate-100 hover:bg-slate-200 border border-slate-300 flex items-center justify-center text-sm cursor-pointer">🏫</button>
+                  <button type="button" onclick="selectSchoolLogoPreset('🏛️')" class="w-7 h-7 rounded-lg bg-slate-100 hover:bg-slate-200 border border-slate-300 flex items-center justify-center text-sm cursor-pointer">🏛️</button>
+                  <button type="button" onclick="selectSchoolLogoPreset('🎓')" class="w-7 h-7 rounded-lg bg-slate-100 hover:bg-slate-200 border border-slate-300 flex items-center justify-center text-sm cursor-pointer">🎓</button>
+                  <button type="button" onclick="selectSchoolLogoPreset('⭐')" class="w-7 h-7 rounded-lg bg-slate-100 hover:bg-slate-200 border border-slate-300 flex items-center justify-center text-sm cursor-pointer">⭐</button>
+                  <button type="button" onclick="selectSchoolLogoPreset('📖')" class="w-7 h-7 rounded-lg bg-slate-100 hover:bg-slate-200 border border-slate-300 flex items-center justify-center text-sm cursor-pointer">📖</button>
+                  <button type="button" onclick="selectSchoolLogoPreset('🦁')" class="w-7 h-7 rounded-lg bg-slate-100 hover:bg-slate-200 border border-slate-300 flex items-center justify-center text-sm cursor-pointer">🦁</button>
+                  <button type="button" onclick="selectSchoolLogoPreset('🦅')" class="w-7 h-7 rounded-lg bg-slate-100 hover:bg-slate-200 border border-slate-300 flex items-center justify-center text-sm cursor-pointer">🦅</button>
                 </div>
                 <input type="text" id="gen-school-custom-logo" oninput="updateCustomLogoPreview(this.value)" placeholder="Ou saisir une URL d'image personnalisée (PNG/SVG)..." class="w-full border border-slate-300 rounded-lg p-1.5 text-[11px] font-mono focus:ring-2 focus:ring-red-600 focus:outline-none">
               </div>
@@ -7549,6 +7571,41 @@
           <div class="space-y-1">
             <label class="font-bold text-slate-700">Description de la mission du groupe</label>
             <textarea id="gen-found-desc" rows="2" placeholder="Réseau d'établissements d'excellence engagé pour l'éducation moderne..." class="w-full border border-slate-300 rounded-lg p-2 focus:ring-2 focus:ring-purple-600 focus:outline-none"></textarea>
+          </div>
+
+          <!-- Choix du Logo / Emblème de la Fondation -->
+          <div class="space-y-2 pt-2 border-t border-slate-200">
+            <label class="font-bold text-slate-700 block">Logo & Emblème de la Fondation :</label>
+            <div class="flex items-center gap-4">
+              <!-- Prévisualisation en direct -->
+              <div id="gen-found-logo-preview" class="w-16 h-16 rounded-xl bg-gradient-to-br from-purple-500 to-indigo-600 p-0.5 shadow-md flex-shrink-0 flex items-center justify-center overflow-hidden">
+                <div class="w-full h-full bg-[#081736] rounded-[10px] flex items-center justify-center text-2xl text-purple-300" id="gen-found-logo-preview-icon">
+                  🏛️
+                </div>
+              </div>
+
+              <!-- Choix de badges & fichier image -->
+              <div class="flex-1 space-y-2">
+                <div class="flex items-center gap-2">
+                  <input type="file" id="gen-found-logo-file" accept="image/png,image/jpeg,image/webp,image/svg+xml" class="hidden" onchange="handleFoundLogoFileUpload(event)">
+                  <button type="button" onclick="document.getElementById('gen-found-logo-file').click()" class="px-3 py-1.5 rounded-lg bg-purple-50 hover:bg-purple-100 text-purple-900 border border-purple-300 font-bold text-xs flex items-center gap-1.5 cursor-pointer shadow-xs transition">
+                    <span>📁</span>
+                    <span>Charger un logo image (PNG/JPG/WebP/SVG)</span>
+                  </button>
+                </div>
+                <div class="flex flex-wrap items-center gap-1.5">
+                  <span class="text-[10.5px] text-slate-400 mr-1">Ou choisir un badge :</span>
+                  <button type="button" onclick="selectFoundationLogoPreset('🏛️')" class="w-7 h-7 rounded-lg bg-slate-100 hover:bg-slate-200 border border-slate-300 flex items-center justify-center text-sm cursor-pointer">🏛️</button>
+                  <button type="button" onclick="selectFoundationLogoPreset('🏫')" class="w-7 h-7 rounded-lg bg-slate-100 hover:bg-slate-200 border border-slate-300 flex items-center justify-center text-sm cursor-pointer">🏫</button>
+                  <button type="button" onclick="selectFoundationLogoPreset('🌐')" class="w-7 h-7 rounded-lg bg-slate-100 hover:bg-slate-200 border border-slate-300 flex items-center justify-center text-sm cursor-pointer">🌐</button>
+                  <button type="button" onclick="selectFoundationLogoPreset('🏆')" class="w-7 h-7 rounded-lg bg-slate-100 hover:bg-slate-200 border border-slate-300 flex items-center justify-center text-sm cursor-pointer">🏆</button>
+                  <button type="button" onclick="selectFoundationLogoPreset('💎')" class="w-7 h-7 rounded-lg bg-slate-100 hover:bg-slate-200 border border-slate-300 flex items-center justify-center text-sm cursor-pointer">💎</button>
+                  <button type="button" onclick="selectFoundationLogoPreset('🌟')" class="w-7 h-7 rounded-lg bg-slate-100 hover:bg-slate-200 border border-slate-300 flex items-center justify-center text-sm cursor-pointer">🌟</button>
+                  <button type="button" onclick="selectFoundationLogoPreset('📚')" class="w-7 h-7 rounded-lg bg-slate-100 hover:bg-slate-200 border border-slate-300 flex items-center justify-center text-sm cursor-pointer">📚</button>
+                </div>
+                <input type="text" id="gen-found-custom-logo" oninput="updateFoundCustomLogoPreview(this.value)" placeholder="Ou saisir une URL d'image (PNG/SVG)..." class="w-full border border-slate-300 rounded-lg p-1.5 text-[11px] font-mono focus:ring-2 focus:ring-purple-600 focus:outline-none">
+              </div>
+            </div>
           </div>
 
           <!-- Bouton de soumission Fondation -->
@@ -7635,12 +7692,172 @@
           </select>
         </div>
 
+        <!-- Section Logo Fondation -->
+        <div class="space-y-2 pt-2 border-t border-slate-200">
+          <label class="font-bold text-slate-700 block">Logo & Emblème Officiel de la Fondation :</label>
+          <div class="flex items-center gap-4">
+            <!-- Prévisualisation en direct -->
+            <div id="edit-found-logo-preview" class="w-16 h-16 rounded-xl bg-gradient-to-br from-purple-500 to-indigo-600 p-0.5 shadow-md flex-shrink-0 flex items-center justify-center overflow-hidden">
+              <div class="w-full h-full bg-[#081736] rounded-[10px] flex items-center justify-center text-2xl text-purple-300" id="edit-found-logo-preview-icon">
+                🏛️
+              </div>
+            </div>
+
+            <!-- Choix de badges & fichier image -->
+            <div class="flex-1 space-y-2">
+              <div class="flex items-center gap-2">
+                <input type="file" id="edit-found-logo-file" accept="image/png,image/jpeg,image/webp,image/svg+xml" class="hidden" onchange="handleEditFoundLogoFileUpload(event)">
+                <button type="button" onclick="document.getElementById('edit-found-logo-file').click()" class="px-3 py-1.5 rounded-lg bg-purple-50 hover:bg-purple-100 text-purple-900 border border-purple-300 font-bold text-xs flex items-center gap-1.5 cursor-pointer shadow-xs transition">
+                  <span>📁</span>
+                  <span>Charger un logo image (PNG/JPG/WebP/SVG)</span>
+                </button>
+              </div>
+              <div class="flex flex-wrap items-center gap-1.5">
+                <span class="text-[10.5px] text-slate-400 mr-1">Ou choisir un badge :</span>
+                <button type="button" onclick="selectEditFoundLogoPreset('🏛️')" class="w-7 h-7 rounded-lg bg-slate-100 hover:bg-slate-200 border border-slate-300 flex items-center justify-center text-sm cursor-pointer">🏛️</button>
+                <button type="button" onclick="selectEditFoundLogoPreset('🏫')" class="w-7 h-7 rounded-lg bg-slate-100 hover:bg-slate-200 border border-slate-300 flex items-center justify-center text-sm cursor-pointer">🏫</button>
+                <button type="button" onclick="selectEditFoundLogoPreset('🌐')" class="w-7 h-7 rounded-lg bg-slate-100 hover:bg-slate-200 border border-slate-300 flex items-center justify-center text-sm cursor-pointer">🌐</button>
+                <button type="button" onclick="selectEditFoundLogoPreset('🏆')" class="w-7 h-7 rounded-lg bg-slate-100 hover:bg-slate-200 border border-slate-300 flex items-center justify-center text-sm cursor-pointer">🏆</button>
+                <button type="button" onclick="selectEditFoundLogoPreset('💎')" class="w-7 h-7 rounded-lg bg-slate-100 hover:bg-slate-200 border border-slate-300 flex items-center justify-center text-sm cursor-pointer">💎</button>
+                <button type="button" onclick="selectEditFoundLogoPreset('🌟')" class="w-7 h-7 rounded-lg bg-slate-100 hover:bg-slate-200 border border-slate-300 flex items-center justify-center text-sm cursor-pointer">🌟</button>
+                <button type="button" onclick="selectEditFoundLogoPreset('📚')" class="w-7 h-7 rounded-lg bg-slate-100 hover:bg-slate-200 border border-slate-300 flex items-center justify-center text-sm cursor-pointer">📚</button>
+              </div>
+              <input type="text" id="edit-found-custom-logo" oninput="updateEditFoundCustomLogoPreview(this.value)" placeholder="Ou saisir une URL d'image (PNG/SVG)..." class="w-full border border-slate-300 rounded-lg p-1.5 text-[11px] font-mono focus:ring-2 focus:ring-purple-600 focus:outline-none">
+            </div>
+          </div>
+        </div>
+
         <!-- Boutons d'action -->
         <div class="pt-3 border-t border-slate-200 flex justify-end gap-2.5">
           <button type="button" onclick="closeEditFoundationModal()" class="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl font-bold transition cursor-pointer">
             Annuler
           </button>
           <button type="submit" class="px-5 py-2 bg-purple-800 hover:bg-purple-900 text-white rounded-xl font-black shadow-md transition flex items-center gap-2 cursor-pointer">
+            <span>💾</span>
+            <span>Enregistrer les modifications</span>
+          </button>
+        </div>
+      </form>
+
+    </div>
+  </div>
+
+  <!-- ================================================================= -->
+  <!-- MODAL : ÉDITION D'UN ÉTABLISSEMENT & LOGO                        -->
+  <!-- ================================================================= -->
+  <div id="modal-edit-school" class="hidden fixed inset-0 bg-black/60 backdrop-blur-xs z-[80] flex items-center justify-center p-4 select-none">
+    <div class="bg-white rounded-2xl shadow-2xl max-w-xl w-full max-h-[92vh] flex flex-col overflow-hidden border border-slate-200">
+      
+      <!-- En-tête du Modal -->
+      <div class="p-4 bg-gradient-to-r from-slate-900 to-slate-800 text-white flex items-center justify-between border-b border-slate-700">
+        <div class="flex items-center gap-2.5">
+          <span class="text-xl">🏫</span>
+          <div>
+            <h3 class="font-black text-sm text-white">Modifier l'Établissement & son Logo</h3>
+            <p class="text-[10.5px] text-slate-400">Mise à jour des coordonnées, du nom institutionnel et du visuel officiel</p>
+          </div>
+        </div>
+        <button type="button" onclick="closeEditSchoolModal()" class="w-8 h-8 rounded-lg bg-white/10 hover:bg-white/20 text-slate-300 hover:text-white flex items-center justify-center transition cursor-pointer text-sm font-bold">
+          ✕
+        </button>
+      </div>
+
+      <!-- Formulaire d'édition Établissement -->
+      <form id="form-edit-school" onsubmit="handleEditSchoolSubmit(event)" class="p-5 overflow-y-auto space-y-4 text-xs">
+        <input type="hidden" id="edit-school-id">
+
+        <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+          <div class="sm:col-span-2 space-y-1">
+            <label class="font-bold text-slate-700">Nom Officiel de l'Établissement *</label>
+            <input type="text" id="edit-school-name" required class="w-full border border-slate-300 rounded-lg p-2 font-medium focus:ring-2 focus:ring-red-600 focus:outline-none">
+          </div>
+          <div class="space-y-1">
+            <label class="font-bold text-slate-700">Nom Court / Sigle</label>
+            <input type="text" id="edit-school-shortname" class="w-full border border-slate-300 rounded-lg p-2 font-medium focus:ring-2 focus:ring-red-600 focus:outline-none">
+          </div>
+        </div>
+
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          <div class="space-y-1">
+            <label class="font-bold text-slate-700">Ville d'implantation</label>
+            <input type="text" id="edit-school-city" class="w-full border border-slate-300 rounded-lg p-2 font-medium focus:ring-2 focus:ring-red-600 focus:outline-none">
+          </div>
+          <div class="space-y-1">
+            <label class="font-bold text-slate-700">Type / Cycles</label>
+            <input type="text" id="edit-school-type" class="w-full border border-slate-300 rounded-lg p-2 font-medium focus:ring-2 focus:ring-red-600 focus:outline-none">
+          </div>
+        </div>
+
+        <div class="space-y-1">
+          <label class="font-bold text-slate-700">Adresse géographique</label>
+          <input type="text" id="edit-school-address" class="w-full border border-slate-300 rounded-lg p-2 font-medium focus:ring-2 focus:ring-red-600 focus:outline-none">
+        </div>
+
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          <div class="space-y-1">
+            <label class="font-bold text-slate-700">Téléphone Direction</label>
+            <input type="tel" id="edit-school-phone" class="w-full border border-slate-300 rounded-lg p-2 font-mono focus:ring-2 focus:ring-red-600 focus:outline-none">
+          </div>
+          <div class="space-y-1">
+            <label class="font-bold text-slate-700">E-mail Officiel</label>
+            <input type="email" id="edit-school-email" class="w-full border border-slate-300 rounded-lg p-2 font-mono focus:ring-2 focus:ring-red-600 focus:outline-none">
+          </div>
+        </div>
+
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          <div class="space-y-1">
+            <label class="font-bold text-slate-700">Année Scolaire</label>
+            <input type="text" id="edit-school-year" class="w-full border border-slate-300 rounded-lg p-2 font-mono font-bold focus:ring-2 focus:ring-red-600 focus:outline-none">
+          </div>
+          <div class="space-y-1" id="edit-school-found-container">
+            <label class="font-bold text-slate-700">Rattachement Fondation</label>
+            <select id="edit-school-foundation" class="w-full border border-slate-300 rounded-lg p-2 font-medium focus:ring-2 focus:ring-red-600 focus:outline-none bg-white">
+              <option value="AUTONOME">⭐ École Autonome (Indépendante)</option>
+            </select>
+          </div>
+        </div>
+
+        <!-- Section Logo École -->
+        <div class="space-y-2 pt-2 border-t border-slate-200">
+          <label class="font-bold text-slate-700 block">Logo & Emblème Officiel :</label>
+          <div class="flex items-center gap-4">
+            <!-- Prévisualisation en direct -->
+            <div id="edit-school-logo-preview" class="w-16 h-16 rounded-xl bg-gradient-to-br from-amber-400 to-yellow-500 p-0.5 shadow-md flex-shrink-0 flex items-center justify-center overflow-hidden">
+              <div class="w-full h-full bg-[#1e0508] rounded-[10px] flex items-center justify-center text-2xl" id="edit-school-logo-preview-icon">
+                🏫
+              </div>
+            </div>
+
+            <!-- Options de sélection -->
+            <div class="flex-1 space-y-2">
+              <div class="flex items-center gap-2">
+                <input type="file" id="edit-school-logo-file" accept="image/png,image/jpeg,image/webp,image/svg+xml" class="hidden" onchange="handleEditSchoolLogoFileUpload(event)">
+                <button type="button" onclick="document.getElementById('edit-school-logo-file').click()" class="px-3 py-1.5 rounded-lg bg-amber-50 hover:bg-amber-100 text-amber-900 border border-amber-300 font-bold text-xs flex items-center gap-1.5 cursor-pointer shadow-xs transition">
+                  <span>📁</span>
+                  <span>Charger un logo image (PNG/JPG/WebP/SVG)</span>
+                </button>
+              </div>
+              <div class="flex flex-wrap items-center gap-1.5">
+                <span class="text-[10.5px] text-slate-400 mr-1">Ou choisir un badge :</span>
+                <button type="button" onclick="selectEditSchoolLogoPreset('🏫')" class="w-7 h-7 rounded-lg bg-slate-100 hover:bg-slate-200 border border-slate-300 flex items-center justify-center text-sm cursor-pointer">🏫</button>
+                <button type="button" onclick="selectEditSchoolLogoPreset('🏛️')" class="w-7 h-7 rounded-lg bg-slate-100 hover:bg-slate-200 border border-slate-300 flex items-center justify-center text-sm cursor-pointer">🏛️</button>
+                <button type="button" onclick="selectEditSchoolLogoPreset('🎓')" class="w-7 h-7 rounded-lg bg-slate-100 hover:bg-slate-200 border border-slate-300 flex items-center justify-center text-sm cursor-pointer">🎓</button>
+                <button type="button" onclick="selectEditSchoolLogoPreset('⭐')" class="w-7 h-7 rounded-lg bg-slate-100 hover:bg-slate-200 border border-slate-300 flex items-center justify-center text-sm cursor-pointer">⭐</button>
+                <button type="button" onclick="selectEditSchoolLogoPreset('📖')" class="w-7 h-7 rounded-lg bg-slate-100 hover:bg-slate-200 border border-slate-300 flex items-center justify-center text-sm cursor-pointer">📖</button>
+                <button type="button" onclick="selectEditSchoolLogoPreset('🦁')" class="w-7 h-7 rounded-lg bg-slate-100 hover:bg-slate-200 border border-slate-300 flex items-center justify-center text-sm cursor-pointer">🦁</button>
+                <button type="button" onclick="selectEditSchoolLogoPreset('🦅')" class="w-7 h-7 rounded-lg bg-slate-100 hover:bg-slate-200 border border-slate-300 flex items-center justify-center text-sm cursor-pointer">🦅</button>
+              </div>
+              <input type="text" id="edit-school-custom-logo" oninput="updateEditSchoolCustomLogoPreview(this.value)" placeholder="Ou saisir une URL directe d'image..." class="w-full border border-slate-300 rounded-lg p-1.5 text-[11px] font-mono focus:ring-2 focus:ring-red-600 focus:outline-none">
+            </div>
+          </div>
+        </div>
+
+        <!-- Boutons d'action -->
+        <div class="pt-3 border-t border-slate-200 flex justify-end gap-2.5">
+          <button type="button" onclick="closeEditSchoolModal()" class="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl font-bold transition cursor-pointer">
+            Annuler
+          </button>
+          <button type="submit" class="px-5 py-2 bg-red-700 hover:bg-red-800 text-white rounded-xl font-black shadow-md transition flex items-center gap-2 cursor-pointer">
             <span>💾</span>
             <span>Enregistrer les modifications</span>
           </button>
@@ -8516,8 +8733,8 @@
           <div class="bg-gradient-to-r from-[#190507] via-[#2a0b10] to-[#190507] rounded-2xl p-5 text-white border border-yellow-400/30 shadow-xl space-y-4">
             <div class="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
               <div class="flex items-center gap-3.5">
-                <div class="w-14 h-14 rounded-2xl bg-gradient-to-tr from-amber-400 to-yellow-500 p-0.5 shadow-lg flex-shrink-0 flex items-center justify-center text-3xl">
-                  ${esc(school.logo || '🏫')}
+                <div class="w-14 h-14 rounded-2xl bg-gradient-to-tr from-amber-400 to-yellow-500 p-0.5 shadow-lg flex-shrink-0 flex items-center justify-center text-3xl overflow-hidden">
+                  ${renderLogoHtml(school.logo, '🏫', 'w-full h-full object-cover rounded-[14px]')}
                 </div>
                 <div>
                   <div class="flex items-center gap-2 flex-wrap">
@@ -13123,6 +13340,94 @@
       }
     }
 
+    function isImageLogo(val) {
+      if (!val || typeof val !== 'string') return false;
+      const trimmed = val.trim();
+      if (trimmed.startsWith('data:image/') || trimmed.startsWith('http://') || trimmed.startsWith('https://') || trimmed.startsWith('/') || trimmed.startsWith('./')) {
+        return true;
+      }
+      if (/\.(png|jpe?g|webp|svg|gif|ico)(\?.*)?$/i.test(trimmed)) {
+        return true;
+      }
+      return false;
+    }
+
+    function renderLogoHtml(logo, fallbackEmoji = '🏫', imgClass = 'w-full h-full object-cover', spanClass = '') {
+      if (!logo) {
+        return `<span class="${spanClass}">${esc(fallbackEmoji)}</span>`;
+      }
+      const clean = String(logo).trim();
+      if (isImageLogo(clean)) {
+        return `<img src="${esc(clean)}" alt="Logo" class="${imgClass}" onerror="this.onerror=null;this.parentElement.innerHTML='<span class=\\'${spanClass}\\'>${esc(fallbackEmoji)}</span>'">`;
+      }
+      return `<span class="${spanClass}">${esc(clean)}</span>`;
+    }
+
+    function setLogoElement(el, logo, fallbackEmoji = '🏫', imgClass = 'w-full h-full object-cover') {
+      if (!el) return;
+      if (!logo) {
+        el.textContent = fallbackEmoji;
+        return;
+      }
+      const clean = String(logo).trim();
+      if (isImageLogo(clean)) {
+        el.innerHTML = `<img src="${esc(clean)}" alt="Logo" class="${imgClass}" onerror="this.onerror=null;this.parentElement.textContent='${esc(fallbackEmoji)}'">`;
+      } else {
+        el.textContent = clean;
+      }
+    }
+
+    function processLogoFile(file, maxWidth = 256, maxHeight = 256, quality = 0.85) {
+      return new Promise((resolve, reject) => {
+        if (!file) return reject(new Error("Aucun fichier sélectionné."));
+        if (!file.type || !file.type.startsWith('image/')) {
+          return reject(new Error("Le fichier sélectionné doit être une image (PNG, JPG, WebP, SVG)."));
+        }
+        if (file.type === 'image/svg+xml') {
+          const reader = new FileReader();
+          reader.onload = (e) => resolve(e.target.result);
+          reader.onerror = () => reject(new Error("Erreur de lecture du fichier SVG."));
+          reader.readAsDataURL(file);
+          return;
+        }
+
+        const reader = new FileReader();
+        reader.onload = (e) => {
+          const img = new Image();
+          img.onload = () => {
+            let width = img.width;
+            let height = img.height;
+            if (width > height) {
+              if (width > maxWidth) {
+                height = Math.round((height * maxWidth) / width);
+                width = maxWidth;
+              }
+            } else {
+              if (height > maxHeight) {
+                width = Math.round((width * maxHeight) / height);
+                height = maxHeight;
+              }
+            }
+            const canvas = document.createElement('canvas');
+            canvas.width = width;
+            canvas.height = height;
+            const ctx = canvas.getContext('2d');
+            ctx.drawImage(img, 0, 0, width, height);
+
+            try {
+              const webp = canvas.toDataURL('image/webp', quality);
+              if (webp.startsWith('data:image/webp')) return resolve(webp);
+            } catch (_) {}
+            resolve(canvas.toDataURL('image/png'));
+          };
+          img.onerror = () => reject(new Error("Format d'image non supporté ou fichier corrompu."));
+          img.src = e.target.result;
+        };
+        reader.onerror = () => reject(new Error("Erreur de lecture du fichier."));
+        reader.readAsDataURL(file);
+      });
+    }
+
     function selectSchoolLogoPreset(icon) {
       const outer = document.getElementById('gen-logo-preview');
       if (outer) {
@@ -13135,11 +13440,241 @@
     function updateCustomLogoPreview(url) {
       const preview = document.getElementById('gen-logo-preview');
       if (!preview) return;
-      if (url && (url.startsWith('http://') || url.startsWith('https://') || url.startsWith('data:'))) {
-        preview.innerHTML = `<img src="${url}" alt="Logo" class="w-full h-full object-cover rounded-[10px]" onerror="this.parentElement.innerHTML='<div class=\'w-full h-full bg-[#1e0508] rounded-[10px] flex items-center justify-center text-2xl\'>🏫</div>'">`;
+      if (url && isImageLogo(url)) {
+        preview.innerHTML = `<img src="${url}" alt="Logo" class="w-full h-full object-cover rounded-[10px]" onerror="this.parentElement.innerHTML='<div class=\\'w-full h-full bg-[#1e0508] rounded-[10px] flex items-center justify-center text-2xl\\'>🏫</div>'">`;
       } else {
         preview.innerHTML = '<div class="w-full h-full bg-[#1e0508] rounded-[10px] flex items-center justify-center text-2xl" id="gen-logo-preview-icon">🏫</div>';
       }
+    }
+
+    async function handleSchoolLogoFileUpload(e) {
+      const file = e.target.files && e.target.files[0];
+      if (!file) return;
+      try {
+        const dataUrl = await processLogoFile(file);
+        const input = document.getElementById('gen-school-custom-logo');
+        if (input) input.value = dataUrl;
+        updateCustomLogoPreview(dataUrl);
+        showToast("Logo de l'école chargé avec succès !");
+      } catch (err) {
+        alert("Erreur chargement logo : " + err.message);
+      }
+    }
+
+    function selectFoundationLogoPreset(icon) {
+      const outer = document.getElementById('gen-found-logo-preview');
+      if (outer) {
+        outer.innerHTML = `<div class="w-full h-full bg-[#081736] rounded-[10px] flex items-center justify-center text-2xl text-purple-300" id="gen-found-logo-preview-icon">${icon}</div>`;
+      }
+      const customInput = document.getElementById('gen-found-custom-logo');
+      if (customInput) customInput.value = '';
+    }
+
+    function updateFoundCustomLogoPreview(url) {
+      const preview = document.getElementById('gen-found-logo-preview');
+      if (!preview) return;
+      if (url && isImageLogo(url)) {
+        preview.innerHTML = `<img src="${url}" alt="Logo" class="w-full h-full object-cover rounded-[10px]" onerror="this.parentElement.innerHTML='<div class=\\'w-full h-full bg-[#081736] rounded-[10px] flex items-center justify-center text-2xl text-purple-300\\'>🏛️</div>'">`;
+      } else {
+        preview.innerHTML = '<div class="w-full h-full bg-[#081736] rounded-[10px] flex items-center justify-center text-2xl text-purple-300" id="gen-found-logo-preview-icon">🏛️</div>';
+      }
+    }
+
+    async function handleFoundLogoFileUpload(e) {
+      const file = e.target.files && e.target.files[0];
+      if (!file) return;
+      try {
+        const dataUrl = await processLogoFile(file);
+        const input = document.getElementById('gen-found-custom-logo');
+        if (input) input.value = dataUrl;
+        updateFoundCustomLogoPreview(dataUrl);
+        showToast("Logo de la fondation chargé avec succès !");
+      } catch (err) {
+        alert("Erreur chargement logo : " + err.message);
+      }
+    }
+
+    function selectEditFoundLogoPreset(icon) {
+      const outer = document.getElementById('edit-found-logo-preview');
+      if (outer) {
+        outer.innerHTML = `<div class="w-full h-full bg-[#081736] rounded-[10px] flex items-center justify-center text-2xl text-purple-300" id="edit-found-logo-preview-icon">${icon}</div>`;
+      }
+      const customInput = document.getElementById('edit-found-custom-logo');
+      if (customInput) customInput.value = '';
+    }
+
+    function updateEditFoundCustomLogoPreview(url) {
+      const preview = document.getElementById('edit-found-logo-preview');
+      if (!preview) return;
+      if (url && isImageLogo(url)) {
+        preview.innerHTML = `<img src="${url}" alt="Logo" class="w-full h-full object-cover rounded-[10px]" onerror="this.parentElement.innerHTML='<div class=\\'w-full h-full bg-[#081736] rounded-[10px] flex items-center justify-center text-2xl text-purple-300\\'>🏛️</div>'">`;
+      } else {
+        preview.innerHTML = '<div class="w-full h-full bg-[#081736] rounded-[10px] flex items-center justify-center text-2xl text-purple-300" id="edit-found-logo-preview-icon">🏛️</div>';
+      }
+    }
+
+    async function handleEditFoundLogoFileUpload(e) {
+      const file = e.target.files && e.target.files[0];
+      if (!file) return;
+      try {
+        const dataUrl = await processLogoFile(file);
+        const input = document.getElementById('edit-found-custom-logo');
+        if (input) input.value = dataUrl;
+        updateEditFoundCustomLogoPreview(dataUrl);
+        showToast("Logo chargé avec succès !");
+      } catch (err) {
+        alert("Erreur chargement logo : " + err.message);
+      }
+    }
+
+    function selectEditSchoolLogoPreset(icon) {
+      const outer = document.getElementById('edit-school-logo-preview');
+      if (outer) {
+        outer.innerHTML = `<div class="w-full h-full bg-[#1e0508] rounded-[10px] flex items-center justify-center text-2xl" id="edit-school-logo-preview-icon">${icon}</div>`;
+      }
+      const customInput = document.getElementById('edit-school-custom-logo');
+      if (customInput) customInput.value = '';
+    }
+
+    function updateEditSchoolCustomLogoPreview(url) {
+      const preview = document.getElementById('edit-school-logo-preview');
+      if (!preview) return;
+      if (url && isImageLogo(url)) {
+        preview.innerHTML = `<img src="${url}" alt="Logo" class="w-full h-full object-cover rounded-[10px]" onerror="this.parentElement.innerHTML='<div class=\\'w-full h-full bg-[#1e0508] rounded-[10px] flex items-center justify-center text-2xl\\'>🏫</div>'">`;
+      } else {
+        preview.innerHTML = '<div class="w-full h-full bg-[#1e0508] rounded-[10px] flex items-center justify-center text-2xl" id="edit-school-logo-preview-icon">🏫</div>';
+      }
+    }
+
+    async function handleEditSchoolLogoFileUpload(e) {
+      const file = e.target.files && e.target.files[0];
+      if (!file) return;
+      try {
+        const dataUrl = await processLogoFile(file);
+        const input = document.getElementById('edit-school-custom-logo');
+        if (input) input.value = dataUrl;
+        updateEditSchoolCustomLogoPreview(dataUrl);
+        showToast("Logo de l'école chargé avec succès !");
+      } catch (err) {
+        alert("Erreur chargement logo : " + err.message);
+      }
+    }
+
+    function openEditSchoolModal(schoolId) {
+      const s = (appState.schools || []).find(x => x.id === Number(schoolId));
+      if (!s) {
+        showToast("Erreur : Établissement introuvable.");
+        return;
+      }
+      const modal = document.getElementById('modal-edit-school');
+      if (!modal) return;
+
+      document.getElementById('edit-school-id').value = s.id;
+      document.getElementById('edit-school-name').value = s.name || '';
+      document.getElementById('edit-school-shortname').value = s.shortName || '';
+      document.getElementById('edit-school-city').value = s.city || '';
+      document.getElementById('edit-school-type').value = s.schoolType || '';
+      document.getElementById('edit-school-address').value = s.address || '';
+      document.getElementById('edit-school-phone').value = s.phone || '';
+      document.getElementById('edit-school-email').value = s.email || '';
+      document.getElementById('edit-school-year').value = s.academicYear || '2026-2027';
+
+      // Remplir le select fondation si Concepteur
+      const foundSelect = document.getElementById('edit-school-foundation');
+      if (foundSelect) {
+        foundSelect.innerHTML = '<option value="AUTONOME">⭐ École Autonome (Indépendante)</option>';
+        (appState.foundations || []).forEach(f => {
+          const opt = document.createElement('option');
+          opt.value = f.id;
+          opt.textContent = `🏛️ ${f.name} (${f.sigle})`;
+          const sFId = s.foundationId !== undefined ? s.foundationId : s.foundation_id;
+          if (sFId && Number(sFId) === Number(f.id)) {
+            opt.selected = true;
+          }
+          foundSelect.appendChild(opt);
+        });
+      }
+
+      // Initialiser le logo
+      const currentLogo = s.logo || '🏫';
+      const customLogoInput = document.getElementById('edit-school-custom-logo');
+      if (isImageLogo(currentLogo)) {
+        if (customLogoInput) customLogoInput.value = currentLogo;
+        updateEditSchoolCustomLogoPreview(currentLogo);
+      } else {
+        if (customLogoInput) customLogoInput.value = '';
+        selectEditSchoolLogoPreset(currentLogo);
+      }
+
+      modal.classList.remove('hidden');
+    }
+
+    function closeEditSchoolModal() {
+      const modal = document.getElementById('modal-edit-school');
+      if (modal) modal.classList.add('hidden');
+    }
+
+    async function handleEditSchoolSubmit(e) {
+      if (e) e.preventDefault();
+      const id = parseInt(document.getElementById('edit-school-id')?.value, 10);
+      const s = (appState.schools || []).find(x => x.id === id);
+      if (!s) {
+        showToast("Erreur : Établissement introuvable.");
+        return;
+      }
+
+      const name = document.getElementById('edit-school-name')?.value.trim();
+      const shortName = document.getElementById('edit-school-shortname')?.value.trim() || name;
+      const city = document.getElementById('edit-school-city')?.value.trim() || 'Abidjan';
+      const schoolType = document.getElementById('edit-school-type')?.value.trim() || 'COLLÈGE & LYCÉE';
+      const address = document.getElementById('edit-school-address')?.value.trim() || '';
+      const phone = document.getElementById('edit-school-phone')?.value.trim() || '';
+      const email = document.getElementById('edit-school-email')?.value.trim() || '';
+      const academicYear = document.getElementById('edit-school-year')?.value.trim() || '2026-2027';
+      const foundVal = document.getElementById('edit-school-foundation')?.value;
+      const foundationId = (foundVal && foundVal !== 'AUTONOME') ? parseInt(foundVal, 10) : null;
+
+      const customLogo = document.getElementById('edit-school-custom-logo')?.value.trim();
+      const logoIcon = customLogo || document.getElementById('edit-school-logo-preview-icon')?.textContent.trim() || s.logo || '🏫';
+
+      const payload = {
+        name,
+        shortName,
+        city,
+        schoolType,
+        address,
+        phone,
+        email,
+        academicYear,
+        foundationId,
+        logo: logoIcon
+      };
+
+      try {
+        const resp = await fetch(`/api/schools/${id}`, {
+          method: 'PUT',
+          credentials: 'same-origin',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload)
+        });
+        if (resp.ok) {
+          const resData = await resp.json();
+          const updated = resData.school || resData;
+          Object.assign(s, updated);
+        } else {
+          Object.assign(s, payload);
+        }
+      } catch (err) {
+        console.warn("Mise à jour école en fallback local :", err.message);
+        Object.assign(s, payload);
+      }
+
+      saveStoredEntity('schools', s);
+      closeEditSchoolModal();
+      showToast(`Établissement "${name}" mis à jour avec succès !`);
+      renderSuperAdminDashboard();
+      renderSuperAdminEntities();
+      updateHeaderTenantContext();
     }
 
     async function saveSchoolGeneratorForm(e) {
@@ -13353,6 +13888,9 @@
       const email = document.getElementById('gen-found-email')?.value.trim() || `contact@${sigle.toLowerCase()}.org`;
       const desc = document.getElementById('gen-found-desc')?.value.trim() || 'Groupe éducatif multi-établissements';
 
+      const customLogo = document.getElementById('gen-found-custom-logo')?.value.trim();
+      const logoIcon = customLogo || document.getElementById('gen-found-logo-preview-icon')?.textContent.trim() || '🏛️';
+
       let newId = (appState.foundations && appState.foundations.length ? Math.max(...appState.foundations.map(f => f.id)) : 0) + 1;
       const code = 'fondation-' + sigle.toLowerCase();
 
@@ -13369,7 +13907,8 @@
             president,
             phone,
             email,
-            description: desc
+            description: desc,
+            logo: logoIcon
           })
         });
         let serverFound = null;
@@ -13393,7 +13932,7 @@
 
       const newFoundation = serverFound ? {
         ...serverFound,
-        logo: serverFound.logo || '🏛️'
+        logo: serverFound.logo || logoIcon
       } : {
         id: newId,
         code: code,
@@ -13403,7 +13942,7 @@
         president: president,
         phone: phone,
         email: email,
-        logo: '🏛️',
+        logo: logoIcon,
         description: desc,
         schoolsCount: 0,
         studentsCount: 0,
@@ -13480,6 +14019,17 @@
       if (emailInput) emailInput.value = f.email || '';
       if (descInput) descInput.value = f.description || '';
       if (statusInput) statusInput.value = f.isActive === false ? 'INACTIVE' : 'ACTIVE';
+
+      // Initialiser le logo
+      const currentLogo = f.logo || '🏛️';
+      const customLogoInput = document.getElementById('edit-found-custom-logo');
+      if (isImageLogo(currentLogo)) {
+        if (customLogoInput) customLogoInput.value = currentLogo;
+        updateEditFoundCustomLogoPreview(currentLogo);
+      } else {
+        if (customLogoInput) customLogoInput.value = '';
+        selectEditFoundLogoPreset(currentLogo);
+      }
 
       modal.classList.remove('hidden');
     }
@@ -13559,7 +14109,7 @@
       }
     }
 
-    function handleEditFoundationSubmit(e) {
+    async function handleEditFoundationSubmit(e) {
       if (e) e.preventDefault();
 
       const id = parseInt(document.getElementById('edit-found-id')?.value);
@@ -13578,13 +14128,39 @@
       const desc = document.getElementById('edit-found-desc')?.value.trim() || '';
       const status = document.getElementById('edit-found-status')?.value || 'ACTIVE';
 
-      f.name = name;
-      f.sigle = sigle;
-      f.hq = hq;
-      f.president = president;
-      f.phone = phone;
-      f.email = email;
-      f.description = desc;
+      const customLogo = document.getElementById('edit-found-custom-logo')?.value.trim();
+      const logoIcon = customLogo || document.getElementById('edit-found-logo-preview-icon')?.textContent.trim() || f.logo || '🏛️';
+
+      const payload = {
+        name,
+        sigle,
+        hq,
+        president,
+        phone,
+        email,
+        description: desc,
+        logo: logoIcon
+      };
+
+      try {
+        const resp = await fetch(`/api/foundations/${id}`, {
+          method: 'PUT',
+          credentials: 'same-origin',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload)
+        });
+        if (resp.ok) {
+          const resData = await resp.json();
+          const updated = resData.foundation || resData;
+          Object.assign(f, updated);
+        } else {
+          Object.assign(f, payload);
+        }
+      } catch (err) {
+        console.warn("Mise à jour fondation fallback :", err.message);
+        Object.assign(f, payload);
+      }
+
       f.isActive = (status === 'ACTIVE');
 
       // Répercuter la mise à jour sur les écoles affiliées
@@ -13594,10 +14170,12 @@
         }
       });
 
+      saveStoredEntity('foundations', f);
       auditAction('FOUNDATION_UPDATE', 'SuperAdmin', f.name, '', `Mise à jour des paramètres de la fondation [${esc(f.sigle)}]`, 'SUCCÈS');
       closeEditFoundationModal();
       showToast(`Fondation "${esc(f.name)}" (${esc(f.sigle)}) mise à jour avec succès !`);
       renderSuperAdminDashboard();
+      renderSuperAdminEntities();
     }
 
     function openTenantModal() {
@@ -13641,7 +14219,7 @@
             </div>
             <div class="p-3 bg-white border border-emerald-200 rounded-lg flex items-center justify-between shadow-xs">
               <div class="flex items-center gap-2.5">
-                <span class="w-8 h-8 rounded-lg bg-emerald-100 text-emerald-800 flex items-center justify-center text-base font-bold">${esc(mySchool.logo || '🏫')}</span>
+                <span class="w-8 h-8 rounded-lg bg-emerald-100 text-emerald-800 flex items-center justify-center text-base font-bold overflow-hidden flex-shrink-0">${renderLogoHtml(mySchool.logo, '🏫', 'w-full h-full object-cover')}</span>
                 <div>
                   <h5 class="font-black text-xs text-slate-900">${esc(mySchool.name)}</h5>
                   <p class="text-[10px] text-slate-500 font-mono font-bold">${esc(mySchool.code)} &bull; ${esc(mySchool.city)}</p>
@@ -13688,7 +14266,7 @@
         card.innerHTML = `
           <div class="p-3 bg-gradient-to-r from-slate-900 to-slate-800 text-white flex items-center justify-between">
             <div class="flex items-center gap-2.5">
-              <span class="text-lg p-1 bg-white/10 rounded-lg">${esc(f.logo || '🏛️')}</span>
+              <span class="text-lg p-1 bg-white/10 rounded-lg w-8 h-8 flex items-center justify-center overflow-hidden flex-shrink-0">${renderLogoHtml(f.logo, '🏛️', 'w-full h-full object-cover rounded-md')}</span>
               <div>
                 <div class="flex items-center gap-2">
                   <h4 class="font-bold text-xs text-white">${esc(f.name)}</h4>
@@ -13711,7 +14289,7 @@
               return `
                 <div class="py-2 px-2 flex items-center justify-between hover:bg-white rounded-lg transition">
                   <div class="flex items-center gap-2">
-                    <span class="w-7 h-7 rounded-lg bg-red-50 text-red-700 flex items-center justify-center text-sm border border-red-100 font-bold">${esc(s.logo || '🏫')}</span>
+                    <span class="w-7 h-7 rounded-lg bg-red-50 text-red-700 flex items-center justify-center text-sm border border-red-100 font-bold overflow-hidden flex-shrink-0">${renderLogoHtml(s.logo, '🏫', 'w-full h-full object-cover rounded-md')}</span>
                     <div>
                       <div class="flex items-center gap-1.5">
                         <strong class="text-xs text-slate-800">${esc(s.name)}</strong>
@@ -13759,7 +14337,7 @@
         row.className = 'p-3 bg-white border border-slate-200 rounded-xl flex items-center justify-between shadow-xs hover:border-slate-300 transition';
         row.innerHTML = `
           <div class="flex items-center gap-3">
-            <span class="w-9 h-9 rounded-xl bg-amber-50 text-amber-800 border border-amber-200 flex items-center justify-center text-lg font-bold">${esc(s.logo || '🦅')}</span>
+            <span class="w-9 h-9 rounded-xl bg-amber-50 text-amber-800 border border-amber-200 flex items-center justify-center text-lg font-bold overflow-hidden flex-shrink-0">${renderLogoHtml(s.logo, '🦅', 'w-full h-full object-cover rounded-lg')}</span>
             <div>
               <div class="flex items-center gap-2">
                 <h4 class="font-bold text-xs text-slate-900">${esc(s.name)}</h4>
@@ -13865,7 +14443,7 @@
       if (schoolNameEl) schoolNameEl.textContent = school.name;
 
       const tenantIcon = document.getElementById('header-tenant-icon');
-      if (tenantIcon) tenantIcon.textContent = school.logo || '🏫';
+      if (tenantIcon) setLogoElement(tenantIcon, school.logo, '🏫', 'w-4 h-4 object-cover rounded');
 
       const yearLabel = document.getElementById('header-year-label');
       if (yearLabel) yearLabel.textContent = school.academicYear || '2026-2027';
@@ -14009,7 +14587,7 @@
       }
 
       const heroLogo = document.getElementById('found-hero-logo');
-      if (heroLogo) heroLogo.textContent = found.logo || '🏛️';
+      if (heroLogo) setLogoElement(heroLogo, found.logo, '🏛️', 'w-full h-full object-cover rounded-[14px]');
 
       // 1. Écoles affiliées réelles
       const affiliated = (appState.schools || []).filter(s => {
@@ -14132,8 +14710,8 @@
                 <div class="space-y-3.5">
                   <div class="flex items-start justify-between gap-3">
                     <div class="flex items-center gap-3">
-                      <div class="w-12 h-12 rounded-2xl bg-blue-50/80 border border-blue-100 flex items-center justify-center text-2xl group-hover:scale-105 transition flex-shrink-0 shadow-xs">
-                        ${esc(s.logo || '🏫')}
+                      <div class="w-12 h-12 rounded-2xl bg-blue-50/80 border border-blue-100 flex items-center justify-center text-2xl group-hover:scale-105 transition flex-shrink-0 shadow-xs overflow-hidden">
+                        ${renderLogoHtml(s.logo, '🏫', 'w-full h-full object-cover rounded-xl')}
                       </div>
                       <div>
                         <h4 class="font-black text-sm text-slate-900 leading-snug group-hover:text-blue-700 transition">${esc(s.name)}</h4>
@@ -14189,11 +14767,16 @@
                     <span>École ID :</span>
                     <span class="font-bold text-slate-600">#${esc(s.id)}</span>
                   </div>
-                  <button onclick="switchTenant('SCHOOL', ${esc(s.id)})" class="px-4 py-2 bg-gradient-to-r from-blue-600 via-indigo-600 to-blue-700 hover:from-blue-700 hover:to-indigo-700 text-white rounded-xl text-xs font-black shadow-md hover:shadow-lg transition flex items-center gap-1.5 cursor-pointer flex-shrink-0">
-                    <span>🚀</span>
-                    <span>Accéder à l'École</span>
-                    <span>&rarr;</span>
-                  </button>
+                  <div class="flex items-center gap-2">
+                    <button onclick="openEditSchoolModal(${esc(s.id)})" class="p-2 text-slate-500 hover:text-blue-600 hover:bg-blue-50 rounded-xl transition cursor-pointer border border-slate-200" title="Modifier l'école et son logo">
+                      ⚙️
+                    </button>
+                    <button onclick="switchTenant('SCHOOL', ${esc(s.id)})" class="px-4 py-2 bg-gradient-to-r from-blue-600 via-indigo-600 to-blue-700 hover:from-blue-700 hover:to-indigo-700 text-white rounded-xl text-xs font-black shadow-md hover:shadow-lg transition flex items-center gap-1.5 cursor-pointer flex-shrink-0">
+                      <span>🚀</span>
+                      <span>Accéder à l'École</span>
+                      <span>&rarr;</span>
+                    </button>
+                  </div>
                 </div>
               `;
               grid.appendChild(card);
@@ -14224,7 +14807,7 @@
             tr.innerHTML = `
               <td class="py-3 px-3.5">
                 <div class="flex items-center gap-2.5">
-                  <span class="text-xl w-8 h-8 rounded-lg bg-blue-50 border border-blue-100 flex items-center justify-center">${esc(s.logo || '🏫')}</span>
+                  <span class="text-xl w-8 h-8 rounded-lg bg-blue-50 border border-blue-100 flex items-center justify-center overflow-hidden flex-shrink-0">${renderLogoHtml(s.logo, '🏫', 'w-full h-full object-cover rounded-md')}</span>
                   <div>
                     <strong class="text-slate-900 font-black block">${esc(s.name)}</strong>
                     <span class="text-[10px] font-mono font-bold text-blue-700 block">${esc(s.code)}</span>
@@ -14239,10 +14822,15 @@
               <td class="py-3 px-3.5 text-right font-mono font-bold text-blue-900">${recRate}%</td>
               <td class="py-3 px-3 text-center"><span class="px-2 py-0.5 bg-emerald-100 text-emerald-800 rounded-full text-[10px] font-bold">ACTIF</span></td>
               <td class="py-3 px-3 text-center">
-                <button onclick="switchTenant('SCHOOL', ${esc(s.id)})" class="px-3 py-1.5 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-xs font-black transition cursor-pointer shadow-xs inline-flex items-center gap-1">
-                  <span>Ouvrir</span>
-                  <span>&rarr;</span>
-                </button>
+                <div class="flex items-center justify-center gap-1.5">
+                  <button onclick="openEditSchoolModal(${esc(s.id)})" class="p-1.5 text-slate-500 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition cursor-pointer border border-slate-200" title="Modifier l'école et son logo">
+                    ⚙️
+                  </button>
+                  <button onclick="switchTenant('SCHOOL', ${esc(s.id)})" class="px-3 py-1.5 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-xs font-black transition cursor-pointer shadow-xs inline-flex items-center gap-1">
+                    <span>Ouvrir</span>
+                    <span>&rarr;</span>
+                  </button>
+                </div>
               </td>
             `;
             tbody.appendChild(tr);
@@ -14465,7 +15053,7 @@
             <tr class="hover:bg-amber-50/40 transition border-b border-slate-100 bg-amber-50/15">
               <td class="py-3 px-3.5">
                 <div class="flex items-center gap-2.5">
-                  <span class="text-xl p-1.5 rounded-lg bg-amber-100 border border-amber-200 flex-shrink-0">${esc(f.logo || '🏛️')}</span>
+                  <span class="text-xl p-1.5 rounded-lg bg-amber-100 border border-amber-200 flex-shrink-0 w-9 h-9 flex items-center justify-center overflow-hidden">${renderLogoHtml(f.logo, '🏛️', 'w-full h-full object-cover rounded-md')}</span>
                   <div>
                     <strong class="text-slate-900 text-xs block">${esc(f.name)}</strong>
                     <span class="font-mono text-[10px] text-amber-700 font-bold bg-amber-100/80 px-1.5 py-0.2 rounded border border-amber-200/60">${esc(f.code)}</span>
@@ -14552,7 +15140,7 @@
             <tr class="hover:bg-slate-50 transition border-b border-slate-100">
               <td class="py-3 px-3.5">
                 <div class="flex items-center gap-2.5">
-                  <span class="text-xl p-1.5 rounded-lg bg-slate-100 border border-slate-200 flex-shrink-0">${esc(s.logo || '🏫')}</span>
+                  <span class="text-xl p-1.5 rounded-lg bg-slate-100 border border-slate-200 flex-shrink-0 w-9 h-9 flex items-center justify-center overflow-hidden">${renderLogoHtml(s.logo, '🏫', 'w-full h-full object-cover rounded-md')}</span>
                   <div>
                     <strong class="text-slate-900 text-xs block">${esc(s.name)}</strong>
                     <span class="font-mono text-[10px] text-slate-500 bg-slate-100 px-1.5 py-0.2 rounded">${esc(s.code)}</span>
@@ -14581,6 +15169,9 @@
                 <div class="flex items-center justify-center gap-1.5">
                   <button onclick="impersonateTenant('SCHOOL', ${esc(s.id)})" class="px-2.5 py-1 rounded-lg bg-slate-900 hover:bg-slate-800 text-yellow-400 font-bold text-[10px] uppercase shadow-xs transition flex items-center gap-1 cursor-pointer" title="Prendre le contrôle de l'école">
                     <span>👁️</span> Impersonate
+                  </button>
+                  <button onclick="openEditSchoolModal(${escJs(s.id)})" class="p-1 rounded text-slate-500 hover:text-slate-800 hover:bg-slate-100 transition cursor-pointer" title="Modifier l'établissement et son logo">
+                    ⚙️
                   </button>
                   <button onclick="toggleTenantLock(${escJs(s.id)})" class="p-1 rounded text-xs transition cursor-pointer ${isLocked ? 'text-emerald-600 hover:bg-emerald-50' : 'text-rose-600 hover:bg-rose-50'}" title="${isLocked ? 'Déverrouiller l\'accès à cette école' : 'Verrouiller / Bloquer l\'accès'}">
                     ${isLocked ? '🔓' : '🔒'}

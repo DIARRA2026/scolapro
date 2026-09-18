@@ -665,6 +665,24 @@ const server = http.createServer(async (req, res) => {
         if (!s) return sendError(res, new Error("Établissement introuvable."), 404);
         return sendJson(res, 200, { success: true, school: s, ...s });
       }
+      if (method === 'PUT' || method === 'PATCH') {
+        const body = await readJsonBody(req);
+        const updated = db.updateSchool(user, sId, body);
+        syncToSupabase('schools', {
+          code: updated.code,
+          name: updated.name,
+          short_name: updated.shortName || updated.short_name || updated.name,
+          school_type: updated.schoolType || updated.school_type || 'COLLÈGE & LYCÉE',
+          country_code: 'CI',
+          city: updated.city || 'Abidjan',
+          address: updated.address || 'Abidjan',
+          phone: updated.phone || '+225 27 00 00 00',
+          email: updated.email || `${updated.code.toLowerCase()}@scolapro.ci`,
+          currency: 'XOF',
+          is_active: true
+        }).catch(() => {});
+        return sendJson(res, 200, { success: true, school: updated, ...updated });
+      }
       if (method === 'DELETE') {
         return sendJson(res, 200, db.deleteSchool(user, sId));
       }
@@ -700,6 +718,24 @@ const server = http.createServer(async (req, res) => {
         const f = db.getFoundations(user).find(x => x.id === parseInt(fId, 10));
         if (!f) return sendError(res, new Error("Fondation introuvable."), 404);
         return sendJson(res, 200, { success: true, foundation: f, ...f });
+      }
+      if (method === 'PUT' || method === 'PATCH') {
+        const body = await readJsonBody(req);
+        const updated = db.updateFoundation(user, fId, body);
+        syncToSupabase('foundations', {
+          code: updated.code,
+          name: updated.name,
+          sigle: updated.sigle || (updated.code ? updated.code.toUpperCase() : 'FND'),
+          country_code: 'CI',
+          city: updated.city || 'Abidjan',
+          address: updated.hq || updated.address || 'Abidjan',
+          president_name: updated.president || 'Direction Générale',
+          phone: updated.phone || '+225 27 00 00 00',
+          email: updated.email || 'contact@fondation.ci',
+          description: updated.description || '',
+          is_active: true
+        }).catch(() => {});
+        return sendJson(res, 200, { success: true, foundation: updated, ...updated });
       }
       if (method === 'DELETE') {
         return sendJson(res, 200, db.deleteFoundation(user, fId));

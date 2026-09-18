@@ -2247,11 +2247,12 @@ function createSchool(user, data) {
   const code = String(data.code || `col-auto-${Date.now().toString().slice(-4)}`).trim().toLowerCase();
   const name = String(data.name || '').trim();
   if (!name) throw new Error("Le nom de l'établissement est obligatoire.");
+  const logo = String(data.logo || '🏫').trim();
 
   const stmt = db.prepare(`
     INSERT INTO schools (
-      code, name, short_name, foundation_id, school_type, city, address, phone, email, currency
-    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 'XOF')
+      code, name, short_name, foundation_id, school_type, city, address, phone, email, logo, currency
+    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'XOF')
   `);
 
   const result = stmt.run(
@@ -2263,7 +2264,8 @@ function createSchool(user, data) {
     data.city || 'Abidjan',
     data.address || '',
     data.phone || '',
-    data.email || ''
+    data.email || '',
+    logo
   );
 
   const newId = Number(result.lastInsertRowid);
@@ -2284,15 +2286,75 @@ function createSchool(user, data) {
   return formatSchool(rawSchool, metrics.get(newId));
 }
 
+function updateSchool(user, schoolId, data) {
+  const sId = parseInt(schoolId, 10);
+  if (isNaN(sId) || sId <= 0) throw new Error("Identifiant d'établissement invalide.");
+
+  assertSchoolAccess(user, sId, lookupSchool);
+  assertRank(user, 3);
+
+  const current = lookupSchool(sId);
+  if (!current) throw new Error("Établissement introuvable.");
+
+  let fId = current.foundationId;
+  if (user.role === 'concepteur') {
+    if (data.foundationId !== undefined || data.foundation_id !== undefined) {
+      const rawFId = data.foundationId !== undefined ? data.foundationId : data.foundation_id;
+      if (rawFId === null || rawFId === '' || rawFId === 'AUTONOME') {
+        fId = null;
+      } else {
+        const parsed = parseInt(rawFId, 10);
+        fId = (!isNaN(parsed) && parsed > 0) ? parsed : null;
+      }
+    }
+  }
+
+  const name = data.name !== undefined ? String(data.name).trim() : current.name;
+  if (!name) throw new Error("Le nom de l'établissement ne peut pas être vide.");
+  const shortName = (data.shortName !== undefined || data.short_name !== undefined)
+    ? String(data.shortName || data.short_name).trim()
+    : (current.shortName || name);
+  const schoolType = (data.schoolType !== undefined || data.school_type !== undefined)
+    ? String(data.schoolType || data.school_type).trim()
+    : current.schoolType;
+  const city = data.city !== undefined ? String(data.city).trim() : current.city;
+  const address = data.address !== undefined ? String(data.address).trim() : current.address;
+  const phone = data.phone !== undefined ? String(data.phone).trim() : current.phone;
+  const email = data.email !== undefined ? String(data.email).trim() : current.email;
+  const logo = data.logo !== undefined ? String(data.logo).trim() : current.logo;
+  const academicYear = (data.academicYear !== undefined || data.academic_year !== undefined)
+    ? String(data.academicYear || data.academic_year).trim()
+    : current.academicYear;
+
+  db.prepare(`
+    UPDATE schools
+    SET name = ?, short_name = ?, foundation_id = ?, school_type = ?, city = ?, address = ?, phone = ?, email = ?, logo = ?, academic_year = ?
+    WHERE id = ?
+  `).run(name, shortName, fId, schoolType, city, address, phone, email, logo, academicYear, sId);
+
+  addAuditLog(user, {
+    action: 'SCHOOL_UPDATE',
+    module: 'Administration',
+    target: `Établissement #${sId} (${name})`,
+    oldVal: `Logo: ${current.logo ? current.logo.slice(0, 30) : 'none'}, Nom: ${current.name}`,
+    newVal: `Logo: ${logo ? logo.slice(0, 30) : 'none'}, Nom: ${name}`,
+    schoolId: sId,
+    foundationId: fId
+  });
+
+  return lookupSchool(sId);
+}
+
 function createFoundation(user, data) {
   assertRank(user, 1); // Concepteur uniquement
   const code = String(data.code || `fond-auto-${Date.now().toString().slice(-4)}`).trim().toLowerCase();
   const name = String(data.name || '').trim();
   if (!name) throw new Error("Le nom de la fondation est obligatoire.");
+  const logo = String(data.logo || '🏛️').trim();
 
   const stmt = db.prepare(`
-    INSERT INTO foundations (code, name, sigle, hq, president, phone, email, description)
-    VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+    INSERT INTO foundations (code, name, sigle, hq, president, phone, email, description, logo)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
   `);
 
   const result = stmt.run(
@@ -2303,7 +2365,8 @@ function createFoundation(user, data) {
     data.president || '',
     data.phone || '',
     data.email || '',
-    data.description || ''
+    data.description || '',
+    logo
   );
 
   const newId = Number(result.lastInsertRowid);
@@ -2318,6 +2381,46 @@ function createFoundation(user, data) {
 
   const rawFound = db.prepare('SELECT * FROM foundations WHERE id = ?').get(newId);
   return formatFoundation(rawFound, []);
+}
+
+function updateFoundation(user, foundationId, data) {
+  const fId = parseInt(foundationId, 10);
+  if (isNaN(fId) || fId <= 0) throw new Error("Identifiant de fondation invalide.");
+
+  assertFoundationAccess(user, fId);
+  assertRank(user, 2);
+
+  const current = db.prepare('SELECT * FROM foundations WHERE id = ?').get(fId);
+  if (!current) throw new Error("Fondation introuvable.");
+
+  const name = data.name !== undefined ? String(data.name).trim() : current.name;
+  if (!name) throw new Error("Le nom de la fondation ne peut pas être vide.");
+  const sigle = data.sigle !== undefined ? String(data.sigle).trim().toUpperCase() : current.sigle;
+  const hq = data.hq !== undefined ? String(data.hq).trim() : current.hq;
+  const president = data.president !== undefined ? String(data.president).trim() : current.president;
+  const phone = data.phone !== undefined ? String(data.phone).trim() : current.phone;
+  const email = data.email !== undefined ? String(data.email).trim() : current.email;
+  const description = data.description !== undefined ? String(data.description).trim() : current.description;
+  const logo = data.logo !== undefined ? String(data.logo).trim() : current.logo;
+
+  db.prepare(`
+    UPDATE foundations
+    SET name = ?, sigle = ?, hq = ?, president = ?, phone = ?, email = ?, description = ?, logo = ?
+    WHERE id = ?
+  `).run(name, sigle, hq, president, phone, email, description, logo, fId);
+
+  addAuditLog(user, {
+    action: 'FOUNDATION_UPDATE',
+    module: 'Administration Souveraine',
+    target: `Fondation #${fId} (${name})`,
+    oldVal: `Logo: ${current.logo ? current.logo.slice(0, 30) : 'none'}, Nom: ${current.name}`,
+    newVal: `Logo: ${logo ? logo.slice(0, 30) : 'none'}, Nom: ${name}`,
+    foundationId: fId
+  });
+
+  const updatedRaw = db.prepare('SELECT * FROM foundations WHERE id = ?').get(fId);
+  const allSchools = getSchools({ role: 'concepteur' });
+  return formatFoundation(updatedRaw, allSchools);
 }
 
 function deleteSchool(user, schoolId) {
@@ -2740,11 +2843,13 @@ module.exports = {
   updateUser,
   deleteUser,
   createSchool,
+  updateSchool,
   getSchools,
   formatSchool,
   getLiveSchoolMetrics,
   deleteSchool,
   createFoundation,
+  updateFoundation,
   getFoundations,
   formatFoundation,
   deleteFoundation,

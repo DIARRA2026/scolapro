@@ -289,3 +289,108 @@ test('CONSOL-06 : Étanchéité — Une école autonome n\'apparaît dans aucune
   assert.ok(foundInN1, "L'école autonome doit apparaître dans le dashboard N1 (Concepteur)");
   assert.equal(foundInN1.foundationId, null, "En N1, son foundationId doit être strictement null");
 });
+
+test('CONSOL-07 : Mise à jour du logo et informations d\'une école via PUT /api/schools/:id', async () => {
+  const session = await loginUser(baseUrl, TEST_USERS.concepteur, TEST_PASSWORD);
+
+  // 1. Créer une école avec logo emoji initial
+  const testCode = `logo-sch-${Date.now()}`;
+  const createRes = await makeRequest(baseUrl, {
+    path: '/api/schools',
+    method: 'POST',
+    headers: { cookie: session.cookie }
+  }, {
+    name: 'École Test Logo Initial',
+    code: testCode,
+    schoolType: 'COLLÈGE & LYCÉE',
+    city: 'Abidjan',
+    logo: '🏫'
+  });
+  assert.equal(createRes.statusCode, 201);
+  const schoolId = createRes.json.id;
+
+  // 2. Mettre à jour avec un logo image (data URL ou URL)
+  const customLogo = 'data:image/webp;base64,UklGRh4AAABXRUJQVlA4TBEAAAAvAAAAAAfQ//73v/+BiOh/AAA=';
+  const updateRes = await makeRequest(baseUrl, {
+    path: `/api/schools/${schoolId}`,
+    method: 'PUT',
+    headers: { cookie: session.cookie }
+  }, {
+    name: 'École Test Logo Modifié',
+    logo: customLogo,
+    city: 'Yamoussoukro'
+  });
+
+  assert.equal(updateRes.statusCode, 200);
+  assert.equal(updateRes.json.logo, customLogo);
+  assert.equal(updateRes.json.name, 'École Test Logo Modifié');
+  assert.equal(updateRes.json.city, 'Yamoussoukro');
+
+  // 3. Vérifier la persistance via GET direct et GET bootstrap
+  const getRes = await makeRequest(baseUrl, {
+    path: `/api/schools/${schoolId}`,
+    headers: { cookie: session.cookie }
+  });
+  assert.equal(getRes.statusCode, 200);
+  assert.equal(getRes.json.logo, customLogo);
+
+  const bootRes = await makeRequest(baseUrl, {
+    path: '/api/bootstrap',
+    headers: { cookie: session.cookie }
+  });
+  const foundInBoot = (bootRes.json.schools || []).find(s => s.id === schoolId);
+  assert.ok(foundInBoot, "L'école mise à jour doit être présente dans bootstrap");
+  assert.equal(foundInBoot.logo, customLogo, "Le logo mis à jour doit être fidèlement persisté dans bootstrap");
+});
+
+test('CONSOL-08 : Mise à jour du logo et informations d\'une fondation via PUT /api/foundations/:id', async () => {
+  const session = await loginUser(baseUrl, TEST_USERS.concepteur, TEST_PASSWORD);
+
+  // 1. Créer une fondation avec logo emoji initial
+  const foundCode = `logo-fnd-${Date.now()}`;
+  const createRes = await makeRequest(baseUrl, {
+    path: '/api/foundations',
+    method: 'POST',
+    headers: { cookie: session.cookie }
+  }, {
+    name: 'Fondation Test Logo Initial',
+    code: foundCode,
+    sigle: 'FTLI',
+    hq: 'Abidjan',
+    logo: '🏛️'
+  });
+  assert.equal(createRes.statusCode, 201);
+  const foundId = createRes.json.id;
+
+  // 2. Mettre à jour avec un logo image personnalisé
+  const customLogo = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==';
+  const updateRes = await makeRequest(baseUrl, {
+    path: `/api/foundations/${foundId}`,
+    method: 'PUT',
+    headers: { cookie: session.cookie }
+  }, {
+    name: 'Fondation Test Logo Modifiée',
+    sigle: 'FTLM',
+    logo: customLogo
+  });
+
+  assert.equal(updateRes.statusCode, 200);
+  assert.equal(updateRes.json.logo, customLogo);
+  assert.equal(updateRes.json.name, 'Fondation Test Logo Modifiée');
+
+  // 3. Vérifier la persistance via GET direct et GET bootstrap
+  const getRes = await makeRequest(baseUrl, {
+    path: `/api/foundations/${foundId}`,
+    headers: { cookie: session.cookie }
+  });
+  assert.equal(getRes.statusCode, 200);
+  assert.equal(getRes.json.logo, customLogo);
+
+  const bootRes = await makeRequest(baseUrl, {
+    path: '/api/bootstrap',
+    headers: { cookie: session.cookie }
+  });
+  const foundInBoot = (bootRes.json.foundations || []).find(f => f.id === foundId);
+  assert.ok(foundInBoot, "La fondation mise à jour doit être présente dans bootstrap");
+  assert.equal(foundInBoot.logo, customLogo, "Le logo de la fondation doit être fidèlement persisté dans bootstrap");
+});
