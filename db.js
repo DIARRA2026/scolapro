@@ -102,7 +102,10 @@ function lookupSchool(schoolId) {
   if (!schoolId) return null;
   const sId = parseInt(schoolId, 10);
   if (isNaN(sId) || sId <= 0) return null;
-  return db.prepare('SELECT * FROM schools WHERE id = ?').get(sId);
+  const row = db.prepare('SELECT * FROM schools WHERE id = ?').get(sId);
+  if (!row) return null;
+  const metricsMap = getLiveSchoolMetrics([sId]);
+  return formatSchool(row, metricsMap.get(sId));
 }
 
 /**
@@ -946,110 +949,264 @@ function formatUser(u) {
   };
 }
 
-// ---------------------------------------------------------------------
-// SÉRIALISATION ÉTABLISSEMENTS & FONDATIONS (snake_case DB -> camelCase API)
-// ---------------------------------------------------------------------
+/**
+ * Consolidation optimisée des métriques des établissements en un seul lot (sans requêtes N+1).
+ * Calcule dynamiquement l'effectif, les classes, les caisses actives et la trésorerie.
+ * @param {number[]|null} schoolIds
+ * @returns {Map<number, object>}
+ */
+function getLiveSchoolMetrics(schoolIds = null) {
+  let studentQuery = 'SELECT school_id, COUNT(*) as count, SUM(fee_due) as total_due, SUM(fee_paid) as total_paid, AVG(avg) as general_avg FROM students';
+  let classQuery = 'SELECT school_id, COUNT(*) as count FROM classes';
+  let deskQuery = "SELECT school_id, COUNT(*) as count, SUM(balance) as total_cash FROM cash_desks WHERE status = 'ACTIVE'";
+
+  const params = [];
+  if (Array.isArray(schoolIds) && schoolIds.length > 0) {
+    const validIds = schoolIds.map(id => parseInt(id, 10)).filter(id => !isNaN(id) && id > 0);
+    if (validIds.length > 0) {
+      const placeholders = validIds.map(() => '?').join(',');
+      const whereClause = ` WHERE school_id IN (${placeholders})`;
+      studentQuery += whereClause + ' GROUP BY school_id';
+      classQuery += whereClause + ' GROUP BY school_id';
+      deskQuery += ` AND school_id IN (${placeholders}) GROUP BY school_id`;
+      params.push(...validIds);
+    } else {
+      studentQuery += ' GROUP BY school_id';
+      classQuery += ' GROUP BY school_id';
+      deskQuery += ' GROUP BY school_id';
+    }
+  } else {
+    studentQuery += ' GROUP BY school_id';
+    classQuery += ' GROUP BY school_id';
+    deskQuery += ' GROUP BY school_id';
+  }
+
+  const studentRows = params.length > 0 ? db.prepare(studentQuery).all(...params) : db.prepare(studentQuery).all();
+  const classRows = params.length > 0 ? db.prepare(classQuery).all(...params) : db.prepare(classQuery).all();
+  const deskRows = params.length > 0 ? db.prepare(deskQuery).all(...params) : db.prepare(deskQuery).all();
+
+  const metricsMap = new Map();
+
+  for (const row of studentRows) {
+    const sId = Number(row.school_id);
+    const totalDue = Number(row.total_due || 0);
+    const totalPaid = Number(row.total_paid || 0);
+    const count = Number(row.count || 0);
+    const recoveryRate = totalDue > 0 ? Number(((totalPaid / totalDue) * 100).toFixed(1)) : (count > 0 ? 100.0 : 0.0);
+    const genAvg = (row.general_avg !== null && row.general_avg !== undefined) ? Number(Number(row.general_avg).toFixed(2)) : 12.5;
+
+    metricsMap.set(sId, {
+      studentsCount: count,
+      totalDue,
+      totalPaid,
+      recoveryRate,
+      generalAverage: genAvg,
+      classesCount: 0,
+      cashDesksCount: 0,
+      totalCash: 0
+    });
+  }
+
+  for (const row of classRows) {
+    const sId = Number(row.school_id);
+    const existing = metricsMap.get(sId) || {
+      studentsCount: 0,
+      totalDue: 0,
+      totalPaid: 0,
+      recoveryRate: 0.0,
+      generalAverage: 12.5,
+      classesCount: 0,
+      cashDesksCount: 0,
+      totalCash: 0
+    };
+    existing.classesCount = Number(row.count || 0);
+    metricsMap.set(sId, existing);
+  }
+
+  for (const row of deskRows) {
+    const sId = Number(row.school_id);
+    const existing = metricsMap.get(sId) || {
+      studentsCount: 0,
+      totalDue: 0,
+      totalPaid: 0,
+      recoveryRate: 0.0,
+      generalAverage: 12.5,
+      classesCount: 0,
+      cashDesksCount: 0,
+      totalCash: 0
+    };
+    existing.cashDesksCount = Number(row.count || 0);
+    existing.totalCash = Number(row.total_cash || 0);
+    metricsMap.set(sId, existing);
+  }
+
+  return metricsMap;
+}
 
 /**
- * Sérialise un lot d'établissements et calcule leurs compteurs vivants
- * (élèves, classes, caisses, taux de recouvrement) par agrégation SQL au
- * moment de la lecture. C'est ce lien — recalculé à chaque appel plutôt que
- * lu depuis une colonne en cache jamais mise à jour — qui permet aux
- * tableaux de bord Fondation (Niveau 2) et Concepteur (Niveau 1) de refléter
- * fidèlement l'activité réelle de chaque établissement (Niveau 3).
- * @param {object[]} rows lignes brutes issues de `SELECT * FROM schools`
+ * Formate un établissement en convertissant les champs SQL snake_case en camelCase
+ * et en lui associant ses métriques temps réel consolidées.
+ * @param {object} row
+ * @param {object|null} metrics
+ * @returns {object|null}
+ */
+function formatSchool(row, metrics = null) {
+  if (!row) return null;
+  const sId = Number(row.id);
+  const rawFoundationId = (row.foundation_id !== null && row.foundation_id !== undefined)
+    ? row.foundation_id
+    : (row.foundationId !== null && row.foundationId !== undefined ? row.foundationId : null);
+  const foundationId = (rawFoundationId !== null && rawFoundationId !== undefined && rawFoundationId !== '' && rawFoundationId !== 'AUTONOME')
+    ? parseInt(rawFoundationId, 10)
+    : null;
+
+  const m = metrics || {};
+  const studentsCount = m.studentsCount !== undefined ? m.studentsCount : (row.studentsCount !== undefined ? row.studentsCount : (row.students_count || 0));
+  const classesCount = m.classesCount !== undefined ? m.classesCount : (row.classesCount !== undefined ? row.classesCount : (row.classes_count || 0));
+  const cashDesksCount = m.cashDesksCount !== undefined ? m.cashDesksCount : (row.cashDesksCount !== undefined ? row.cashDesksCount : (row.cash_desks_count || 0));
+  const totalCash = m.totalCash !== undefined ? m.totalCash : (row.totalCash || 0);
+  const recoveryRate = m.recoveryRate !== undefined ? m.recoveryRate : (row.recoveryRate !== undefined ? row.recoveryRate : (row.recovery_rate || 0.0));
+  const generalAverage = m.generalAverage !== undefined ? m.generalAverage : (row.generalAverage || 12.5);
+  const totalDue = m.totalDue !== undefined ? m.totalDue : 0;
+  const totalPaid = m.totalPaid !== undefined ? m.totalPaid : 0;
+
+  return {
+    id: sId,
+    code: row.code,
+    name: row.name,
+    shortName: row.short_name || row.shortName || row.name,
+    foundationId: foundationId,
+    foundation_id: foundationId, // compatibilité RBAC et SQL
+    schoolType: row.school_type || row.schoolType || 'COLLÈGE & LYCÉE',
+    city: row.city || 'Abidjan',
+    address: row.address || '',
+    phone: row.phone || '',
+    email: row.email || '',
+    logo: row.logo || '🏫',
+    currency: row.currency || 'XOF',
+    academicYear: row.academic_year || row.academicYear || '2026-2027',
+    studentsCount,
+    classesCount,
+    cashDesksCount,
+    totalCash,
+    totalDue,
+    totalPaid,
+    recoveryRate,
+    generalAverage,
+    isActive: row.is_active !== undefined ? !!row.is_active : (row.isActive !== undefined ? !!row.isActive : true),
+    createdAt: row.created_at || row.createdAt || '01/09/2026'
+  };
+}
+
+/**
+ * Formate une fondation en convertissant les champs SQL snake_case en camelCase
+ * et en agrégeant les métriques réelles de l'ensemble de ses écoles affiliées.
+ * @param {object} row
+ * @param {object[]} affiliatedSchools
+ * @returns {object|null}
+ */
+function formatFoundation(row, affiliatedSchools = []) {
+  if (!row) return null;
+  const fId = Number(row.id);
+
+  // Filtrer les écoles rattachées à cette fondation
+  const matchingSchools = (affiliatedSchools || []).filter(s => {
+    const sFId = s.foundationId !== undefined ? s.foundationId : s.foundation_id;
+    return sFId !== null && sFId !== undefined && Number(sFId) === fId;
+  });
+
+  const schoolsCount = matchingSchools.length;
+  const studentsCount = matchingSchools.reduce((sum, s) => sum + (s.studentsCount || 0), 0);
+  const classesCount = matchingSchools.reduce((sum, s) => sum + (s.classesCount || 0), 0);
+  const cashDesksCount = matchingSchools.reduce((sum, s) => sum + (s.cashDesksCount || 0), 0);
+  const totalCash = matchingSchools.reduce((sum, s) => sum + (s.totalCash || 0), 0);
+
+  let totalDue = 0;
+  let totalPaid = 0;
+  for (const s of matchingSchools) {
+    totalDue += (s.totalDue || 0);
+    totalPaid += (s.totalPaid || 0);
+  }
+
+  const recoveryRate = totalDue > 0
+    ? Number(((totalPaid / totalDue) * 100).toFixed(1))
+    : (schoolsCount > 0 && matchingSchools.some(s => s.recoveryRate > 0)
+      ? Number((matchingSchools.reduce((acc, s) => acc + (s.recoveryRate || 0), 0) / schoolsCount).toFixed(1))
+      : 0.0);
+
+  return {
+    id: fId,
+    code: row.code,
+    name: row.name,
+    sigle: row.sigle || (row.code ? row.code.toUpperCase() : 'FND'),
+    hq: row.hq || 'Abidjan',
+    president: row.president || 'Direction Générale',
+    phone: row.phone || '',
+    email: row.email || '',
+    logo: row.logo || '🏛️',
+    description: row.description || '',
+    schoolsCount,
+    studentsCount,
+    classesCount,
+    cashDesksCount,
+    totalCash,
+    recoveryRate,
+    isActive: row.is_active !== undefined ? !!row.is_active : (row.isActive !== undefined ? !!row.isActive : true),
+    createdAt: row.created_at || row.createdAt || '01/09/2026'
+  };
+}
+
+/**
+ * Retourne la liste des établissements scolaires autorisés pour l'utilisateur,
+ * entièrement sérialisés en camelCase avec leurs compteurs temps réel consolidés.
+ * @param {object} user
+ * @param {number|string|null} filterFoundationId
  * @returns {object[]}
  */
-function formatSchools(rows) {
-  if (!rows || rows.length === 0) return [];
-  const ids = rows.map(r => r.id);
-  const inClause = ids.map(() => '?').join(',');
+function getSchools(user, filterFoundationId = null) {
+  const allowed = readableSchoolIds(user);
+  let rows = [];
+  if (allowed === 'ALL') {
+    if (filterFoundationId !== null && filterFoundationId !== undefined && filterFoundationId !== '') {
+      const fId = parseInt(filterFoundationId, 10);
+      rows = db.prepare('SELECT * FROM schools WHERE foundation_id = ? AND is_active = 1 ORDER BY id ASC').all(fId);
+    } else {
+      rows = db.prepare('SELECT * FROM schools WHERE is_active = 1 ORDER BY id ASC').all();
+    }
+  } else if (Array.isArray(allowed) && allowed.length > 0) {
+    if (filterFoundationId !== null && filterFoundationId !== undefined && filterFoundationId !== '') {
+      const fId = parseInt(filterFoundationId, 10);
+      rows = db.prepare(`SELECT * FROM schools WHERE id IN (${allowed.map(() => '?').join(',')}) AND foundation_id = ? AND is_active = 1 ORDER BY id ASC`).all(...allowed, fId);
+    } else {
+      rows = db.prepare(`SELECT * FROM schools WHERE id IN (${allowed.map(() => '?').join(',')}) AND is_active = 1 ORDER BY id ASC`).all(...allowed);
+    }
+  }
 
-  const studentStats = new Map();
-  db.prepare(`
-    SELECT school_id, COUNT(*) as count, SUM(fee_due) as due, SUM(fee_paid) as paid
-    FROM students WHERE school_id IN (${inClause}) GROUP BY school_id
-  `).all(...ids).forEach(r => studentStats.set(r.school_id, r));
-
-  const classStats = new Map();
-  db.prepare(`
-    SELECT school_id, COUNT(*) as count
-    FROM classes WHERE school_id IN (${inClause}) GROUP BY school_id
-  `).all(...ids).forEach(r => classStats.set(r.school_id, r));
-
-  const cashStats = new Map();
-  db.prepare(`
-    SELECT school_id, COUNT(*) as count, SUM(balance) as total
-    FROM cash_desks WHERE school_id IN (${inClause}) GROUP BY school_id
-  `).all(...ids).forEach(r => cashStats.set(r.school_id, r));
-
-  return rows.map(s => {
-    const st = studentStats.get(s.id);
-    const studentsCount = (st && st.count) || 0;
-    const totalDue = (st && st.due) || 0;
-    const totalPaid = (st && st.paid) || 0;
-    const recoveryRate = totalDue > 0
-      ? Math.round((totalPaid / totalDue) * 1000) / 10
-      : (studentsCount > 0 ? 100 : 0);
-    const cl = classStats.get(s.id);
-    const cd = cashStats.get(s.id);
-
-    return {
-      id: s.id,
-      code: s.code,
-      name: s.name,
-      shortName: s.short_name,
-      foundationId: (s.foundation_id !== null && s.foundation_id !== undefined) ? parseInt(s.foundation_id, 10) : null,
-      schoolType: s.school_type,
-      city: s.city,
-      address: s.address,
-      phone: s.phone,
-      email: s.email,
-      logo: s.logo,
-      currency: s.currency,
-      academicYear: s.academic_year,
-      studentsCount,
-      classesCount: (cl && cl.count) || 0,
-      cashDesksCount: (cd && cd.count) || 0,
-      cashBalance: (cd && cd.total) || 0,
-      recoveryRate,
-      isActive: !!s.is_active,
-      createdAt: s.created_at
-    };
-  });
+  if (rows.length === 0) return [];
+  const schoolIds = rows.map(r => r.id);
+  const metricsMap = getLiveSchoolMetrics(schoolIds);
+  return rows.map(r => formatSchool(r, metricsMap.get(r.id)));
 }
 
 /**
- * Sérialise un unique établissement (voir {@link formatSchools}).
- * @param {object|null} row
- * @returns {object|null}
+ * Retourne la liste des fondations autorisées pour l'utilisateur,
+ * entièrement sérialisées en camelCase et consolidées sur leurs écoles réelles.
+ * @param {object} user
+ * @returns {object[]}
  */
-function formatSchool(row) {
-  if (!row) return null;
-  return formatSchools([row])[0];
-}
+function getFoundations(user) {
+  let rows = [];
+  if (user && user.role === 'concepteur') {
+    rows = db.prepare('SELECT * FROM foundations ORDER BY id ASC').all();
+  } else if (user && user.foundationId) {
+    rows = db.prepare('SELECT * FROM foundations WHERE id = ?').all(user.foundationId);
+  }
 
-/**
- * Sérialise une fondation mère en camelCase pour l'API.
- * @param {object|null} f
- * @returns {object|null}
- */
-function formatFoundation(f) {
-  if (!f) return null;
-  return {
-    id: f.id,
-    code: f.code,
-    name: f.name,
-    sigle: f.sigle,
-    hq: f.hq,
-    president: f.president,
-    phone: f.phone,
-    email: f.email,
-    logo: f.logo,
-    description: f.description,
-    isActive: !!f.is_active,
-    createdAt: f.created_at
-  };
+  if (rows.length === 0) return [];
+
+  // Récupérer toutes les écoles actives pour consolider chaque fondation
+  const allSchools = getSchools({ role: 'concepteur' });
+  return rows.map(r => formatFoundation(r, allSchools));
 }
 
 // ---------------------------------------------------------------------
@@ -2071,19 +2228,20 @@ function deleteUser(user, id) {
 
 function createSchool(user, data) {
   assertRank(user, 2); // Concepteur ou Fondateur
-  // Le fondateur ne peut fonder que dans sa propre fondation. Le concepteur choisit
-  // explicitement : `foundationId` omis => rattachement par défaut (rétrocompatibilité),
-  // `foundationId` explicitement null/vide => établissement AUTONOME (aucune fondation).
-  // Un "|| 1" naïf aurait affilié à tort toute école "autonome" à la fondation #1.
-  let fId;
+  let fId = null;
   if (user.role === 'fondateur') {
+    if (!user.foundationId) {
+      throw new AccessError('Compte fondation non rattaché à une fondation mère.', 403, 'TENANT_VIOLATION', 'SECURITY_TENANT_BREACH');
+    }
     fId = user.foundationId;
-  } else if (data.foundationId === undefined) {
-    fId = 1;
-  } else if (data.foundationId === null || data.foundationId === '') {
-    fId = null;
   } else {
-    fId = parseInt(data.foundationId, 10);
+    const rawFId = data.foundationId !== undefined ? data.foundationId : data.foundation_id;
+    if (rawFId !== null && rawFId !== undefined && rawFId !== '' && rawFId !== 'AUTONOME') {
+      const parsed = parseInt(rawFId, 10);
+      fId = (!isNaN(parsed) && parsed > 0) ? parsed : null;
+    } else {
+      fId = null;
+    }
   }
 
   const code = String(data.code || `col-auto-${Date.now().toString().slice(-4)}`).trim().toLowerCase();
@@ -2092,8 +2250,8 @@ function createSchool(user, data) {
 
   const stmt = db.prepare(`
     INSERT INTO schools (
-      code, name, short_name, foundation_id, school_type, city, address, phone, email, logo, currency
-    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'XOF')
+      code, name, short_name, foundation_id, school_type, city, address, phone, email, currency
+    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 'XOF')
   `);
 
   const result = stmt.run(
@@ -2105,8 +2263,7 @@ function createSchool(user, data) {
     data.city || 'Abidjan',
     data.address || '',
     data.phone || '',
-    data.email || '',
-    data.logo || '🏫'
+    data.email || ''
   );
 
   const newId = Number(result.lastInsertRowid);
@@ -2117,12 +2274,14 @@ function createSchool(user, data) {
     module: 'Administration',
     target: `Établissement #${newId} (${name})`,
     oldVal: '',
-    newVal: `Code: ${code}, Fondation: ${fId ? '#' + fId : 'AUCUNE (établissement autonome)'}`,
+    newVal: `Code: ${code}, Fondation: ${fId ? '#' + fId : 'Autonome'}`,
     schoolId: newId,
     foundationId: fId
   });
 
-  return { success: true, school: formatSchool(db.prepare('SELECT * FROM schools WHERE id = ?').get(newId)) };
+  const rawSchool = db.prepare('SELECT * FROM schools WHERE id = ?').get(newId);
+  const metrics = getLiveSchoolMetrics([newId]);
+  return formatSchool(rawSchool, metrics.get(newId));
 }
 
 function createFoundation(user, data) {
@@ -2157,7 +2316,8 @@ function createFoundation(user, data) {
     foundationId: newId
   });
 
-  return { success: true, foundation: formatFoundation(db.prepare('SELECT * FROM foundations WHERE id = ?').get(newId)) };
+  const rawFound = db.prepare('SELECT * FROM foundations WHERE id = ?').get(newId);
+  return formatFoundation(rawFound, []);
 }
 
 function deleteSchool(user, schoolId) {
@@ -2378,8 +2538,10 @@ function getFoundationConsolidatedData(user, foundationId) {
   const foundation = db.prepare('SELECT * FROM foundations WHERE id = ?').get(foundationId);
   if (!foundation) throw new Error("Fondation introuvable");
 
-  const schools = db.prepare('SELECT * FROM schools WHERE foundation_id = ?').all(foundationId);
-  const schoolIds = schools.map(s => s.id);
+  const rawSchools = db.prepare('SELECT * FROM schools WHERE foundation_id = ? AND is_active = 1').all(foundationId);
+  const schoolIds = rawSchools.map(s => s.id);
+  const metricsMap = getLiveSchoolMetrics(schoolIds);
+  const schools = rawSchools.map(s => formatSchool(s, metricsMap.get(s.id)));
 
   let totalStudents = 0;
   let totalDue = 0;
@@ -2387,41 +2549,24 @@ function getFoundationConsolidatedData(user, foundationId) {
   let totalCashBalance = 0;
   let totalClasses = 0;
 
-  if (schoolIds.length > 0) {
-    const inClause = schoolIds.map(() => '?').join(',');
-    const stStats = db.prepare(`
-      SELECT COUNT(*) as count, SUM(fee_due) as due, SUM(fee_paid) as paid 
-      FROM students 
-      WHERE school_id IN (${inClause})
-    `).get(...schoolIds);
-
-    totalStudents = stStats.count || 0;
-    totalDue = stStats.due || 0;
-    totalPaid = stStats.paid || 0;
-
-    const deskStats = db.prepare(`
-      SELECT SUM(balance) as totalBalance 
-      FROM cash_desks 
-      WHERE school_id IN (${inClause})
-    `).get(...schoolIds);
-    totalCashBalance = deskStats.totalBalance || 0;
-
-    const clStats = db.prepare(`
-      SELECT COUNT(*) as count 
-      FROM classes 
-      WHERE school_id IN (${inClause})
-    `).get(...schoolIds);
-    totalClasses = clStats.count || 0;
+  for (const s of schools) {
+    totalStudents += (s.studentsCount || 0);
+    totalDue += (s.totalDue || 0);
+    totalPaid += (s.totalPaid || 0);
+    totalCashBalance += (s.totalCash || 0);
+    totalClasses += (s.classesCount || 0);
   }
 
   const avgRecoveryRate = totalDue > 0 
     ? (Math.round((totalPaid / totalDue) * 1000) / 10).toFixed(1) 
     : (totalStudents > 0 ? '100.0' : '0.0');
 
+  const formattedFoundation = formatFoundation(foundation, schools);
+
   return {
     success: true,
-    foundation: formatFoundation(foundation),
-    schools: formatSchools(schools),
+    foundation: formattedFoundation,
+    schools,
     stats: {
       schoolsCount: schools.length,
       totalStudents,
@@ -2441,22 +2586,8 @@ function getFoundationConsolidatedData(user, foundationId) {
 }
 
 function getBootstrapData(user) {
-  const allowed = readableSchoolIds(user);
-  let rawSchools = [];
-  if (allowed === 'ALL') {
-    rawSchools = db.prepare('SELECT * FROM schools WHERE is_active = 1 ORDER BY id ASC').all();
-  } else if (allowed.length > 0) {
-    rawSchools = db.prepare(`SELECT * FROM schools WHERE id IN (${allowed.map(() => '?').join(',')}) AND is_active = 1`).all(...allowed);
-  }
-  const schools = formatSchools(rawSchools);
-
-  let rawFoundations = [];
-  if (user.role === 'concepteur') {
-    rawFoundations = db.prepare('SELECT * FROM foundations ORDER BY id ASC').all();
-  } else if (user.foundationId) {
-    rawFoundations = db.prepare('SELECT * FROM foundations WHERE id = ?').all(user.foundationId);
-  }
-  const foundations = rawFoundations.map(formatFoundation);
+  const schools = getSchools(user);
+  const foundations = getFoundations(user);
 
   let students = [];
   try {
@@ -2497,9 +2628,7 @@ function getBootstrapData(user) {
     currentUser: user,
     schools,
     foundations,
-    activeSchool: user.schoolId
-      ? (schools.find(s => s.id === parseInt(user.schoolId, 10)) || formatSchool(lookupSchool(user.schoolId)))
-      : (schools[0] || null),
+    activeSchool: user.schoolId ? lookupSchool(user.schoolId) : (schools[0] || null),
     classes,
     students,
     cashDesks,
@@ -2611,8 +2740,13 @@ module.exports = {
   updateUser,
   deleteUser,
   createSchool,
+  getSchools,
+  formatSchool,
+  getLiveSchoolMetrics,
   deleteSchool,
   createFoundation,
+  getFoundations,
+  formatFoundation,
   deleteFoundation,
   getSystemSettings,
   updateSystemSettings,

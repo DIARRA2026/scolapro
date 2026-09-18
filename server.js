@@ -34,6 +34,43 @@ const {
 // CONFIGURATION D'ENVIRONNEMENT
 // ---------------------------------------------------------------------
 
+
+// ---------------------------------------------------------------------
+// SYNCHRONISATION SUPABASE CLOUD (Multi-Tenant BaaS)
+// ---------------------------------------------------------------------
+
+async function syncToSupabase(table, record) {
+  const rawUrl = process.env.SUPABASE_URL || '';
+  let rawKey = process.env.SUPABASE_SERVICE_ROLE_KEY || '';
+  rawKey = rawKey.replace(/^["']|["']$/g, '').trim();
+  if (!rawKey || rawKey.startsWith('your-') || rawKey.length < 50) {
+    rawKey = (process.env.SUPABASE_ANON_KEY || '').replace(/^["']|["']$/g, '').trim();
+  }
+  const sbUrl = rawUrl.replace(/^["']|["']$/g, '').trim();
+  const sbKey = rawKey;
+  if (!sbUrl || !sbKey || sbUrl.includes('your-project') || sbKey.startsWith('your-')) return;
+
+  try {
+    const endpoint = `${sbUrl.replace(/\/$/, '')}/rest/v1/${table}`;
+    const resp = await fetch(endpoint, {
+      method: 'POST',
+      headers: {
+        'apikey': sbKey,
+        'Authorization': `Bearer ${sbKey}`,
+        'Content-Type': 'application/json',
+        'Prefer': 'return=minimal,resolution=merge-duplicates'
+      },
+      body: JSON.stringify(record)
+    });
+    if (!resp.ok) {
+      const errTxt = await resp.text().catch(() => '');
+      console.warn(`[Supabase Sync] Note table ${table} (${resp.status}):`, errTxt);
+    }
+  } catch (err) {
+    console.warn(`[Supabase Sync] Échec synchro table ${table}:`, err.message);
+  }
+}
+
 function loadEnvFile() {
   const envPath = path.join(__dirname, '.env');
   if (fs.existsSync(envPath)) {
@@ -45,8 +82,11 @@ function loadEnvFile() {
           const eqIdx = trimmed.indexOf('=');
           if (eqIdx !== -1) {
             const key = trimmed.slice(0, eqIdx).trim();
-            const val = trimmed.slice(eqIdx + 1).trim();
-            if (!process.env[key]) {
+            let val = trimmed.slice(eqIdx + 1).trim();
+            if ((val.startsWith('"') && val.endsWith('"')) || (val.startsWith("'") && val.endsWith("'"))) {
+              val = val.slice(1, -1);
+            }
+            if (!process.env[key] || process.env[key].startsWith('"')) {
               process.env[key] = val;
             }
           }
@@ -286,6 +326,32 @@ const server = http.createServer(async (req, res) => {
     }
 
     return sendJson(res, 200, { success: true }, { 'Set-Cookie': clearCookie });
+  }
+
+  // 4b. État de session courant (/api/auth/me)
+  if (reqPath === '/api/auth/me' && method === 'GET') {
+    const me = authenticate(req);
+    if (!me) {
+      return sendJson(res, 200, { authenticated: false });
+    }
+    return sendJson(res, 200, {
+      authenticated: true,
+      user: {
+        id: me.id,
+        nom: me.nom,
+        prenom: me.prenom,
+        email: me.email,
+        phone: me.phone,
+        role: me.role,
+        roleLabel: me.roleLabel,
+        level: me.level,
+        scopeType: me.scopeType,
+        scopeLabel: me.scopeLabel,
+        schoolId: me.schoolId,
+        foundationId: me.foundationId,
+        rank: me.rank
+      }
+    });
   }
 
   // 5. Page de connexion (/login.html)
@@ -567,22 +633,77 @@ const server = http.createServer(async (req, res) => {
     }
 
     // Établissements & Fondations
-    if (reqPath === '/api/schools' && method === 'POST') {
-      const body = await readJsonBody(req);
-      return sendJson(res, 201, db.createSchool(user, body));
+    if (reqPath === '/api/schools') {
+      if (method === 'GET') {
+        const fId = queryParams.foundation_id || queryParams.foundationId || null;
+        return sendJson(res, 200, db.getSchools(user, fId));
+      }
+      if (method === 'POST') {
+        const body = await readJsonBody(req);
+        const created = db.createSchool(user, body);
+        syncToSupabase('schools', {
+          code: created.code,
+          name: created.name,
+          short_name: created.shortName || created.short_name || created.name,
+          school_type: created.schoolType || created.school_type || 'COLLÈGE & LYCÉE',
+          country_code: 'CI',
+          city: created.city || 'Abidjan',
+          address: created.address || 'Abidjan',
+          phone: created.phone || '+225 27 00 00 00',
+          email: created.email || `${created.code.toLowerCase()}@scolapro.ci`,
+          currency: 'XOF',
+          is_active: true
+        }).catch(() => {});
+        return sendJson(res, 201, { success: true, school: created, id: created.id, ...created });
+      }
     }
     const schoolMatch = reqPath.match(/^\/api\/schools\/(\d+)$/);
-    if (schoolMatch && method === 'DELETE') {
-      return sendJson(res, 200, db.deleteSchool(user, schoolMatch[1]));
+    if (schoolMatch) {
+      const sId = schoolMatch[1];
+      if (method === 'GET') {
+        const s = db.lookupSchool(sId);
+        if (!s) return sendError(res, new Error("Établissement introuvable."), 404);
+        return sendJson(res, 200, { success: true, school: s, ...s });
+      }
+      if (method === 'DELETE') {
+        return sendJson(res, 200, db.deleteSchool(user, sId));
+      }
     }
 
-    if (reqPath === '/api/foundations' && method === 'POST') {
-      const body = await readJsonBody(req);
-      return sendJson(res, 201, db.createFoundation(user, body));
+    if (reqPath === '/api/foundations') {
+      if (method === 'GET') {
+        return sendJson(res, 200, db.getFoundations(user));
+      }
+      if (method === 'POST') {
+        const body = await readJsonBody(req);
+        const created = db.createFoundation(user, body);
+        syncToSupabase('foundations', {
+          code: created.code,
+          name: created.name,
+          sigle: created.sigle || (created.code ? created.code.toUpperCase() : 'FND'),
+          country_code: 'CI',
+          city: created.city || 'Abidjan',
+          address: created.hq || created.address || 'Abidjan',
+          president_name: created.president || 'Direction Générale',
+          phone: created.phone || '+225 27 00 00 00',
+          email: created.email || 'contact@fondation.ci',
+          description: created.description || '',
+          is_active: true
+        }).catch(() => {});
+        return sendJson(res, 201, { success: true, foundation: created, id: created.id, ...created });
+      }
     }
     const foundMatch = reqPath.match(/^\/api\/foundations\/(\d+)$/);
-    if (foundMatch && method === 'DELETE') {
-      return sendJson(res, 200, db.deleteFoundation(user, foundMatch[1]));
+    if (foundMatch) {
+      const fId = foundMatch[1];
+      if (method === 'GET') {
+        const f = db.getFoundations(user).find(x => x.id === parseInt(fId, 10));
+        if (!f) return sendError(res, new Error("Fondation introuvable."), 404);
+        return sendJson(res, 200, { success: true, foundation: f, ...f });
+      }
+      if (method === 'DELETE') {
+        return sendJson(res, 200, db.deleteFoundation(user, fId));
+      }
     }
 
     // Journaux d'audit
