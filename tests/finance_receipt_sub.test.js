@@ -187,3 +187,21 @@ test('ERP-10 : Modaux pédagogiques intégrés dans le DOM (Emploi du temps & Co
   assert.ok(content.includes('id="modal-timetable-config"'), 'modal-timetable-config doit exister');
 });
 
+test('ERP-11 : Présence et intégrité des illustrations scolaires en arrière-plan sur la landing page', () => {
+  const content = fs.readFileSync(path.join(__dirname, '..', 'index.html'), 'utf8');
+
+  // Vérifier la présence des chemins d'images dans index.html
+  assert.ok(content.includes('/assets/images/hero_school_students.jpg'), 'hero_school_students.jpg doit être référencé dans la landing page');
+  assert.ok(content.includes('/assets/images/students_classroom_study.jpg'), 'students_classroom_study.jpg doit être référencé dans la landing page');
+  assert.ok(content.includes('/assets/images/school_building_exterior.jpg'), 'school_building_exterior.jpg doit être référencé dans la landing page');
+
+  // Vérifier la présence physique des images sur le disque
+  const imgDir = path.join(__dirname, '..', 'assets', 'images');
+  ['hero_school_students.jpg', 'students_classroom_study.jpg', 'school_building_exterior.jpg'].forEach(filename => {
+    const filePath = path.join(imgDir, filename);
+    assert.ok(fs.existsSync(filePath), `Le fichier image ${filename} doit exister dans assets/images`);
+    const stats = fs.statSync(filePath);
+    assert.ok(stats.size > 100000, `Le fichier image ${filename} doit avoir une taille valide (> 100KB)`);
+  });
+});
+
