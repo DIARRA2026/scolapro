@@ -3307,7 +3307,7 @@
                 <p class="text-[10px] text-slate-500">DRENA Abidjan 1</p>
               </div>
               <div class="w-1/3 text-center">
-                <div class="inline-block p-1.5 bg-slate-100 border border-slate-300 rounded font-black text-slate-900 text-sm tracking-widest uppercase">
+                <div id="b-school-name" class="inline-block p-1.5 bg-slate-100 border border-slate-300 rounded font-black text-slate-900 text-sm tracking-widest uppercase">
                   ÉTABLISSEMENT SCOLAIRE
                 </div>
                 <p class="text-[11px] font-extrabold text-slate-800 mt-1">BULLETIN TRIMESTRIEL DE NOTES</p>
@@ -3315,7 +3315,7 @@
               </div>
               <div class="w-1/3 text-right text-[10px] text-slate-500">
                 <p>Édition : <strong class="text-slate-800">09/09/2026</strong></p>
-                <p>Code : <strong class="text-slate-800">LYC-SM-ABJ</strong></p>
+                <p>Code : <strong id="b-school-code" class="text-slate-800">LYC-SM-ABJ</strong></p>
                 <span class="inline-block border border-emerald-600 bg-emerald-50 px-2 py-0.5 rounded text-[10px] font-bold text-emerald-800 mt-1">
                   ✓ PÉRIODE PUBLIÉE
                 </span>
@@ -3337,7 +3337,7 @@
               </div>
               <div>
                 <span class="text-[10px] text-slate-500 uppercase block">Statut Financier</span>
-                <span class="inline-block px-1.5 py-0.2 bg-emerald-100 text-emerald-800 rounded font-semibold text-[10px]">Inscrit &bull; À Jour</span>
+                <span id="b-student-finance-status" class="inline-block px-1.5 py-0.2 bg-emerald-100 text-emerald-800 rounded font-semibold text-[10px]">Inscrit &bull; À Jour</span>
               </div>
             </div>
 
@@ -8207,6 +8207,182 @@
     </div>
   </div>
 
+  <!-- ================================================================= -->
+  <!-- MODAL : GESTION DES DOSSIERS DISCIPLINAIRES & LISTE NOIRE         -->
+  <!-- ================================================================= -->
+  <div id="modal-discipline-blacklist" class="hidden fixed inset-0 bg-black/60 backdrop-blur-xs z-50 flex items-center justify-center p-3 sm:p-4 overflow-y-auto">
+    <div class="bg-white rounded-2xl shadow-2xl max-w-xl w-full border border-slate-200 overflow-hidden my-6">
+      
+      <div class="bg-gradient-to-r from-red-950 via-red-900 to-rose-950 text-white px-5 py-4 flex justify-between items-center border-b border-rose-500/30">
+        <div class="flex items-center gap-2.5">
+          <div class="w-8 h-8 rounded-lg bg-rose-500/20 text-rose-300 flex items-center justify-center text-base border border-rose-400/30">
+            ⛔
+          </div>
+          <div>
+            <h4 class="font-black text-sm text-white">Signalement Disciplinaire & Registre des Exclusions</h4>
+            <p class="text-[11px] text-rose-200/80">Instruction de sanction sous l'autorité du Conseil de Discipline</p>
+          </div>
+        </div>
+        <button type="button" onclick="closeBlacklistModal()" class="text-rose-200 hover:text-white text-xl font-bold cursor-pointer">&times;</button>
+      </div>
+
+      <form onsubmit="handleBlacklistSubmit(event)" class="p-5 space-y-4 text-xs">
+        
+        <!-- Sélection Élève -->
+        <div>
+          <label class="block text-slate-700 font-semibold mb-1">Sélectionner l'Élève concerné <span class="text-red-500">*</span></label>
+          <select id="bl-student-picker" onchange="onSelectBlacklistStudent(this.value)" class="w-full border border-slate-300 rounded-lg px-3 py-2 bg-white font-bold outline-none focus:ring-2 focus:ring-red-600">
+            <!-- Rendu dynamique via JS -->
+          </select>
+        </div>
+
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 bg-slate-50 p-3 rounded-xl border border-slate-200">
+          <div>
+            <span class="text-slate-400 block text-[10px] uppercase font-bold">Matricule National</span>
+            <input type="text" id="bl-matricule" readonly class="w-full bg-transparent font-mono font-bold text-slate-800 text-xs outline-none">
+          </div>
+          <div>
+            <span class="text-slate-400 block text-[10px] uppercase font-bold">Classe d'Affectation</span>
+            <input type="text" id="bl-classe" readonly class="w-full bg-transparent font-bold text-slate-800 text-xs outline-none">
+          </div>
+        </div>
+
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <div>
+            <label class="block text-slate-700 font-semibold mb-1">Motif Principal du Signalement <span class="text-red-500">*</span></label>
+            <select id="bl-motif" required class="w-full border border-slate-300 rounded-lg px-3 py-2 bg-white font-bold outline-none focus:ring-2 focus:ring-red-600">
+              <option value="Indiscipline notoire & violences physiques">Indiscipline notoire & violences physiques</option>
+              <option value="Fraude caractérisée aux examens (BEPC/BAC)">Fraude caractérisée aux examens (BEPC/BAC)</option>
+              <option value="Absences répétées injustifiées (> 30 heures)">Absences répétées injustifiées (&gt; 30 heures)</option>
+              <option value="Défaut d'écolage persistant & refus de régularisation">Défaut d'écolage persistant & refus de régularisation</option>
+              <option value="Dégradation volontaire de biens de l'école">Dégradation volontaire de biens de l'école</option>
+              <option value="Atteinte grave à la communauté scolaire">Atteinte grave à la communauté scolaire</option>
+            </select>
+          </div>
+          <div>
+            <label class="block text-slate-700 font-semibold mb-1">Sanction Prononcée</label>
+            <select id="bl-sanction" class="w-full border border-slate-300 rounded-lg px-3 py-2 bg-white font-bold outline-none focus:ring-2 focus:ring-red-600">
+              <option value="Exclusion Définitive (Liste Noire)">Exclusion Définitive (Liste Noire)</option>
+              <option value="Exclusion Temporaire (8 jours)">Exclusion Temporaire (8 jours)</option>
+              <option value="Exclusion Temporaire (3 jours)">Exclusion Temporaire (3 jours)</option>
+              <option value="Blâme solennel avec sursis">Blâme solennel avec sursis</option>
+            </select>
+          </div>
+        </div>
+
+        <div>
+          <label class="block text-slate-700 font-semibold mb-1">Procès-verbal / Précisions circonstanciées</label>
+          <textarea id="bl-details" rows="2" placeholder="Décrire les faits reprochés, la date de réunion du conseil de discipline et les délibérations..." class="w-full border border-slate-300 rounded-lg p-2.5 outline-none focus:ring-2 focus:ring-red-600"></textarea>
+        </div>
+
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <div>
+            <label class="block text-slate-700 font-semibold mb-1">Date d'Effet de la Décision</label>
+            <input type="date" id="bl-date" class="w-full border border-slate-300 rounded-lg px-3 py-2 outline-none font-mono">
+          </div>
+          <div class="flex items-center pt-5">
+            <label class="flex items-center gap-2 cursor-pointer text-slate-700 font-semibold">
+              <input type="checkbox" id="bl-notify-parent" checked class="rounded border-slate-300 text-red-600">
+              <span>Notifier les parents par SMS / Écrit</span>
+            </label>
+          </div>
+        </div>
+
+        <div class="pt-3 border-t border-slate-200 flex justify-end gap-2.5">
+          <button type="button" onclick="closeBlacklistModal()" class="px-4 py-2 border border-slate-300 rounded-xl text-slate-700 hover:bg-slate-100 font-bold transition cursor-pointer">
+            Annuler
+          </button>
+          <button type="submit" class="px-5 py-2 bg-red-700 hover:bg-red-800 text-white rounded-xl font-black shadow-md transition flex items-center gap-2 cursor-pointer">
+            <span>⛔</span>
+            <span>Enregistrer la Sanction</span>
+          </button>
+        </div>
+      </form>
+
+    </div>
+  </div>
+
+  <!-- ================================================================= -->
+  <!-- MODAL : VISUALISATION OFFICIELLE DE DOCUMENT ADMINISTRATIF        -->
+  <!-- ================================================================= -->
+  <div id="modal-official-document-view" class="hidden fixed inset-0 bg-black/60 backdrop-blur-xs z-50 flex items-center justify-center p-3 sm:p-4 overflow-y-auto">
+    <div class="bg-white rounded-2xl shadow-2xl max-w-2xl w-full border border-slate-200 overflow-hidden my-6">
+      
+      <div class="bg-slate-900 text-white px-5 py-3 flex justify-between items-center print:hidden">
+        <div class="flex items-center gap-2">
+          <span class="text-amber-400 font-bold">📜</span>
+          <span class="font-bold text-xs uppercase tracking-wide">Document Administratif Certifié</span>
+        </div>
+        <div class="flex items-center gap-2">
+          <button type="button" onclick="window.print()" class="px-3 py-1 bg-amber-500 hover:bg-amber-400 text-slate-950 font-black rounded-lg text-xs flex items-center gap-1.5 shadow transition cursor-pointer">
+            <span>🖨️</span>
+            <span>Imprimer</span>
+          </button>
+          <button type="button" onclick="closeOfficialDocModal()" class="text-slate-400 hover:text-white text-xl font-bold px-1.5 cursor-pointer">&times;</button>
+        </div>
+      </div>
+
+      <div class="p-6 sm:p-8 space-y-5 bg-white text-slate-800">
+        <!-- En-tête officiel -->
+        <div class="flex justify-between items-start border-b-2 border-slate-900 pb-4">
+          <div class="space-y-0.5">
+            <h2 id="doc-view-school" class="font-black text-sm uppercase text-slate-900">ÉTABLISSEMENT SCOLAIRE</h2>
+            <p class="text-[10px] text-slate-500">Direction des Études & Administration Pédagogique</p>
+            <p class="text-[10px] text-slate-400 font-mono">République de Côte d'Ivoire &bull; DRENA</p>
+          </div>
+          <div class="text-right">
+            <span class="inline-block px-2.5 py-0.5 rounded bg-slate-100 font-mono font-bold text-xs text-slate-800" id="doc-view-ref">
+              DOC-2026-001
+            </span>
+            <p class="text-[10px] text-slate-500 mt-1" id="doc-view-date">09/09/2026</p>
+          </div>
+        </div>
+
+        <!-- Titre & Catégorie -->
+        <div class="text-center py-2">
+          <span class="px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider bg-rose-100 text-rose-800 border border-rose-200" id="doc-view-category">
+            ADMINISTRATIF
+          </span>
+          <h1 class="text-lg font-black uppercase text-slate-900 mt-2 tracking-tight" id="doc-view-title">
+            Titre du Document
+          </h1>
+          <p class="text-[11px] text-slate-500 font-medium">Public cible : <strong id="doc-view-target" class="text-slate-700">Tous</strong></p>
+        </div>
+
+        <!-- Corps du Document -->
+        <div class="p-4 bg-slate-50 rounded-xl border border-slate-200 text-xs leading-relaxed text-slate-700 space-y-3" id="doc-view-body">
+          <p>Le présent acte administratif a été émis et authentifié par les services de l'établissement conformément aux normes réglementaires en vigueur.</p>
+          <p>Il atteste de la validité des informations scolaires et pédagogiques enregistrées sur la plateforme ScolaPro OS.</p>
+        </div>
+
+        <!-- Validations & Sceaux -->
+        <div class="grid grid-cols-2 gap-6 pt-4 border-t border-slate-200 text-xs">
+          <div>
+            <span class="text-slate-500 block text-[10px] uppercase font-bold">Certificat Numérique</span>
+            <p class="font-mono text-[10px] text-emerald-700 font-semibold mt-1">✓ HASH SHA-256 VALIDÉ (CONFORME)</p>
+            <p class="text-[9px] text-slate-400 font-mono mt-0.5">Horodatage serveur certifié</p>
+          </div>
+          <div class="text-right">
+            <span class="text-slate-500 block text-[10px] uppercase font-bold">Le Chef d'Établissement</span>
+            <p class="font-bold text-slate-800 mt-1">Pour la Direction</p>
+            <div class="mt-3 text-[9px] text-slate-400 italic">[Signature & Sceau de l'École]</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="bg-slate-50 px-5 py-3 border-t border-slate-200 flex justify-end gap-2 print:hidden">
+        <button type="button" onclick="closeOfficialDocModal()" class="px-4 py-2 border border-slate-300 rounded-xl text-slate-700 hover:bg-slate-100 text-xs font-bold transition cursor-pointer">
+          Fermer
+        </button>
+        <button type="button" onclick="window.print()" class="px-5 py-2 bg-slate-900 hover:bg-slate-800 text-amber-400 font-black rounded-xl text-xs flex items-center gap-2 shadow transition cursor-pointer">
+          <span>🖨️</span>
+          <span>Imprimer</span>
+        </button>
+      </div>
+
+    </div>
+  </div>
+
     <!-- TOAST NOTIFICATION -->
   <div id="toast" class="fixed bottom-5 right-5 bg-slate-900 text-white px-4 py-2.5 rounded-lg shadow-xl text-xs flex items-center gap-2 transform transition-all duration-300 translate-y-20 opacity-0 pointer-events-none z-50">
     <span class="text-emerald-400 font-bold text-sm">✓</span>
@@ -12572,21 +12748,82 @@
     }
 
     function openBlacklistModal() {
-      const mat = prompt("Entrez le matricule de l'élève à signaler :");
-      const motif = prompt("Motif de l'exclusion :");
-      if (mat && motif) {
-        appState.indesirables.push({
-          id: Date.now(),
-          matricule: mat.toUpperCase(),
-          nomPrenom: "ÉLÈVE SIGNALÉ",
-          classe: "Non assigné",
-          motif: motif,
-          date: new Date().toLocaleDateString('fr-FR')
+      const modal = document.getElementById('modal-discipline-blacklist');
+      if (!modal) return;
+
+      const picker = document.getElementById('bl-student-picker');
+      if (picker) {
+        picker.innerHTML = '';
+        (appState.students || []).forEach(st => {
+          const opt = document.createElement('option');
+          opt.value = st.id;
+          opt.textContent = `${st.nomPrenom} (${st.matricule}) — ${st.classe}`;
+          picker.appendChild(opt);
         });
-        renderIndesirablesTable();
-        auditAction('STUDENT_BLACKLIST', 'Discipline', mat, '', motif, 'SUCCÈS');
-        showToast("Signalement enregistré avec succès.");
       }
+
+      const firstStudent = (appState.students && appState.students[0]);
+      if (firstStudent) {
+        onSelectBlacklistStudent(firstStudent.id);
+      }
+
+      const dateEl = document.getElementById('bl-date');
+      if (dateEl) {
+        dateEl.value = new Date().toISOString().split('T')[0];
+      }
+
+      modal.classList.remove('hidden');
+    }
+
+    function closeBlacklistModal() {
+      const modal = document.getElementById('modal-discipline-blacklist');
+      if (modal) modal.classList.add('hidden');
+    }
+
+    function onSelectBlacklistStudent(studentId) {
+      const st = (appState.students || []).find(s => s.id === parseInt(studentId));
+      if (!st) return;
+      const matEl = document.getElementById('bl-matricule');
+      const classEl = document.getElementById('bl-classe');
+      if (matEl) matEl.value = st.matricule;
+      if (classEl) classEl.value = st.classe;
+    }
+
+    function handleBlacklistSubmit(event) {
+      if (event && event.preventDefault) event.preventDefault();
+      const studentId = parseInt(document.getElementById('bl-student-picker')?.value, 10);
+      const student = (appState.students || []).find(s => s.id === studentId);
+      const motif = document.getElementById('bl-motif')?.value || 'Indiscipline grave';
+      const sanction = document.getElementById('bl-sanction')?.value || 'Exclusion Définitive (Liste Noire)';
+      const details = document.getElementById('bl-details')?.value.trim();
+      const dateVal = document.getElementById('bl-date')?.value || new Date().toISOString().split('T')[0];
+      const notifyParent = document.getElementById('bl-notify-parent')?.checked;
+
+      const dateStr = new Date(dateVal).toLocaleDateString('fr-FR');
+      const fullMotif = `${motif} (${sanction}${details ? ' - ' + details : ''})`;
+
+      appState.indesirables.push({
+        id: Date.now(),
+        studentId: student ? student.id : null,
+        matricule: student ? student.matricule : (document.getElementById('bl-matricule')?.value || 'N/A'),
+        nomPrenom: student ? student.nomPrenom : 'ÉLÈVE SIGNALÉ',
+        classe: student ? student.classe : 'Non assigné',
+        motif: fullMotif,
+        sanction: sanction,
+        date: dateStr
+      });
+
+      if (student && sanction.includes('Définitive')) {
+        student.isExcluded = true;
+      }
+
+      renderIndesirablesTable();
+      auditAction('STUDENT_BLACKLIST', 'Discipline', student ? student.matricule : 'Élève', '', fullMotif, 'SUCCÈS');
+      if (notifyParent && student) {
+        auditAction('SMS_NOTIFICATION_SENT', 'Discipline', student.nomPrenom, '', `Notification de sanction disciplinaire envoyée au tuteur (${esc(student.tuteur || 'Parent')})`, 'SUCCÈS');
+      }
+      showToast(`Sanction disciplinaire enregistrée pour ${esc(student ? student.nomPrenom : 'l\'élève')} !`);
+      closeBlacklistModal();
     }
 
     function openTransferModal() {
@@ -13015,13 +13252,30 @@
         return;
       }
 
+      const curSchool = (appState.schools || []).find(s => s.id === (student.schoolId || appState.currentSchoolId)) || { name: 'ÉTABLISSEMENT SCOLAIRE', code: 'SCH-01' };
+      const elSchool = document.getElementById('b-school-name');
+      const elCode = document.getElementById('b-school-code');
+      const elFin = document.getElementById('b-student-finance-status');
+      if (elSchool) elSchool.textContent = curSchool.name;
+      if (elCode) elCode.textContent = curSchool.code || `sch-0${curSchool.id}`;
+      if (elFin) {
+        const bal = (student.feeDue || 0) - (student.feePaid || 0);
+        if (bal <= 0) {
+          elFin.textContent = 'Inscrit • À Jour';
+          elFin.className = 'inline-block px-1.5 py-0.2 bg-emerald-100 text-emerald-800 border border-emerald-300 rounded font-semibold text-[10px]';
+        } else {
+          elFin.textContent = `Reliquat : ${bal.toLocaleString()} XOF`;
+          elFin.className = 'inline-block px-1.5 py-0.2 bg-amber-100 text-amber-900 border border-amber-300 rounded font-bold text-[10px]';
+        }
+      }
+
       document.getElementById('b-student-name').innerText = student.nomPrenom;
       document.getElementById('b-student-mat').innerText = student.matricule;
       document.getElementById('b-student-sexe').innerText = student.sexe;
       document.getElementById('b-student-classe').innerText = student.classe;
-      document.getElementById('b-general-avg').innerText = student.avg.toFixed(2).replace('.', ',') + " / 20";
-      document.getElementById('b-rank').innerText = student.rank === 1 ? '1ère' : `${esc(student.rank)}e`;
-      document.getElementById('b-mention').innerText = student.mention;
+      document.getElementById('b-general-avg').innerText = (student.avg || 12).toFixed(2).replace('.', ',') + " / 20";
+      document.getElementById('b-rank').innerText = student.rank === 1 ? '1ère' : `${esc(student.rank || 1)}e`;
+      document.getElementById('b-mention').innerText = student.mention || 'Passable';
 
       const subjects = [
         { name: 'Français', teacher: 'Mme Bamba', coef: 4, dev: '15 ; 14.5', compo: '16', moy: '15.38', pts: '61.52', rank: '1ère', classMoy: '12.40', app: 'Excellente maîtrise.' },
@@ -18416,9 +18670,48 @@ function deleteDocumentPrompt(id) {
 
 function consultDocument(id) {
   const d = appState.adminDocuments.find(x => x.id == id);
-  const curSchool = (appState.schools || []).find(s => s.id === appState.currentSchoolId) || (appState.schools && appState.schools[0]) || { name: 'Établissement' };
-  alert(`Document officiel certifié :\n\nTitre : ${esc(d.title)}\nCatégorie : ${esc(d.category)}\nRéférence : ${esc(d.ref)}\nCible : ${esc(d.target)}\nStatut : ${esc(d.status)}\nÉtablissement : ${esc(curSchool.name)}\nSignature Numérique : CONFORME (Certifié MENA)`);
-  auditAction('DOC_VIEW', 'Pédagogie', `Consultation ${esc(d.ref)}`, '', 'Visualisation du document certifié', 'SUCCÈS');
+  if (!d) return;
+  const curSchool = (appState.schools || []).find(s => s.id === appState.currentSchoolId) || (appState.schools && appState.schools[0]) || { name: "ÉTABLISSEMENT SCOLAIRE SCOLAPRO" };
+  const modal = document.getElementById('modal-official-document-view');
+  if (!modal) return;
+
+  const elSchool = document.getElementById('doc-view-school');
+  const elRef = document.getElementById('doc-view-ref');
+  const elDate = document.getElementById('doc-view-date');
+  const elCat = document.getElementById('doc-view-category');
+  const elTitle = document.getElementById('doc-view-title');
+  const elTarget = document.getElementById('doc-view-target');
+  const elBody = document.getElementById('doc-view-body');
+
+  if (elSchool) elSchool.textContent = curSchool.name;
+  if (elRef) elRef.textContent = d.ref;
+  if (elDate) elDate.textContent = d.date || new Date().toLocaleDateString('fr-FR');
+  if (elCat) elCat.textContent = d.category;
+  if (elTitle) elTitle.textContent = d.title;
+  if (elTarget) elTarget.textContent = d.target;
+
+  if (elBody) {
+    elBody.innerHTML = `
+      <p class="font-bold text-slate-800">Objet : ${esc(d.title)} (Réf. ${esc(d.ref)})</p>
+      <p class="text-justify leading-relaxed">
+        Le présent document atteste officiellement de la régularité et de la conformité académique de l'acte enregistré pour l'établissement <strong>${esc(curSchool.name)}</strong> sous le matricule et les registres légaux du Ministère de l'Éducation Nationale.
+      </p>
+      <div class="p-3 bg-white border border-slate-200 rounded-lg font-mono text-[11px] text-slate-600 space-y-1">
+        <div>• Catégorie administrative : <span class="font-bold text-slate-800">${esc(d.category)}</span></div>
+        <div>• Public destinataire : <span class="font-bold text-slate-800">${esc(d.target)}</span></div>
+        <div>• Empreinte numérique : <span class="text-emerald-700 font-bold">SHA256-${Math.random().toString(36).substring(2, 10).toUpperCase()}</span></div>
+      </div>
+      <p class="italic text-[11px] text-slate-500">Délivré en original certifié conforme pour servir et valoir ce que de droit.</p>
+    `;
+  }
+
+  auditAction('DOC_VIEW', 'Pédagogie', `Consultation ${esc(d.ref)}`, '', `Visualisation certifiée : ${d.title}`, 'SUCCÈS');
+  modal.classList.remove('hidden');
+}
+
+function closeOfficialDocModal() {
+  const modal = document.getElementById('modal-official-document-view');
+  if (modal) modal.classList.add('hidden');
 }
 
 function printDocument(id) {

@@ -99,3 +99,24 @@ test('ERP-05 : Indicateurs financiers dynamiques de view-finance présents dans 
   assert.ok(content.includes('id="fin-total-remaining"'), 'L\'indicateur fin-total-remaining doit être présent');
   assert.ok(content.includes('id="fin-collection-rate"'), 'L\'indicateur fin-collection-rate doit être présent');
 });
+
+test('ERP-06 : Modal de signalement et discipline opérant (modal-discipline-blacklist)', () => {
+  const content = fs.readFileSync(path.join(__dirname, '..', 'index.html'), 'utf8');
+
+  assert.ok(content.includes('id="modal-discipline-blacklist"'), 'Le modal de discipline doit exister');
+  assert.ok(content.includes('id="bl-student-picker"'), 'Le sélecteur d\'élève doit exister');
+  assert.ok(content.includes('id="bl-motif"'), 'Le sélecteur de motif disciplinaire doit exister');
+  assert.ok(content.includes('id="bl-sanction"'), 'Le sélecteur de sanction doit exister');
+  assert.ok(content.includes('function openBlacklistModal('), 'openBlacklistModal doit être défini');
+  assert.ok(content.includes('function handleBlacklistSubmit('), 'handleBlacklistSubmit doit être défini');
+});
+
+test('ERP-07 : Consultation certifiée des actes officiels et bulletin dynamique', () => {
+  const content = fs.readFileSync(path.join(__dirname, '..', 'index.html'), 'utf8');
+
+  assert.ok(content.includes('id="modal-official-document-view"'), 'Le modal de consultation officielle doit exister');
+  assert.ok(content.includes('id="doc-view-ref"'), 'La référence du document doit exister');
+  assert.ok(content.includes('id="doc-view-body"'), 'Le corps officiel du document doit exister');
+  assert.ok(content.includes('id="b-school-name"'), 'Le nom dynamique de l\'école sur le bulletin doit exister');
+  assert.ok(content.includes('id="b-student-finance-status"'), 'Le statut financier de l\'élève sur le bulletin doit exister');
+});
