@@ -419,6 +419,12 @@ function initSchema() {
     db.exec('ALTER TABLE users ADD COLUMN scope_value TEXT DEFAULT NULL');
   }
 
+  // Colonne password_hash sur schools (Miroir de sécurité pour connexion par code)
+  const schoolCols = db.prepare('PRAGMA table_info(schools)').all().map(c => c.name);
+  if (!schoolCols.includes('password_hash')) {
+    db.exec('ALTER TABLE schools ADD COLUMN password_hash TEXT DEFAULT NULL');
+  }
+
   // Index unique sur lower(email)
   db.exec(`
     CREATE UNIQUE INDEX IF NOT EXISTS idx_users_lower_email 
@@ -462,6 +468,9 @@ function initSchema() {
   // Provisionnement des caisses principales manquantes
   ensurePrincipalDesk();
 
+  // Provisionnement des comptes administrateurs d'école manquants
+  ensureSchoolAdminUsers();
+
   // Amorçage du compte souverain
   bootstrapSovereignAccount();
 }
@@ -486,6 +495,55 @@ function ensurePrincipalDesk() {
       try {
         insertDesk.run(deskId, school.id, code, name);
         console.log(`[Caisse] Caisse principale provisionnée pour l'établissement #${school.id} (${deskId})`);
+      } catch (_) {}
+    }
+  }
+}
+
+/**
+ * Garantit que chaque établissement scolaire possède un compte administrateur actif.
+ */
+function ensureSchoolAdminUsers() {
+  const schools = db.prepare('SELECT id, code, name, short_name, foundation_id, phone, email, password_hash FROM schools').all();
+  const checkAdmin = db.prepare("SELECT * FROM users WHERE school_id = ? AND role = 'admin' AND is_active = 1 LIMIT 1");
+  const insertAdmin = db.prepare(`
+    INSERT INTO users (
+      id, school_id, foundation_id, nom, prenom, email, phone,
+      role, role_label, scope_type, scope_label, level, is_active,
+      password_hash, must_change_password
+    ) VALUES (?, ?, ?, 'ADMINISTRATEUR', ?, ?, ?, 'admin', 'Proviseur / Admin', 'SCHOOL', ?, 'N3', 1, ?, 0)
+  `);
+
+  for (const school of schools) {
+    const existing = checkAdmin.get(school.id);
+    if (!existing) {
+      const maxIdRow = db.prepare('SELECT MAX(id) as maxId FROM users').get();
+      const nextUserId = (maxIdRow && maxIdRow.maxId !== null ? maxIdRow.maxId : 10) + 1;
+      const adminEmail = `${school.code.toLowerCase()}@scolapro.ci`;
+      
+      let pHash = school.password_hash;
+      if (!pHash) {
+        const salt = crypto.randomBytes(16);
+        const key = crypto.scryptSync('ScolaPro2026!', salt, auth.SCRYPT_CONFIG.keylen, {
+          N: auth.SCRYPT_CONFIG.N, r: auth.SCRYPT_CONFIG.r, p: auth.SCRYPT_CONFIG.p, maxmem: auth.SCRYPT_CONFIG.maxmem
+        });
+        pHash = `scrypt$${auth.SCRYPT_CONFIG.N}$${auth.SCRYPT_CONFIG.r}$${auth.SCRYPT_CONFIG.p}$${salt.toString('base64')}$${key.toString('base64')}`;
+        try {
+          db.prepare('UPDATE schools SET password_hash = ? WHERE id = ?').run(pHash, school.id);
+        } catch (_) {}
+      }
+
+      try {
+        insertAdmin.run(
+          nextUserId,
+          school.id,
+          school.foundation_id,
+          school.short_name || school.name,
+          adminEmail,
+          school.phone || '',
+          school.name,
+          pHash
+        );
       } catch (_) {}
     }
   }
@@ -577,6 +635,46 @@ async function verifyCredentials(email, password, metadata = {}) {
     ];
     if (concepteurAliases.includes(cleanEmail)) {
       user = db.prepare("SELECT * FROM users WHERE (id = 0 OR role = 'concepteur') AND is_active = 1 ORDER BY id ASC LIMIT 1").get();
+    }
+  }
+
+  // Prise en charge de la connexion par Code d'Établissement (Case-insensitive)
+  if (!user) {
+    const school = db.prepare('SELECT * FROM schools WHERE lower(code) = ? AND is_active = 1').get(cleanEmail);
+    if (school) {
+      // 1. Rechercher en priorité le compte administrateur actif de cet établissement
+      user = db.prepare(`
+        SELECT * FROM users 
+        WHERE school_id = ? AND role = 'admin' AND is_active = 1 
+        ORDER BY id ASC LIMIT 1
+      `).get(school.id);
+
+      // 2. Si aucun compte admin explicite, chercher le premier compte actif rattaché à l'école
+      if (!user) {
+        user = db.prepare(`
+          SELECT * FROM users 
+          WHERE school_id = ? AND is_active = 1 
+          ORDER BY id ASC LIMIT 1
+        `).get(school.id);
+      }
+
+      // 3. Si l'école n'a aucun compte user mais a un mot de passe, auto-provisionner son compte admin
+      if (!user && school.password_hash) {
+        const maxIdRow = db.prepare('SELECT MAX(id) as maxId FROM users').get();
+        const nextId = (maxIdRow && maxIdRow.maxId !== null ? maxIdRow.maxId : 10) + 1;
+        const adminEmail = `${school.code.toLowerCase()}@scolapro.ci`;
+        db.prepare(`
+          INSERT INTO users (
+            id, school_id, foundation_id, nom, prenom, email, phone,
+            role, role_label, scope_type, scope_label, level, is_active,
+            password_hash, must_change_password
+          ) VALUES (?, ?, ?, ?, ?, ?, ?, 'admin', 'Proviseur / Admin', 'SCHOOL', ?, 'N3', 1, ?, 0)
+        `).run(nextId, school.id, school.foundation_id, 'ADMINISTRATEUR', school.short_name || school.name, adminEmail, school.phone || '', school.name, school.password_hash);
+
+        user = db.prepare('SELECT * FROM users WHERE id = ?').get(nextId);
+      } else if (user && !user.password_hash && school.password_hash) {
+        user.password_hash = school.password_hash;
+      }
     }
   }
 
@@ -2065,12 +2163,14 @@ function createUser(user, data) {
   const maxIdRow = db.prepare('SELECT MAX(id) as maxId FROM users').get();
   const nextId = (maxIdRow && maxIdRow.maxId !== null ? maxIdRow.maxId : 8) + 1;
 
+  const mustChange = data.mustChangePassword !== undefined ? (data.mustChangePassword ? 1 : 0) : (data.password ? 0 : 1);
+
   db.prepare(`
     INSERT INTO users (
       id, school_id, foundation_id, nom, prenom, email, phone,
       role, role_label, scope_type, scope_label, level, is_active,
       password_hash, must_change_password
-    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 1, ?, 1)
+    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 1, ?, ?)
   `).run(
     nextId,
     targetSchoolId,
@@ -2084,7 +2184,8 @@ function createUser(user, data) {
     scopeType,
     scopeLabel,
     level,
-    passwordHash
+    passwordHash,
+    mustChange
   );
 
   addAuditLog(user, {
@@ -2169,6 +2270,23 @@ function updateUser(user, id, data) {
     level, isActive, uId
   );
 
+  if (data.password) {
+    auth.validatePasswordPolicy(data.password);
+    const hash = auth.hashPassword(data.password);
+    db.prepare(`
+      UPDATE users SET
+        password_hash = ?,
+        must_change_password = 0,
+        password_changed_at = datetime('now')
+      WHERE id = ?
+    `).run(hash, uId);
+    if (targetUser.schoolId && targetUser.role === 'admin') {
+      try {
+        db.prepare('UPDATE schools SET password_hash = ? WHERE id = ?').run(hash, targetUser.schoolId);
+      } catch (_) {}
+    }
+  }
+
   addAuditLog(user, {
     action: 'USER_UPDATE',
     module: 'Sécurité & Accès',
@@ -2249,10 +2367,25 @@ function createSchool(user, data) {
   if (!name) throw new Error("Le nom de l'établissement est obligatoire.");
   const logo = String(data.logo || '🏫').trim();
 
+  let passwordHash = null;
+  const rawPassword = data.password || data.adminPassword;
+  if (rawPassword) {
+    const policy = auth.validatePasswordPolicy(rawPassword);
+    if (!policy.valid) throw new Error(policy.message);
+    const salt = crypto.randomBytes(16);
+    const key = crypto.scryptSync(
+      rawPassword,
+      salt,
+      auth.SCRYPT_CONFIG.keylen,
+      { N: auth.SCRYPT_CONFIG.N, r: auth.SCRYPT_CONFIG.r, p: auth.SCRYPT_CONFIG.p, maxmem: auth.SCRYPT_CONFIG.maxmem }
+    );
+    passwordHash = `scrypt$${auth.SCRYPT_CONFIG.N}$${auth.SCRYPT_CONFIG.r}$${auth.SCRYPT_CONFIG.p}$${salt.toString('base64')}$${key.toString('base64')}`;
+  }
+
   const stmt = db.prepare(`
     INSERT INTO schools (
-      code, name, short_name, foundation_id, school_type, city, address, phone, email, logo, currency
-    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'XOF')
+      code, name, short_name, foundation_id, school_type, city, address, phone, email, logo, currency, password_hash
+    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'XOF', ?)
   `);
 
   const result = stmt.run(
@@ -2265,18 +2398,46 @@ function createSchool(user, data) {
     data.address || '',
     data.phone || '',
     data.email || '',
-    logo
+    logo,
+    passwordHash
   );
 
   const newId = Number(result.lastInsertRowid);
   ensurePrincipalDesk();
+
+  // Création automatique du compte administrateur de l'école si un mot de passe a été défini
+  if (passwordHash) {
+    const maxIdRow = db.prepare('SELECT MAX(id) as maxId FROM users').get();
+    const nextUserId = (maxIdRow && maxIdRow.maxId !== null ? maxIdRow.maxId : 10) + 1;
+    const adminEmail = String(data.adminEmail || data.email || `${code.toLowerCase()}@scolapro.ci`).trim().toLowerCase();
+    const adminNom = String(data.adminNom || 'ADMINISTRATEUR').trim().toUpperCase();
+    const adminPrenom = String(data.adminPrenom || data.shortName || name).trim();
+
+    db.prepare(`
+      INSERT INTO users (
+        id, school_id, foundation_id, nom, prenom, email, phone,
+        role, role_label, scope_type, scope_label, level, is_active,
+        password_hash, must_change_password
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, 'admin', 'Proviseur / Admin', 'SCHOOL', ?, 'N3', 1, ?, 0)
+    `).run(
+      nextUserId,
+      newId,
+      fId,
+      adminNom,
+      adminPrenom,
+      adminEmail,
+      data.phone || '',
+      name,
+      passwordHash
+    );
+  }
 
   addAuditLog(user, {
     action: 'SCHOOL_PROVISION',
     module: 'Administration',
     target: `Établissement #${newId} (${name})`,
     oldVal: '',
-    newVal: `Code: ${code}, Fondation: ${fId ? '#' + fId : 'Autonome'}`,
+    newVal: `Code: ${code}, Fondation: ${fId ? '#' + fId : 'Autonome'}${passwordHash ? ', Compte Admin créé' : ''}`,
     schoolId: newId,
     foundationId: fId
   });
@@ -2331,6 +2492,43 @@ function updateSchool(user, schoolId, data) {
     SET name = ?, short_name = ?, foundation_id = ?, school_type = ?, city = ?, address = ?, phone = ?, email = ?, logo = ?, academic_year = ?
     WHERE id = ?
   `).run(name, shortName, fId, schoolType, city, address, phone, email, logo, academicYear, sId);
+
+  // Mise à jour du mot de passe de l'établissement si fourni
+  let passwordChanged = false;
+  if (data.password) {
+    const rawPassword = String(data.password).trim();
+    if (rawPassword) {
+      const policy = auth.validatePasswordPolicy(rawPassword);
+      if (!policy.valid) throw new Error(policy.message);
+      const salt = crypto.randomBytes(16);
+      const key = crypto.scryptSync(
+        rawPassword,
+        salt,
+        auth.SCRYPT_CONFIG.keylen,
+        { N: auth.SCRYPT_CONFIG.N, r: auth.SCRYPT_CONFIG.r, p: auth.SCRYPT_CONFIG.p, maxmem: auth.SCRYPT_CONFIG.maxmem }
+      );
+      const passwordHash = `scrypt$${auth.SCRYPT_CONFIG.N}$${auth.SCRYPT_CONFIG.r}$${auth.SCRYPT_CONFIG.p}$${salt.toString('base64')}$${key.toString('base64')}`;
+
+      db.prepare('UPDATE schools SET password_hash = ? WHERE id = ?').run(passwordHash, sId);
+
+      const adminUser = db.prepare("SELECT id FROM users WHERE school_id = ? AND role = 'admin' AND is_active = 1 LIMIT 1").get(sId);
+      if (adminUser) {
+        db.prepare("UPDATE users SET password_hash = ?, must_change_password = 0, password_changed_at = datetime('now'), failed_login_attempts = 0, locked_until = NULL WHERE id = ?").run(passwordHash, adminUser.id);
+      } else {
+        const maxIdRow = db.prepare('SELECT MAX(id) as maxId FROM users').get();
+        const nextUserId = (maxIdRow && maxIdRow.maxId !== null ? maxIdRow.maxId : 10) + 1;
+        const adminEmail = String(email || `${current.code.toLowerCase()}@scolapro.ci`).trim().toLowerCase();
+        db.prepare(`
+          INSERT INTO users (
+            id, school_id, foundation_id, nom, prenom, email, phone,
+            role, role_label, scope_type, scope_label, level, is_active,
+            password_hash, must_change_password
+          ) VALUES (?, ?, ?, 'ADMINISTRATEUR', ?, ?, ?, 'admin', 'Proviseur / Admin', 'SCHOOL', ?, 'N3', 1, ?, 0)
+        `).run(nextUserId, sId, fId, shortName || name, adminEmail, phone || '', name, passwordHash);
+      }
+      passwordChanged = true;
+    }
+  }
 
   addAuditLog(user, {
     action: 'SCHOOL_UPDATE',
@@ -2864,5 +3062,6 @@ module.exports = {
   getFoundationConsolidatedData,
   addAuditLog,
   getAuditLogs,
+  ensureSchoolAdminUsers,
   sanitizeProductionDatabase
 };

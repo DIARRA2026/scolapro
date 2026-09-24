@@ -284,7 +284,8 @@ const server = http.createServer(async (req, res) => {
 
     try {
       const body = await readJsonBody(req);
-      const user = await db.verifyCredentials(body.email, body.password, {
+      const identifier = body.identifier || body.email || body.code || body.schoolCode;
+      const user = await db.verifyCredentials(identifier, body.password, {
         ip: clientIp,
         userAgent: req.headers['user-agent']
       });

@@ -2263,6 +2263,12 @@
                   <span>👤 Direction : <strong id="found-hero-president" class="text-yellow-300">Non renseignée</strong></span>
                   <span>•</span>
                   <span>📞 <span id="found-hero-phone" class="font-mono text-blue-200">Non renseigné</span></span>
+                  <span>•</span>
+                  <span>🏫 <strong id="header-found-schools-count" class="text-white">0</strong> école(s)</span>
+                  <span>•</span>
+                  <span>👥 <strong id="header-found-students-count" class="text-white">0</strong> élève(s)</span>
+                  <span>•</span>
+                  <span>📈 Recouvrement : <strong id="header-found-recov-rate" class="text-emerald-300 font-bold">0.0%</strong></span>
                 </p>
               </div>
             </div>
@@ -3409,13 +3415,13 @@
         <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
           <div class="bg-white border border-slate-200 p-4 rounded-xl shadow-sm">
             <span class="text-xs uppercase font-bold text-slate-500">Total Dû (Frais d'Écolage)</span>
-            <p class="text-2xl font-black text-slate-800 mt-1">53 850 000 <span class="text-xs font-normal">XOF</span></p>
+            <p class="text-2xl font-black text-slate-800 mt-1" id="fin-total-due">53 850 000 <span class="text-xs font-normal">XOF</span></p>
             <p class="text-[11px] text-slate-400">Tarification standard par niveau</p>
           </div>
           <div class="bg-white border border-slate-200 p-4 rounded-xl shadow-sm">
             <span class="text-xs uppercase font-bold text-slate-500">Total Encaissé (Validé)</span>
             <p class="text-2xl font-black text-emerald-600 mt-1" id="fin-total-collected">42 150 000 <span class="text-xs font-normal">XOF</span></p>
-            <p class="text-[11px] text-emerald-600 font-semibold">78,4% taux d'encaissement</p>
+            <p class="text-[11px] text-emerald-600 font-semibold" id="fin-collection-rate">78,4% taux d'encaissement</p>
           </div>
           <div class="bg-white border border-slate-200 p-4 rounded-xl shadow-sm">
             <span class="text-xs uppercase font-bold text-slate-500">Reste à Recouvrer (Soldes)</span>
@@ -4417,7 +4423,7 @@
               </h3>
               <p class="text-xs text-slate-500">Chaque établissement dispose de son périmètre strict de données.</p>
             </div>
-            <button onclick="alert('Module de création d\'établissement réservé au Super Administrateur Global.')" class="px-3 py-1.5 bg-indigo-600 text-white rounded text-xs font-bold shadow">
+            <button onclick="openSchoolGeneratorModal('SCHOOL', appState.currentFoundationId || null)" class="px-3 py-1.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded text-xs font-bold shadow transition cursor-pointer">
               + Ajouter un Établissement
             </button>
           </div>
@@ -5473,8 +5479,11 @@
 
         <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
           <div>
-            <label class="block text-slate-700 font-semibold mb-1">Matricule MENA <span class="text-red-500">*</span></label>
-            <input type="text" id="m-matricule" required placeholder="Ex: 23819402X" class="w-full border border-slate-300 rounded px-3 py-1.5 font-mono focus:border-ecole-orange focus:outline-none uppercase">
+            <div class="flex justify-between items-center mb-1">
+              <label class="block text-slate-700 font-semibold">Matricule MENA <span class="text-red-500">*</span></label>
+              <button type="button" onclick="generateAutoMatricule()" class="text-[10px] text-blue-600 hover:text-blue-800 font-bold underline cursor-pointer">Générer ⚡</button>
+            </div>
+            <input type="text" id="m-matricule" required placeholder="Ex: 26819402X" class="w-full border border-slate-300 rounded px-3 py-1.5 font-mono focus:border-ecole-orange focus:outline-none uppercase">
           </div>
           <div>
             <label class="block text-slate-700 font-semibold mb-1">Sexe <span class="text-red-500">*</span></label>
@@ -5499,7 +5508,7 @@
           </div>
           <div>
             <label class="block text-slate-700 font-semibold mb-1">Niveau</label>
-            <select id="m-niveau" onchange="updateClassSelectOptions('m-classe', this.value)" class="w-full border border-slate-300 rounded px-3 py-1.5 bg-white focus:outline-none font-bold">
+            <select id="m-niveau" onchange="updateClassSelectOptions('m-classe', this.value); updateTuitionFeePreview(this.value);" class="w-full border border-slate-300 rounded px-3 py-1.5 bg-white focus:outline-none font-bold">
               <option value="6EME">6EME</option>
               <option value="5EME">5EME</option>
               <option value="4EME" selected>4EME</option>
@@ -5517,6 +5526,16 @@
               <option value="4EME 2">4EME 2</option>
               <option value="Non assigné">Non assigné</option>
             </select>
+          </div>
+        </div>
+
+        <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 pt-1">
+          <div>
+            <label class="block text-slate-700 font-semibold mb-1">Frais Annuels Scolarité (XOF)</label>
+            <input type="number" id="m-feedue" value="120000" min="0" step="5000" class="w-full border border-slate-300 rounded px-3 py-1.5 font-mono font-bold text-slate-900 bg-amber-50/50 focus:outline-none">
+          </div>
+          <div class="sm:col-span-2 flex items-end pb-1.5">
+            <span class="text-[11px] text-slate-500 italic" id="m-feedue-hint">Calculé automatiquement selon le barème du niveau sélectionné.</span>
           </div>
         </div>
 
@@ -6218,6 +6237,28 @@
             </select>
           </div>
         </div>
+        <div class="grid grid-cols-2 gap-3 pt-2 border-t border-slate-100">
+          <div>
+            <label class="block text-slate-700 font-semibold mb-1">Mot de passe de connexion *</label>
+            <div class="relative">
+              <input type="password" id="nu-password" minlength="8" required placeholder="Min. 8 caractères" class="w-full border border-slate-300 rounded px-2.5 py-1.5 pr-8 font-mono">
+              <button type="button" onclick="togglePasswordVisibilityField('nu-password', this)" class="absolute right-2 top-2 text-slate-400 hover:text-slate-600 text-xs">👁️</button>
+            </div>
+          </div>
+          <div>
+            <label class="block text-slate-700 font-semibold mb-1">Confirmer mot de passe *</label>
+            <div class="relative">
+              <input type="password" id="nu-password-confirm" minlength="8" required placeholder="Confirmer mot de passe" class="w-full border border-slate-300 rounded px-2.5 py-1.5 pr-8 font-mono">
+              <button type="button" onclick="togglePasswordVisibilityField('nu-password-confirm', this)" class="absolute right-2 top-2 text-slate-400 hover:text-slate-600 text-xs">👁️</button>
+            </div>
+          </div>
+        </div>
+        <div class="flex items-center gap-2">
+          <button type="button" onclick="generateRandomPasswordForField('nu-password', 'nu-password-confirm')" class="text-[11px] text-purple-700 hover:text-purple-900 font-bold underline flex items-center gap-1 cursor-pointer">
+            <span>⚡</span> Générer un mot de passe sécurisé
+          </button>
+          <span id="nu-password-generated-badge" class="hidden text-[10px] bg-emerald-100 text-emerald-800 font-bold px-1.5 py-0.5 rounded">Généré !</span>
+        </div>
         <div class="flex justify-end gap-2 pt-3 border-t border-slate-200">
           <button type="button" onclick="closeNewUserModal()" class="px-4 py-1.5 border border-slate-300 rounded text-slate-600">Annuler</button>
           <button type="submit" class="px-5 py-1.5 bg-purple-700 text-white rounded font-bold shadow hover:bg-purple-800">Créer l'utilisateur</button>
@@ -6276,6 +6317,13 @@
               <option value="ACTIF">Actif</option>
               <option value="SUSPENDU">Suspendu</option>
             </select>
+          </div>
+        </div>
+        <div class="pt-2 border-t border-slate-100 space-y-1">
+          <label class="block text-slate-700 font-semibold text-[11px]">Nouveau mot de passe (Optionnel, min. 8 car.)</label>
+          <div class="relative">
+            <input type="password" id="eu-password" minlength="8" placeholder="Laisser vide si inchangé" class="w-full border border-slate-300 rounded px-2.5 py-1.5 pr-8 font-mono text-xs">
+            <button type="button" onclick="togglePasswordVisibilityField('eu-password', this)" class="absolute right-2 top-2 text-slate-400 hover:text-slate-600 text-xs">👁️</button>
           </div>
         </div>
         <div class="flex justify-end gap-2 pt-3 border-t border-slate-200">
@@ -7292,15 +7340,16 @@
 
       <!-- Formulaire de Connexion -->
       <form id="form-secure-login" onsubmit="handleSecureLoginSubmit(event)" class="mt-4 space-y-4 relative z-10">
-        <!-- Champ Email -->
+        <!-- Champ Identifiant / Email -->
         <div class="space-y-1.5">
           <label class="block text-[11px] font-bold text-amber-200/90 uppercase tracking-wider" for="login-modal-email">
-            Identifiant / Email Professionnel
+            Code Établissement ou E-mail Professionnel
           </label>
           <div class="relative">
-            <input type="email" id="login-modal-email" required autocomplete="username" placeholder="prenom.nom@scolapro.ci" class="w-full px-3.5 py-2.5 rounded-xl bg-black/50 border border-amber-500/30 text-white text-xs font-medium focus:ring-2 focus:ring-amber-400 focus:border-amber-400 outline-none transition placeholder-slate-500">
-            <span class="absolute right-3 top-2.5 text-slate-400 text-sm">👤</span>
+            <input type="text" id="login-modal-email" required autocomplete="username" placeholder="Ex: GSH-01 ou prenom.nom@scolapro.ci" class="w-full px-3.5 py-2.5 rounded-xl bg-black/50 border border-amber-500/30 text-white text-xs font-medium focus:ring-2 focus:ring-amber-400 focus:border-amber-400 outline-none transition placeholder-slate-500">
+            <span class="absolute right-3 top-2.5 text-slate-400 text-sm">🏫</span>
           </div>
+          <p class="text-[10px] text-amber-300/70">Connectez-vous avec le <strong>Code Établissement</strong> ou l'adresse e-mail.</p>
         </div>
 
         <!-- Champ Mot de Passe avec Toggle Visibilité -->
@@ -7512,6 +7561,42 @@
               <span>Générer automatiquement les divisions de classes et le barème d'écolage</span>
             </label>
             <p class="text-[10.5px] text-emerald-700 pl-5">Crée instantanément 4 classes types, une Caisse Principale active et des règles de relance opérationnelles.</p>
+          </div>
+
+          <!-- Sécurité & Mot de Passe de l'Établissement -->
+          <div class="p-3.5 bg-red-50/80 border border-red-200 rounded-xl space-y-2.5">
+            <div class="flex items-center justify-between">
+              <label class="font-bold text-red-950 flex items-center gap-1.5 text-xs">
+                <span>🔐</span>
+                <span>Mot de Passe Administrateur de l'Établissement *</span>
+              </label>
+              <span class="text-[10px] text-red-700 bg-red-100 px-2 py-0.5 rounded font-bold">Connexion par Code ou Email</span>
+            </div>
+            <p class="text-[11px] text-slate-600">
+              Définissez le mot de passe qui permettra au Proviseur / Administrateur de se connecter immédiatement avec le <strong>Code Établissement</strong> ou l'email officiel.
+            </p>
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <div class="space-y-1">
+                <label class="font-bold text-slate-700 text-[11px]">Mot de passe (min. 8 caractères) *</label>
+                <div class="relative">
+                  <input type="password" id="gen-school-password" required minlength="8" placeholder="Min. 8 caractères" class="w-full border border-slate-300 rounded-lg p-2 pr-9 font-mono text-xs focus:ring-2 focus:ring-red-600 focus:outline-none">
+                  <button type="button" onclick="togglePasswordVisibilityField('gen-school-password', this)" class="absolute right-2 top-2 text-slate-400 hover:text-slate-600 text-xs cursor-pointer">👁️</button>
+                </div>
+              </div>
+              <div class="space-y-1">
+                <label class="font-bold text-slate-700 text-[11px]">Confirmer le mot de passe *</label>
+                <div class="relative">
+                  <input type="password" id="gen-school-password-confirm" required minlength="8" placeholder="Confirmer mot de passe" class="w-full border border-slate-300 rounded-lg p-2 pr-9 font-mono text-xs focus:ring-2 focus:ring-red-600 focus:outline-none">
+                  <button type="button" onclick="togglePasswordVisibilityField('gen-school-password-confirm', this)" class="absolute right-2 top-2 text-slate-400 hover:text-slate-600 text-xs cursor-pointer">👁️</button>
+                </div>
+              </div>
+            </div>
+            <div class="flex items-center gap-2 pt-1">
+              <button type="button" onclick="generateRandomPasswordForField('gen-school-password', 'gen-school-password-confirm')" class="text-[11px] text-red-700 hover:text-red-900 font-bold underline flex items-center gap-1 cursor-pointer">
+                <span>⚡</span> Générer un mot de passe sécurisé
+              </button>
+              <span id="gen-school-password-generated-badge" class="hidden text-[10px] bg-emerald-100 text-emerald-800 font-bold px-1.5 py-0.5 rounded">Généré !</span>
+            </div>
           </div>
 
           <!-- Bouton de soumission École -->
@@ -7817,6 +7902,36 @@
           </div>
         </div>
 
+        <!-- Sécurité & Mot de Passe Administrateur Établissement (Optionnel) -->
+        <div class="p-3 bg-red-50/70 border border-red-200 rounded-xl space-y-2">
+          <div class="flex items-center justify-between">
+            <label class="font-bold text-red-950 flex items-center gap-1.5 text-xs">
+              <span>🔐</span>
+              <span>Modifier le mot de passe de l'Établissement (Optionnel)</span>
+            </label>
+            <span class="text-[10px] text-red-700 bg-red-100 px-2 py-0.5 rounded font-bold">Admin / Code Établissement</span>
+          </div>
+          <p class="text-[10.5px] text-slate-500">
+            Laissez vide pour conserver le mot de passe actuel. Si vous saisissez un nouveau mot de passe, il sera immédiatement actif pour la connexion avec le Code Établissement et pour le compte administrateur.
+          </p>
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <div class="space-y-1">
+              <label class="font-bold text-slate-700 text-[10.5px]">Nouveau mot de passe (min. 8 car.)</label>
+              <div class="relative">
+                <input type="password" id="edit-school-password" minlength="8" placeholder="Laisser vide si inchangé" class="w-full border border-slate-300 rounded-lg p-2 pr-8 font-mono focus:ring-2 focus:ring-red-600 focus:outline-none text-xs">
+                <button type="button" onclick="togglePasswordVisibilityField('edit-school-password', this)" class="absolute right-2 top-2 text-slate-400 hover:text-slate-600 text-xs cursor-pointer">👁️</button>
+              </div>
+            </div>
+            <div class="space-y-1">
+              <label class="font-bold text-slate-700 text-[10.5px]">Confirmer le mot de passe</label>
+              <div class="relative">
+                <input type="password" id="edit-school-password-confirm" minlength="8" placeholder="Confirmer le nouveau mot de passe" class="w-full border border-slate-300 rounded-lg p-2 pr-8 font-mono focus:ring-2 focus:ring-red-600 focus:outline-none text-xs">
+                <button type="button" onclick="togglePasswordVisibilityField('edit-school-password-confirm', this)" class="absolute right-2 top-2 text-slate-400 hover:text-slate-600 text-xs cursor-pointer">👁️</button>
+              </div>
+            </div>
+          </div>
+        </div>
+
         <!-- Section Logo École -->
         <div class="space-y-2 pt-2 border-t border-slate-200">
           <label class="font-bold text-slate-700 block">Logo & Emblème Officiel :</label>
@@ -7860,6 +7975,231 @@
           <button type="submit" class="px-5 py-2 bg-red-700 hover:bg-red-800 text-white rounded-xl font-black shadow-md transition flex items-center gap-2 cursor-pointer">
             <span>💾</span>
             <span>Enregistrer les modifications</span>
+          </button>
+        </div>
+      </form>
+
+    </div>
+  </div>
+
+  <!-- ================================================================= -->
+  <!-- MODAL : REÇU DE PAIEMENT & QUITTANCE OFFICIELLE (SYSCOHADA)       -->
+  <!-- ================================================================= -->
+  <div id="modal-payment-receipt" class="hidden fixed inset-0 bg-black/60 backdrop-blur-xs z-50 flex items-center justify-center p-3 sm:p-4 overflow-y-auto">
+    <div class="bg-white rounded-2xl shadow-2xl max-w-xl w-full border border-slate-200 overflow-hidden my-6">
+      
+      <!-- Barre d'actions supérieure (non imprimable) -->
+      <div class="bg-slate-900 text-white px-5 py-3 flex justify-between items-center print:hidden">
+        <div class="flex items-center gap-2">
+          <span class="text-amber-400 font-bold">📄</span>
+          <span class="font-bold text-xs uppercase tracking-wide">Quittance Officielle de Paiement</span>
+        </div>
+        <div class="flex items-center gap-2">
+          <button type="button" onclick="window.print()" class="px-3 py-1 bg-amber-500 hover:bg-amber-400 text-slate-950 font-black rounded-lg text-xs flex items-center gap-1.5 shadow transition cursor-pointer">
+            <span>🖨️</span>
+            <span>Imprimer</span>
+          </button>
+          <button type="button" onclick="closeReceiptModal()" class="text-slate-400 hover:text-white text-xl font-bold px-1.5 cursor-pointer">&times;</button>
+        </div>
+      </div>
+
+      <!-- Contenu imprimable du reçu -->
+      <div id="printable-receipt" class="p-6 sm:p-8 space-y-6 bg-white text-slate-800">
+        <!-- En-tête officiel établissement -->
+        <div class="flex items-start justify-between border-b-2 border-slate-900 pb-4">
+          <div class="space-y-1">
+            <h2 id="rcpt-school-name" class="font-black text-base text-slate-900 uppercase tracking-tight">GROUPE SCOLAIRE D'EXCELLENCE SCOLAPRO</h2>
+            <p id="rcpt-school-info" class="text-[11px] text-slate-500 font-medium">Direction Régionale de l'Éducation Nationale • Code MENA • Tél: +225 27 20 00 11</p>
+            <p class="text-[10px] text-slate-400 font-mono">Système Intégré de Gestion Scolaire ScolaPro OS</p>
+          </div>
+          <div class="text-right">
+            <span class="inline-block px-2.5 py-1 rounded bg-slate-100 border border-slate-200 text-slate-800 font-mono font-bold text-xs" id="rcpt-number">
+              QUITT-2026-0001
+            </span>
+            <p class="text-[10px] text-slate-400 mt-1" id="rcpt-date">24 septembre 2026</p>
+          </div>
+        </div>
+
+        <!-- Titre du document -->
+        <div class="text-center py-1">
+          <h1 class="text-base sm:text-lg font-black uppercase text-slate-900 tracking-wider underline underline-offset-4 decoration-amber-500">
+            QUITTANCE DE PAIEMENT & FRAIS DE SCOLARITÉ
+          </h1>
+          <p class="text-[11px] text-slate-500 font-semibold mt-1">Année Scolaire 2025 - 2026</p>
+        </div>
+
+        <!-- Informations Élève -->
+        <div class="grid grid-cols-2 gap-3 bg-slate-50 p-4 rounded-xl border border-slate-200 text-xs">
+          <div>
+            <span class="text-slate-400 block text-[10px] uppercase font-bold">Nom & Prénoms de l'Élève</span>
+            <strong id="rcpt-student-name" class="text-slate-900 font-black text-sm">KOUASSI Jean-Marc</strong>
+          </div>
+          <div>
+            <span class="text-slate-400 block text-[10px] uppercase font-bold">Matricule MENA</span>
+            <strong id="rcpt-matricule" class="font-mono text-slate-900 font-black text-sm">26819402X</strong>
+          </div>
+          <div>
+            <span class="text-slate-400 block text-[10px] uppercase font-bold">Classe Fréquentée</span>
+            <strong id="rcpt-classe" class="text-blue-700 font-bold">4EME 5</strong>
+          </div>
+          <div>
+            <span class="text-slate-400 block text-[10px] uppercase font-bold">Statut d'Affectation</span>
+            <strong id="rcpt-statut" class="text-slate-700 font-medium">Affecté de l'État (AFF)</strong>
+          </div>
+          <div class="col-span-2 pt-1 border-t border-slate-200">
+            <span class="text-slate-400 block text-[10px] uppercase font-bold">Tuteur / Contact Référent</span>
+            <strong id="rcpt-tuteur" class="text-slate-700">KOUASSI Michel (+225 07 00 11 22)</strong>
+          </div>
+        </div>
+
+        <!-- Tableau financier récapitulatif -->
+        <div class="border border-slate-300 rounded-xl overflow-hidden text-xs">
+          <table class="w-full text-left">
+            <thead class="bg-slate-100 text-slate-700 uppercase font-black text-[10px] border-b border-slate-300">
+              <tr>
+                <th class="p-3">Désignation</th>
+                <th class="p-3 text-right">Montant Exigible</th>
+                <th class="p-3 text-right">Total Versé</th>
+                <th class="p-3 text-right">Reste à Solder</th>
+              </tr>
+            </thead>
+            <tbody class="divide-y divide-slate-200 font-mono">
+              <tr>
+                <td class="p-3 font-sans font-semibold text-slate-800">Écolage & Frais de Scolarité Globale</td>
+                <td class="p-3 text-right font-bold text-slate-700" id="rcpt-fee-due">120 000 XOF</td>
+                <td class="p-3 text-right font-black text-emerald-600" id="rcpt-fee-paid">120 000 XOF</td>
+                <td class="p-3 text-right font-extrabold text-slate-900" id="rcpt-fee-balance">0 XOF</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        <!-- Statut comptable & Attestation -->
+        <div class="flex flex-col sm:flex-row items-center justify-between gap-4 p-3.5 bg-amber-50/60 border border-amber-200 rounded-xl">
+          <div>
+            <span class="text-[10px] text-amber-900/80 font-bold uppercase block">Situation Comptable</span>
+            <div id="rcpt-status-badge" class="mt-1 inline-block px-3 py-1 rounded-full text-xs font-black uppercase bg-emerald-100 text-emerald-800 border border-emerald-300">
+              SOLDE INTÉGRALEMENT RÉGLÉ
+            </div>
+          </div>
+          <p class="text-[10px] text-slate-500 italic max-w-xs text-center sm:text-right">
+            La présente quittance certifie le règlement des montants ci-dessus indiqués sous réserve d'encaissement définitif.
+          </p>
+        </div>
+
+        <!-- Bloc signatures et cachets -->
+        <div class="grid grid-cols-2 gap-8 pt-4 border-t border-slate-200 text-xs">
+          <div>
+            <span class="text-slate-500 block text-[11px] font-semibold">Le Caissier / Agent Comptable</span>
+            <strong id="rcpt-cashier" class="text-slate-900 block mt-1 font-bold">KOFFI Adjoua (Caisse Principale)</strong>
+            <div class="mt-4 h-12 border-b border-dashed border-slate-400 flex items-center justify-center text-[10px] text-slate-400 italic">
+              [Signature & Cachet Caisse]
+            </div>
+          </div>
+          <div class="text-right">
+            <span class="text-slate-500 block text-[11px] font-semibold">Pour la Direction de l'Établissement</span>
+            <strong class="text-slate-900 block mt-1 font-bold">Le Chef d'Établissement</strong>
+            <div class="mt-4 h-12 border-b border-dashed border-slate-400 flex items-center justify-center text-[10px] text-slate-400 italic">
+              [Sceau officiel de l'école]
+            </div>
+          </div>
+        </div>
+
+        <!-- Pied de page officiel -->
+        <div class="text-center pt-2 text-[9px] text-slate-400 font-mono border-t border-slate-100">
+          Document sécurisé généré par ScolaPro OS • Certifié conforme aux normes SYSCOHADA de gestion des flux scolaires
+        </div>
+      </div>
+
+      <!-- Bouton fermer inférieur (non imprimable) -->
+      <div class="bg-slate-50 px-5 py-3 border-t border-slate-200 flex justify-end gap-2 print:hidden">
+        <button type="button" onclick="closeReceiptModal()" class="px-4 py-2 border border-slate-300 rounded-xl text-slate-700 hover:bg-slate-100 text-xs font-bold transition cursor-pointer">
+          Fermer
+        </button>
+        <button type="button" onclick="window.print()" class="px-5 py-2 bg-slate-900 hover:bg-slate-800 text-amber-400 font-black rounded-xl text-xs flex items-center gap-2 shadow transition cursor-pointer">
+          <span>🖨️</span>
+          <span>Imprimer la Quittance</span>
+        </button>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- ================================================================= -->
+  <!-- MODAL : GESTION ABONNEMENT SAAS & LICENCES ÉCOLE                  -->
+  <!-- ================================================================= -->
+  <div id="modal-school-subscription" class="hidden fixed inset-0 bg-black/60 backdrop-blur-xs z-50 flex items-center justify-center p-3 sm:p-4 overflow-y-auto">
+    <div class="bg-white rounded-2xl shadow-2xl max-w-xl w-full border border-slate-200 overflow-hidden my-6">
+      
+      <div class="bg-gradient-to-r from-slate-900 via-slate-800 to-indigo-950 text-white px-5 py-4 flex justify-between items-center border-b border-indigo-500/30">
+        <div class="flex items-center gap-2.5">
+          <div class="w-8 h-8 rounded-lg bg-indigo-500/20 text-indigo-300 flex items-center justify-center text-base border border-indigo-400/30">
+            ⚙️
+          </div>
+          <div>
+            <h4 class="font-black text-sm text-white">Gestion de l'Abonnement SaaS & Quotas</h4>
+            <p class="text-[11px] text-slate-400">Paramétrage des licences élèves et formule cloud</p>
+          </div>
+        </div>
+        <button type="button" onclick="closeSchoolSubscriptionModal()" class="text-slate-400 hover:text-white text-xl font-bold cursor-pointer">&times;</button>
+      </div>
+
+      <form onsubmit="saveSchoolSubscription(event)" class="p-5 space-y-4 text-xs">
+        <input type="hidden" id="sub-modal-school-id" value="">
+
+        <!-- Carte d'identité de l'établissement -->
+        <div class="p-3.5 bg-slate-50 border border-slate-200 rounded-xl space-y-1.5">
+          <div class="flex justify-between items-start">
+            <div>
+              <strong id="sub-modal-school-name" class="text-slate-900 font-black text-sm block">Établissement Scolaire</strong>
+              <span class="text-slate-500 text-[11px] font-mono">Code : <strong id="sub-modal-school-code" class="text-slate-700">sch-01</strong> &bull; Tutelle : <strong id="sub-modal-tutelle" class="text-blue-700">Fondation</strong></span>
+            </div>
+            <span id="sub-modal-student-count" class="px-2.5 py-1 rounded-full bg-blue-100 text-blue-900 font-bold text-[10px]">
+              0 élèves actifs
+            </span>
+          </div>
+        </div>
+
+        <!-- Formule SaaS & Quota Élèves -->
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <div>
+            <label class="block text-slate-700 font-semibold mb-1">Formule SaaS Active</label>
+            <select id="sub-modal-plan" class="w-full border border-slate-300 rounded-lg px-3 py-2 bg-white font-bold outline-none focus:ring-2 focus:ring-indigo-500">
+              <option value="Starter Primaire">Starter Primaire (jusqu'à 500 élèves)</option>
+              <option value="Campus Pro Académique">Campus Pro Académique (jusqu'à 1 000 élèves)</option>
+              <option value="Enterprise Multi-Tenant">Enterprise Multi-Tenant (Illimité)</option>
+            </select>
+          </div>
+          <div>
+            <label class="block text-slate-700 font-semibold mb-1">Quota Maximum d'Élèves (Licences)</label>
+            <input type="number" id="sub-modal-max-students" min="50" max="10000" step="50" class="w-full border border-slate-300 rounded-lg px-3 py-2 font-mono font-bold outline-none focus:ring-2 focus:ring-indigo-500">
+          </div>
+        </div>
+
+        <!-- Date de renouvellement & Statut du compte -->
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <div>
+            <label class="block text-slate-700 font-semibold mb-1">Date d'Échéance / Renouvellement</label>
+            <input type="date" id="sub-modal-renewal-date" class="w-full border border-slate-300 rounded-lg px-3 py-2 font-mono outline-none focus:ring-2 focus:ring-indigo-500">
+          </div>
+          <div>
+            <label class="block text-slate-700 font-semibold mb-1">Statut d'Accès de la Licence</label>
+            <select id="sub-modal-status" class="w-full border border-slate-300 rounded-lg px-3 py-2 bg-white font-bold outline-none focus:ring-2 focus:ring-indigo-500">
+              <option value="ACTIF">ACTIF (Accès complet)</option>
+              <option value="EN_ATTENTE">EN ATTENTE DE RENOUVELLEMENT</option>
+              <option value="SUSPENDU">SUSPENDU (Verrouillage)</option>
+            </select>
+          </div>
+        </div>
+
+        <!-- Boutons d'action -->
+        <div class="pt-3 border-t border-slate-200 flex justify-end gap-2.5">
+          <button type="button" onclick="closeSchoolSubscriptionModal()" class="px-4 py-2 border border-slate-300 rounded-xl text-slate-700 hover:bg-slate-100 font-bold transition cursor-pointer">
+            Annuler
+          </button>
+          <button type="submit" class="px-5 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl font-black shadow-md transition flex items-center gap-2 cursor-pointer">
+            <span>💾</span>
+            <span>Mettre à jour l'Abonnement</span>
           </button>
         </div>
       </form>
@@ -9147,12 +9487,15 @@
       document.getElementById('eu-phone').value = u.phone || '';
       document.getElementById('eu-role').value = u.role || 'consultation';
       document.getElementById('eu-status').value = u.status || 'ACTIF';
+      const epEl = document.getElementById('eu-password');
+      if (epEl) epEl.value = '';
 
       document.getElementById('edit-user-modal').classList.remove('hidden');
     }
 
     function closeEditUserModal() {
-      document.getElementById('edit-user-modal').classList.add('hidden');
+      const modal = document.getElementById('edit-user-modal');
+      if (modal) modal.classList.add('hidden');
     }
 
     async function handleEditUserSubmit(e) {
@@ -9167,12 +9510,26 @@
       const phone = document.getElementById('eu-phone').value.trim();
       const role = document.getElementById('eu-role').value;
       const status = document.getElementById('eu-status').value;
+      const editPassword = document.getElementById('eu-password')?.value;
+
+      if (editPassword && editPassword.length < 8) {
+        alert("Erreur : Le nouveau mot de passe doit comporter au moins 8 caractères.");
+        return;
+      }
 
       try {
         const res = await fetch(`/api/users/${id}`, {
           method: 'PUT',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ nom, prenom, email, phone, role, isActive: status === 'ACTIF' }),
+          body: JSON.stringify({
+            nom,
+            prenom,
+            email,
+            phone,
+            role,
+            isActive: status === 'ACTIF',
+            ...(editPassword ? { password: editPassword } : {})
+          }),
           credentials: 'same-origin'
         });
         if (!res.ok) {
@@ -9260,6 +9617,11 @@
         showToast("Accès refusé : permission users.create requise.");
         return;
       }
+      const pwdEl = document.getElementById('nu-password');
+      const pwdConfEl = document.getElementById('nu-password-confirm');
+      if (pwdEl) pwdEl.value = '';
+      if (pwdConfEl) pwdConfEl.value = '';
+
       document.getElementById('new-user-modal').classList.remove('hidden');
     }
 
@@ -9275,6 +9637,17 @@
       const phone = document.getElementById('nu-phone').value.trim();
       const roleKey = document.getElementById('nu-role').value;
       const scopeLabel = document.getElementById('nu-scope').value;
+
+      const password = document.getElementById('nu-password')?.value || '';
+      const passwordConfirm = document.getElementById('nu-password-confirm')?.value || '';
+      if (!password || password.length < 8) {
+        showToast("Erreur : Le mot de passe doit comporter au moins 8 caractères.");
+        return;
+      }
+      if (password !== passwordConfirm) {
+        showToast("Erreur : Les deux mots de passe ne correspondent pas.");
+        return;
+      }
 
       const newUser = {
         id: appState.users.length + 1,
@@ -9307,7 +9680,8 @@
             role: roleKey,
             roleLabel: newUser.roleLabel,
             scopeType: newUser.scopeType,
-            scopeLabel: newUser.scopeLabel
+            scopeLabel: newUser.scopeLabel,
+            password: password
           })
         });
         if (resp.ok) {
@@ -11587,6 +11961,8 @@
         showToast("Action refusée : permission students.create requise.");
         return;
       }
+      const lvl = document.getElementById('m-niveau')?.value || '4EME';
+      updateTuitionFeePreview(lvl);
       document.getElementById('add-student-modal').classList.remove('hidden');
     }
 
@@ -11607,6 +11983,33 @@
       });
     }
 
+    function generateAutoMatricule() {
+      const yearPrefix = '26'; // Année académique 2026-2027
+      const randomDigits = Math.floor(100000 + Math.random() * 900000).toString();
+      const letters = 'ABCDEFGHJKLMNPQRSTUVWXYZ';
+      const checkLetter = letters.charAt(Math.floor(Math.random() * letters.length));
+      const matricule = `${yearPrefix}${randomDigits}${checkLetter}`;
+      const input = document.getElementById('m-matricule');
+      if (input) {
+        input.value = matricule;
+        input.dispatchEvent(new Event('input', { bubbles: true }));
+      }
+      return matricule;
+    }
+
+    function updateTuitionFeePreview(niveau) {
+      const levelCost = (appState.costsByLevel || []).find(c => c.level === niveau);
+      const computedFeeDue = levelCost ? (levelCost.total || (levelCost.base + (levelCost.exam || 0))) : 120000;
+      const input = document.getElementById('m-feedue');
+      if (input) {
+        input.value = computedFeeDue;
+      }
+      const hint = document.getElementById('m-feedue-hint');
+      if (hint && levelCost) {
+        hint.textContent = `Barème ${esc(levelCost.level)} (${esc(levelCost.cycle)}) : Base ${levelCost.base.toLocaleString()} XOF + Examen ${levelCost.exam.toLocaleString()} XOF.`;
+      }
+    }
+
     async function handleNewStudentSubmit(e) {
       e.preventDefault();
       if (!hasPerm('students.create')) {
@@ -11624,6 +12027,13 @@
       const tuteur = document.getElementById('m-tuteur').value.trim() || 'Tuteur non renseigné';
       const phone = document.getElementById('m-phone').value.trim() || '';
 
+      const feeInput = document.getElementById('m-feedue');
+      let feeDue = feeInput ? parseInt(feeInput.value, 10) : 0;
+      if (!feeDue || feeDue <= 0) {
+        const levelCost = (appState.costsByLevel || []).find(c => c.level === niveau);
+        feeDue = levelCost ? (levelCost.total || (levelCost.base + (levelCost.exam || 0))) : 120000;
+      }
+
       let newStudent = {
         id: appState.students.length > 0 ? Math.max(...appState.students.map(s => s.id)) + 1 : 1,
         schoolId: appState.currentSchoolId || 1,
@@ -11634,7 +12044,7 @@
         statut: statut,
         niveau: niveau,
         classe: classe,
-        feeDue: 120000,
+        feeDue: feeDue,
         feePaid: 0,
         noteDev: 12.0,
         isAbsent: false,
@@ -12235,10 +12645,14 @@
 
       if (scopedStudents.length === 0) {
         tbody.innerHTML = `<tr><td colspan="8" class="py-8 text-center text-slate-400 italic font-medium">Aucun compte élève disponible. Inscrivez vos premiers élèves pour ouvrir leurs fiches d'écolage.</td></tr>`;
+        const dueEl = document.getElementById('fin-total-due');
         const collEl = document.getElementById('fin-total-collected');
         const remEl = document.getElementById('fin-total-remaining');
+        const rateEl = document.getElementById('fin-collection-rate');
+        if (dueEl) dueEl.innerHTML = `0 <span class="text-xs font-normal">XOF</span>`;
         if (collEl) collEl.innerHTML = `0 <span class="text-xs font-normal">XOF</span>`;
         if (remEl) remEl.innerHTML = `0 <span class="text-xs font-normal">XOF</span>`;
+        if (rateEl) rateEl.textContent = `0.0% taux d'encaissement`;
         return;
       }
 
@@ -12279,10 +12693,16 @@
         tbody.appendChild(tr);
       });
 
+      const totalDue = totalCollected + totalRemaining;
+      const rate = totalDue > 0 ? ((totalCollected / totalDue) * 100).toFixed(1) : '0.0';
+      const dueEl = document.getElementById('fin-total-due');
       const collEl = document.getElementById('fin-total-collected');
       const remEl = document.getElementById('fin-total-remaining');
+      const rateEl = document.getElementById('fin-collection-rate');
+      if (dueEl) dueEl.innerHTML = `${totalDue.toLocaleString()} <span class="text-xs font-normal">XOF</span>`;
       if (collEl) collEl.innerHTML = `${totalCollected.toLocaleString()} <span class="text-xs font-normal">XOF</span>`;
       if (remEl) remEl.innerHTML = `${totalRemaining.toLocaleString()} <span class="text-xs font-normal">XOF</span>`;
+      if (rateEl) rateEl.textContent = `${rate.replace('.', ',')}% taux d'encaissement`;
     }
 
     async function quickCollect(id, amount) {
@@ -12388,12 +12808,75 @@
     }
 
     function printReceipt(studentId) {
-      const st = appState.students.find(s => s.id === studentId);
-      const user = getActiveUser();
-      if (st) {
-        const currentSchool = (appState.schools && appState.schools.find(s => s.id === appState.currentSchoolId)) || { name: 'Établissement Scolaire' };
-        alert(`=== QUITTANCE OFFICIELLE DE PAIEMENT ===\nÉtablissement : ${currentSchool.name}\nÉlève : ${esc(st.nomPrenom)}\nMatricule : ${esc(st.matricule)}\nClasse : ${esc(st.classe)}\nTotal Payé : ${st.feePaid.toLocaleString()} XOF\nStatut : SOLDE INTÉGRALEMENT RÉGLÉ\nDate : ${new Date().toLocaleDateString('fr-FR')}\nSignataire / Caissier : ${esc(user.prenom)} ${esc(user.nom)}`);
+      const st = (appState.students || []).find(s => s.id === studentId);
+      if (!st) {
+        showToast("Fiche élève introuvable pour l'impression de la quittance.");
+        return;
       }
+      const user = getActiveUser() || { prenom: 'Caissier', nom: 'Principal' };
+      const currentSchool = (appState.schools && appState.schools.find(s => s.id === (st.schoolId || appState.currentSchoolId))) || { 
+        name: "GROUPE SCOLAIRE D'EXCELLENCE SCOLAPRO", 
+        code: "GS-EXC-01", 
+        phone: "+225 27 20 00 11", 
+        address: "Abidjan Plateau" 
+      };
+
+      const modal = document.getElementById('modal-payment-receipt');
+      if (!modal) return;
+
+      const balance = Math.max(0, (st.feeDue || 0) - (st.feePaid || 0));
+      const receiptNo = `QUITT-2026-${st.id.toString().padStart(4, '0')}-${((st.feePaid || 0) % 9999).toString().padStart(4, '0')}`;
+      const nowStr = new Date().toLocaleDateString('fr-FR', { day: '2-digit', month: 'long', year: 'numeric' });
+
+      const elSchoolName = document.getElementById('rcpt-school-name');
+      const elSchoolInfo = document.getElementById('rcpt-school-info');
+      const elNumber = document.getElementById('rcpt-number');
+      const elDate = document.getElementById('rcpt-date');
+      const elStudentName = document.getElementById('rcpt-student-name');
+      const elMatricule = document.getElementById('rcpt-matricule');
+      const elClasse = document.getElementById('rcpt-classe');
+      const elStatut = document.getElementById('rcpt-statut');
+      const elTuteur = document.getElementById('rcpt-tuteur');
+      const elFeeDue = document.getElementById('rcpt-fee-due');
+      const elFeePaid = document.getElementById('rcpt-fee-paid');
+      const elFeeBalance = document.getElementById('rcpt-fee-balance');
+      const elBadge = document.getElementById('rcpt-status-badge');
+      const elCashier = document.getElementById('rcpt-cashier');
+
+      if (elSchoolName) elSchoolName.textContent = currentSchool.name || "ÉTABLISSEMENT SCOLAIRE";
+      if (elSchoolInfo) elSchoolInfo.textContent = `${currentSchool.code || ''} • Tél: ${currentSchool.phone || '+225 27 20 00 11'} • Réf: DRENA / MENA`;
+      if (elNumber) elNumber.textContent = receiptNo;
+      if (elDate) elDate.textContent = nowStr;
+
+      if (elStudentName) elStudentName.textContent = st.nomPrenom;
+      if (elMatricule) elMatricule.textContent = st.matricule;
+      if (elClasse) elClasse.textContent = st.classe || '—';
+      if (elStatut) elStatut.textContent = st.statut === 'AFF' ? "Affecté de l'État (AFF)" : "Non affecté (Privé direct)";
+      if (elTuteur) elTuteur.textContent = st.tuteur || "Parent / Tuteur légal";
+
+      if (elFeeDue) elFeeDue.textContent = `${(st.feeDue || 0).toLocaleString()} XOF`;
+      if (elFeePaid) elFeePaid.textContent = `${(st.feePaid || 0).toLocaleString()} XOF`;
+      if (elFeeBalance) elFeeBalance.textContent = `${balance.toLocaleString()} XOF`;
+
+      if (elBadge) {
+        if (balance === 0) {
+          elBadge.textContent = "SOLDE INTÉGRALEMENT RÉGLÉ";
+          elBadge.className = "mt-1 inline-block px-3 py-1 rounded-full text-xs font-black uppercase bg-emerald-100 text-emerald-800 border border-emerald-300";
+        } else {
+          elBadge.textContent = `ACOMPTE ENREGISTRÉ (RESTE : ${balance.toLocaleString()} XOF)`;
+          elBadge.className = "mt-1 inline-block px-3 py-1 rounded-full text-xs font-black uppercase bg-amber-100 text-amber-900 border border-amber-300";
+        }
+      }
+
+      if (elCashier) elCashier.textContent = `${user.prenom || ''} ${user.nom || 'Agent Caisse'}`.trim();
+
+      auditAction('RECEIPT_VIEW', 'Comptabilité', `Élève #${st.id}`, '', `Quittance ${receiptNo} générée`, 'SUCCÈS');
+      modal.classList.remove('hidden');
+    }
+
+    function closeReceiptModal() {
+      const modal = document.getElementById('modal-payment-receipt');
+      if (modal) modal.classList.add('hidden');
     }
 
     // =================================================================
@@ -13075,6 +13558,42 @@
       }
     }
 
+    function togglePasswordVisibilityField(fieldId, btnEl) {
+      const input = document.getElementById(fieldId);
+      if (!input) return;
+      if (input.type === 'password') {
+        input.type = 'text';
+        if (btnEl) btnEl.textContent = '🙈';
+      } else {
+        input.type = 'password';
+        if (btnEl) btnEl.textContent = '👁️';
+      }
+    }
+
+    function generateRandomPasswordForField(pwdFieldId, confirmFieldId) {
+      const chars = "abcdefghjkmnpqrstuvwxyzABCDEFGHJKLMNPQRSTUVWXYZ23456789#@!*";
+      let pwd = "";
+      for (let i = 0; i < 12; i++) {
+        pwd += chars.charAt(Math.floor(Math.random() * chars.length));
+      }
+      const p1 = document.getElementById(pwdFieldId);
+      const p2 = document.getElementById(confirmFieldId);
+      if (p1) {
+        p1.type = 'text';
+        p1.value = pwd;
+      }
+      if (p2) {
+        p2.type = 'text';
+        p2.value = pwd;
+      }
+      const badge = document.getElementById(pwdFieldId + '-generated-badge');
+      if (badge) {
+        badge.classList.remove('hidden');
+        setTimeout(() => badge.classList.add('hidden'), 3500);
+      }
+      showToast("Mot de passe sécurisé généré !");
+    }
+
     function presetLoginCredentials(email) {
       const emailInput = document.getElementById('login-modal-email');
       const pwdInput = document.getElementById('login-modal-password');
@@ -13085,16 +13604,16 @@
     async function handleSecureLoginSubmit(event) {
       if (event) event.preventDefault();
 
-      const email = document.getElementById('login-modal-email')?.value.trim();
+      const identifier = document.getElementById('login-modal-email')?.value.trim();
       const password = document.getElementById('login-modal-password')?.value;
       const alertBox = document.getElementById('login-modal-alert');
       const submitBtn = document.getElementById('btn-login-submit');
       const submitText = document.getElementById('btn-login-text');
 
-      if (!email || !password) {
+      if (!identifier || !password) {
         if (alertBox) {
           alertBox.className = 'my-3 p-3 rounded-xl text-xs font-semibold bg-red-950/80 border border-red-500/50 text-rose-200 block';
-          alertBox.textContent = '⚠️ Veuillez renseigner votre email et votre mot de passe.';
+          alertBox.textContent = '⚠️ Veuillez renseigner votre Code Établissement ou E-mail ainsi que votre mot de passe.';
         }
         return;
       }
@@ -13107,7 +13626,7 @@
           method: 'POST',
           credentials: 'same-origin',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ email, password })
+          body: JSON.stringify({ identifier, email: identifier, code: identifier, password })
         });
 
         const data = await resp.json();
@@ -13288,6 +13807,11 @@
       }
 
       toggleGeneratorType(defaultType);
+      const pwdInput1 = document.getElementById('gen-school-password');
+      const pwdInput2 = document.getElementById('gen-school-password-confirm');
+      if (pwdInput1) pwdInput1.value = '';
+      if (pwdInput2) pwdInput2.value = '';
+
       const modal = document.getElementById('modal-school-generator');
       if (modal) modal.classList.remove('hidden');
       dismissLoadingScreen();
@@ -13606,6 +14130,11 @@
         selectEditSchoolLogoPreset(currentLogo);
       }
 
+      const ep1 = document.getElementById('edit-school-password');
+      const ep2 = document.getElementById('edit-school-password-confirm');
+      if (ep1) ep1.value = '';
+      if (ep2) ep2.value = '';
+
       modal.classList.remove('hidden');
     }
 
@@ -13634,6 +14163,19 @@
       const foundVal = document.getElementById('edit-school-foundation')?.value;
       const foundationId = (foundVal && foundVal !== 'AUTONOME') ? parseInt(foundVal, 10) : null;
 
+      const editPassword = document.getElementById('edit-school-password')?.value || '';
+      const editPasswordConfirm = document.getElementById('edit-school-password-confirm')?.value || '';
+      if (editPassword) {
+        if (editPassword.length < 8) {
+          showToast("Erreur : Le nouveau mot de passe doit comporter au moins 8 caractères.");
+          return;
+        }
+        if (editPassword !== editPasswordConfirm) {
+          showToast("Erreur : Les deux nouveaux mots de passe saisis ne correspondent pas.");
+          return;
+        }
+      }
+
       const customLogo = document.getElementById('edit-school-custom-logo')?.value.trim();
       const logoIcon = customLogo || document.getElementById('edit-school-logo-preview-icon')?.textContent.trim() || s.logo || '🏫';
 
@@ -13647,7 +14189,8 @@
         email,
         academicYear,
         foundationId,
-        logo: logoIcon
+        logo: logoIcon,
+        ...(editPassword ? { password: editPassword } : {})
       };
 
       try {
@@ -13703,6 +14246,17 @@
       const year = document.getElementById('gen-school-year')?.value || '2026-2027';
       const autoClasses = document.getElementById('gen-school-auto-classes')?.checked ?? true;
 
+      const password = document.getElementById('gen-school-password')?.value || '';
+      const passwordConfirm = document.getElementById('gen-school-password-confirm')?.value || '';
+      if (!password || password.length < 8) {
+        showToast("Erreur : Le mot de passe administrateur de l'école doit comporter au moins 8 caractères.");
+        return;
+      }
+      if (password !== passwordConfirm) {
+        showToast("Erreur : Les deux mots de passe saisis ne correspondent pas.");
+        return;
+      }
+
       // Cycle sélectionné
       const cycles = [];
       if (document.getElementById('gen-cycle-mat')?.checked) cycles.push('Maternelle');
@@ -13741,7 +14295,8 @@
             address,
             phone,
             email,
-            logo: logoIcon
+            logo: logoIcon,
+            password: password
           })
         });
         let serverSchool = null;
@@ -15344,13 +15899,15 @@
 
       const subscriptions = (appState.schools || []).map(s => {
         const found = (appState.foundations || []).find(f => f.id === s.foundationId) || { name: 'Autonome' };
-        const isLycee = s.name.toLowerCase().includes('lycée');
-        const isCollege = s.name.toLowerCase().includes('collège');
-        const plan = isLycee ? 'Enterprise Multi-Tenant' : (isCollege ? 'Campus Pro Académique' : 'Starter Primaire');
-        const planBadge = isLycee ? 'bg-purple-100 text-purple-900 border-purple-200' : (isCollege ? 'bg-blue-100 text-blue-900 border-blue-200' : 'bg-amber-100 text-amber-900 border-amber-200');
+        const isLycee = (s.name || '').toLowerCase().includes('lycée');
+        const isCollege = (s.name || '').toLowerCase().includes('collège');
+        const plan = s.plan || (isLycee ? 'Enterprise Multi-Tenant' : (isCollege ? 'Campus Pro Académique' : 'Starter Primaire'));
+        const planBadge = plan.includes('Enterprise') ? 'bg-purple-100 text-purple-900 border-purple-200' : (plan.includes('Campus') ? 'bg-blue-100 text-blue-900 border-blue-200' : 'bg-amber-100 text-amber-900 border-amber-200');
         const count = (appState.students || []).filter(st => st.schoolId === s.id).length;
-        const maxStudents = isLycee ? 1500 : (isCollege ? 800 : 500);
-        const annualFee = isLycee ? 5355000 : (isCollege ? 3250000 : 2100000);
+        const maxStudents = s.maxStudents || (isLycee ? 1500 : (isCollege ? 800 : 500));
+        const annualFee = plan.includes('Enterprise') ? 5355000 : (plan.includes('Campus') ? 3250000 : 2100000);
+        const status = s.status || 'ACTIF';
+        const statusBadge = status === 'ACTIF' ? 'bg-emerald-100 text-emerald-800' : (status === 'SUSPENDU' ? 'bg-rose-100 text-rose-800' : 'bg-amber-100 text-amber-800');
         return {
           id: s.id,
           schoolId: s.id,
@@ -15362,9 +15919,9 @@
           students: count,
           maxStudents: maxStudents,
           annualFee: annualFee,
-          renewalDate: '31/08/2027',
-          status: 'ACTIF',
-          statusBadge: 'bg-emerald-100 text-emerald-800'
+          renewalDate: s.subscription_end || '31/08/2027',
+          status: status,
+          statusBadge: statusBadge
         };
       });
 
@@ -15394,12 +15951,95 @@
             </span>
           </td>
           <td class="py-3 px-3 text-center">
-            <button onclick="manageSchoolSubscription(${escJs(sub.schoolId)})" class="px-2.5 py-1 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded text-[11px] font-bold transition">
+            <button onclick="manageSchoolSubscription(${escJs(sub.schoolId)})" class="px-2.5 py-1 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded text-[11px] font-bold transition cursor-pointer">
               Gérer ⚙️
             </button>
           </td>
         </tr>
       `).join('');
+    }
+
+    function manageSchoolSubscription(schoolId) {
+      const school = (appState.schools || []).find(s => s.id === schoolId);
+      if (!school) {
+        showToast("Établissement introuvable pour la gestion de l'abonnement.");
+        return;
+      }
+      const modal = document.getElementById('modal-school-subscription');
+      if (!modal) return;
+
+      const found = (appState.foundations || []).find(f => f.id === school.foundationId) || { name: 'Autonome' };
+      const studentCount = (appState.students || []).filter(st => st.schoolId === school.id).length;
+
+      const isLycee = (school.name || '').toLowerCase().includes('lycée');
+      const isCollege = (school.name || '').toLowerCase().includes('collège');
+      const defaultPlan = isLycee ? 'Enterprise Multi-Tenant' : (isCollege ? 'Campus Pro Académique' : 'Starter Primaire');
+
+      const elId = document.getElementById('sub-modal-school-id');
+      const elName = document.getElementById('sub-modal-school-name');
+      const elCode = document.getElementById('sub-modal-school-code');
+      const elTutelle = document.getElementById('sub-modal-tutelle');
+      const elCount = document.getElementById('sub-modal-student-count');
+      const elPlan = document.getElementById('sub-modal-plan');
+      const elMax = document.getElementById('sub-modal-max-students');
+      const elEnd = document.getElementById('sub-modal-renewal-date');
+      const elStatus = document.getElementById('sub-modal-status');
+
+      if (elId) elId.value = school.id;
+      if (elName) elName.textContent = school.name;
+      if (elCode) elCode.textContent = school.code || `sch-0${school.id}`;
+      if (elTutelle) elTutelle.textContent = found.name;
+      if (elCount) elCount.textContent = `${studentCount} élève(s) actif(s)`;
+
+      if (elPlan) elPlan.value = school.plan || defaultPlan;
+      if (elMax) elMax.value = school.maxStudents || (isLycee ? 1500 : (isCollege ? 800 : 500));
+      if (elEnd) elEnd.value = school.subscription_end || '2027-08-31';
+      if (elStatus) elStatus.value = school.status || 'ACTIF';
+
+      modal.classList.remove('hidden');
+    }
+
+    function closeSchoolSubscriptionModal() {
+      const modal = document.getElementById('modal-school-subscription');
+      if (modal) modal.classList.add('hidden');
+    }
+
+    async function saveSchoolSubscription(event) {
+      if (event && event.preventDefault) event.preventDefault();
+      const schoolId = parseInt(document.getElementById('sub-modal-school-id').value, 10);
+      const school = (appState.schools || []).find(s => s.id === schoolId);
+      if (!school) return;
+
+      const plan = document.getElementById('sub-modal-plan').value;
+      const maxStudents = parseInt(document.getElementById('sub-modal-max-students').value, 10) || 500;
+      const renewalDate = document.getElementById('sub-modal-renewal-date').value;
+      const status = document.getElementById('sub-modal-status').value;
+
+      school.plan = plan;
+      school.maxStudents = maxStudents;
+      school.subscription_end = renewalDate;
+      school.status = status;
+
+      try {
+        await fetch(`/api/schools/${schoolId}`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            plan: plan,
+            maxStudents: maxStudents,
+            subscription_end: renewalDate,
+            status: status
+          }),
+          credentials: 'same-origin'
+        });
+      } catch (err) {
+        console.warn("Mise à jour persistante de l'abonnement en arrière-plan :", err);
+      }
+
+      auditAction('SUBSCRIPTION_UPDATE', 'SuperAdmin', `Établissement #${schoolId}`, '', `${plan} - Quota: ${maxStudents} - Statut: ${status}`, 'SUCCÈS');
+      showToast(`Abonnement de ${esc(school.name)} mis à jour avec succès !`);
+      closeSchoolSubscriptionModal();
+      renderSuperAdminSubscriptions();
     }
 
     function exportSuperAdminSubscriptionsCSV() {

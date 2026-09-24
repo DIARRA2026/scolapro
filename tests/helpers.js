@@ -79,13 +79,13 @@ async function initTestCredentials() {
 
   // Provisionner les fondations de test si absentes
   db.db.prepare(`
-    INSERT OR IGNORE INTO foundations (id, code, name, sigle, hq, president, phone, email, logo, description, is_active)
+    INSERT OR REPLACE INTO foundations (id, code, name, sigle, hq, president, phone, email, logo, description, is_active)
     VALUES (1, 'fondation-fea', 'Fondation Éducation & Avenir', 'FEA', 'Plateau, Immeuble CCIA, Abidjan', 'Dr. Kouamé A. Patrice', '+225 27 20 22 00', 'contact@fondation-fea.ci', '🏛️', 'Réseau test', 1)
   `).run();
 
   // Provisionner les écoles de test si absentes
   const insertSchool = db.db.prepare(`
-    INSERT OR IGNORE INTO schools (id, code, name, short_name, foundation_id, school_type, city, is_active)
+    INSERT OR REPLACE INTO schools (id, code, name, short_name, foundation_id, school_type, city, is_active)
     VALUES (?, ?, ?, ?, ?, ?, ?, 1)
   `);
   insertSchool.run(1, 'lyc-sainte-marie', "Lycée Sainte-Marie d'Abidjan", 'Lycée Sainte-Marie', 1, 'COLLÈGE & LYCÉE', 'Abidjan Cocody');
@@ -94,13 +94,13 @@ async function initTestCredentials() {
 
   // Provisionner la caisse principale de l'école 1 si absente
   db.db.prepare(`
-    INSERT OR IGNORE INTO cash_desks (id, school_id, code, name, type, balance, physical, status, cashier)
+    INSERT OR REPLACE INTO cash_desks (id, school_id, code, name, type, balance, physical, status, cashier)
     VALUES ('PRINCIPALE', 1, 'CAISSE-01', 'Caisse Principale (Centrale)', 'PRINCIPALE', 0, 0, 'ACTIVE', 'Clarisse Marie AHOU')
   `).run();
 
   // Provisionner les utilisateurs de test s'ils ne sont pas déjà présents
   const insertUser = db.db.prepare(`
-    INSERT OR IGNORE INTO users (id, school_id, foundation_id, nom, prenom, email, phone, role, role_label, scope_type, scope_label, level, scope_value, is_active)
+    INSERT OR REPLACE INTO users (id, school_id, foundation_id, nom, prenom, email, phone, role, role_label, scope_type, scope_label, level, scope_value, is_active)
     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 1)
   `);
   for (const fu of FIXTURE_USERS) {
@@ -109,17 +109,17 @@ async function initTestCredentials() {
 
   // Provisionner les caisses de test nécessaires (ex: CAISSE_2 et S2_PRINCIPALE)
   db.db.prepare(`
-    INSERT OR IGNORE INTO cash_desks (id, school_id, code, name, type, balance, physical, status, cashier)
+    INSERT OR REPLACE INTO cash_desks (id, school_id, code, name, type, balance, physical, status, cashier)
     VALUES ('CAISSE_2', 1, 'CAISSE-02', 'Caisse Secondaire 2 (Guichet B)', 'SECONDAIRE', 0, 0, 'ACTIVE', 'M. Koffi Yao Paul')
   `).run();
   db.db.prepare(`
-    INSERT OR IGNORE INTO cash_desks (id, school_id, code, name, type, balance, physical, status, cashier)
+    INSERT OR REPLACE INTO cash_desks (id, school_id, code, name, type, balance, physical, status, cashier)
     VALUES ('S2_PRINCIPALE', 2, 'PRIN-2', 'Caisse Principale (Collège Sainte-Anne)', 'PRINCIPALE', 0, 0, 'ACTIVE', 'Responsable Caisse Sainte-Anne')
   `).run();
 
   // Provisionner la classe 6EME 1 si absente
   db.db.prepare(`
-    INSERT OR IGNORE INTO classes (id, school_id, name, level, cycle, capacity, titulaire, educateur, room, status)
+    INSERT OR REPLACE INTO classes (id, school_id, name, level, cycle, capacity, titulaire, educateur, room, status)
     VALUES (1, 1, '6EME 1', '6EME', 'Premier Cycle', 45, 'Mme Bamba Fatou', 'Mme Bamba Fatou', 'Salle 101', 'ACTIF')
   `).run();
 
@@ -128,11 +128,11 @@ async function initTestCredentials() {
 
   // Provisionner des élèves de test pour les tests d'isolation et financiers si absents
   db.db.prepare(`
-    INSERT OR IGNORE INTO students (id, school_id, matricule, nom_prenom, sexe, niveau, classe, fee_due, fee_paid, is_absent)
+    INSERT OR REPLACE INTO students (id, school_id, matricule, nom_prenom, sexe, niveau, classe, fee_due, fee_paid, is_absent)
     VALUES (1, 1, 'MAT-001', 'Kouamé Jean', 'M', '6EME', '6EME 1', 150000, 50000, 0)
   `).run();
   db.db.prepare(`
-    INSERT OR IGNORE INTO students (id, school_id, matricule, nom_prenom, sexe, niveau, classe, fee_due, fee_paid, is_absent)
+    INSERT OR REPLACE INTO students (id, school_id, matricule, nom_prenom, sexe, niveau, classe, fee_due, fee_paid, is_absent)
     VALUES (2, 2, 'MAT-002', 'Traoré Fatou', 'F', '5EME', '5EME 1', 120000, 30000, 0)
   `).run();
 

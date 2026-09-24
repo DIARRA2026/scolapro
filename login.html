@@ -134,6 +134,62 @@
     .hidden {
       display: none !important;
     }
+    .login-tabs {
+      display: flex;
+      gap: 0.5rem;
+      margin-bottom: 1.25rem;
+      background: rgba(0, 0, 0, 0.4);
+      padding: 0.35rem;
+      border-radius: 0.85rem;
+      border: 1px solid rgba(220, 38, 38, 0.3);
+    }
+    .login-tab {
+      flex: 1;
+      padding: 0.6rem 0.5rem;
+      border: none;
+      background: transparent;
+      color: rgba(253, 164, 175, 0.7);
+      font-size: 0.8rem;
+      font-weight: 700;
+      border-radius: 0.65rem;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 0.4rem;
+      transition: all 0.2s;
+    }
+    .login-tab.active {
+      background: linear-gradient(135deg, rgba(220, 38, 38, 0.6), rgba(153, 27, 27, 0.8));
+      color: #fff;
+      border: 1px solid rgba(250, 204, 21, 0.4);
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.4);
+    }
+    .hint {
+      font-size: 0.72rem;
+      color: var(--color-text-muted);
+      margin-top: 0.35rem;
+      opacity: 0.85;
+      line-height: 1.3;
+    }
+    .pwd-container {
+      position: relative;
+    }
+    .toggle-pwd {
+      position: absolute;
+      right: 0.75rem;
+      top: 50%;
+      transform: translateY(-50%);
+      background: none;
+      border: none;
+      color: rgba(253, 164, 175, 0.7);
+      font-size: 1rem;
+      cursor: pointer;
+      padding: 0.25rem;
+    }
+    .toggle-pwd:hover {
+      color: var(--color-gold);
+    }
     .footer-note {
       text-align: center;
       margin-top: 1.5rem;
@@ -155,13 +211,30 @@
 
     <!-- Formulaire de Connexion Standard -->
     <form id="loginForm">
-      <div class="form-group">
-        <label for="email">Adresse e-mail professionnelle</label>
-        <input type="email" id="email" name="email" required autocomplete="username" placeholder="prenom.nom@scolapro.ci">
+      <!-- Sélecteur de Mode : Code Établissement vs Email -->
+      <div class="login-tabs">
+        <button type="button" id="tabCode" class="login-tab active" onclick="setLoginMode('code')">
+          <span>🏫</span> Code Établissement
+        </button>
+        <button type="button" id="tabEmail" class="login-tab" onclick="setLoginMode('email')">
+          <span>📧</span> Adresse E-mail
+        </button>
       </div>
+
+      <div class="form-group">
+        <label id="identifierLabel" for="identifier">Code de l'établissement</label>
+        <input type="text" id="identifier" name="identifier" required autocomplete="username" placeholder="Ex: GSH-01, LSM, COL-01...">
+        <p id="identifierHint" class="hint">Saisissez le code officiel attribué à votre école lors de sa création.</p>
+      </div>
+
       <div class="form-group">
         <label for="password">Mot de passe</label>
-        <input type="password" id="password" name="password" required autocomplete="current-password" placeholder="••••••••••••">
+        <div class="pwd-container">
+          <input type="password" id="password" name="password" required autocomplete="current-password" placeholder="••••••••••••" style="padding-right: 2.5rem;">
+          <button type="button" class="toggle-pwd" onclick="togglePasswordVisibility()" title="Afficher/Masquer le mot de passe">
+            <span id="pwdEye">👁️</span>
+          </button>
+        </div>
       </div>
       <button type="submit" id="loginBtn" class="btn">Se connecter</button>
     </form>
@@ -189,6 +262,43 @@
 
   <script>
     'use strict';
+
+    let currentMode = 'code';
+    function setLoginMode(mode) {
+      currentMode = mode;
+      const tabCode = document.getElementById('tabCode');
+      const tabEmail = document.getElementById('tabEmail');
+      const label = document.getElementById('identifierLabel');
+      const input = document.getElementById('identifier');
+      const hint = document.getElementById('identifierHint');
+      if (mode === 'code') {
+        tabCode.classList.add('active');
+        tabEmail.classList.remove('active');
+        label.textContent = "Code de l'établissement";
+        input.placeholder = "Ex: GSH-01, LSM, COL-01...";
+        hint.textContent = "Saisissez le code officiel attribué à votre école lors de sa création.";
+      } else {
+        tabEmail.classList.add('active');
+        tabCode.classList.remove('active');
+        label.textContent = "Adresse e-mail professionnelle";
+        input.placeholder = "prenom.nom@scolapro.ci";
+        hint.textContent = "Saisissez votre e-mail de connexion (Concepteur, Fondateur, Personnel).";
+      }
+      input.focus();
+    }
+
+    function togglePasswordVisibility() {
+      const pwdInput = document.getElementById('password');
+      const eye = document.getElementById('pwdEye');
+      if (!pwdInput) return;
+      if (pwdInput.type === 'password') {
+        pwdInput.type = 'text';
+        if (eye) eye.textContent = '🙈';
+      } else {
+        pwdInput.type = 'password';
+        if (eye) eye.textContent = '👁️';
+      }
+    }
 
     // Résolution sécurisée de l'URL de redirection post-connexion (Anti-Open-Redirect)
     function resolveSafeNextUrl() {
@@ -224,7 +334,7 @@
       loginBtn.disabled = true;
       loginBtn.textContent = 'Vérification en cours...';
 
-      const email = document.getElementById('email').value.trim();
+      const identifier = document.getElementById('identifier').value.trim();
       const password = document.getElementById('password').value;
 
       try {
@@ -233,7 +343,12 @@
           headers: {
             'Content-Type': 'application/json'
           },
-          body: JSON.stringify({ email, password })
+          body: JSON.stringify({
+            identifier,
+            email: identifier,
+            code: identifier,
+            password
+          })
         });
 
         const data = await res.json();
