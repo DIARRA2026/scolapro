@@ -8383,7 +8383,506 @@
     </div>
   </div>
 
-    <!-- TOAST NOTIFICATION -->
+    
+  <!-- ================================================================= -->
+  <!-- MODAL : PROFIL OPÉRATEUR & SESSION ACTIVE SÉCURISÉE              -->
+  <!-- ================================================================= -->
+  <div id="modal-active-session" class="hidden fixed inset-0 bg-black/60 backdrop-blur-xs z-50 flex items-center justify-center p-3 sm:p-4 overflow-y-auto">
+    <div class="bg-white rounded-2xl shadow-2xl max-w-md w-full border border-slate-200 overflow-hidden my-6">
+      <div class="bg-gradient-to-r from-slate-950 via-slate-900 to-indigo-950 text-white p-5 flex items-center justify-between border-b border-indigo-500/20">
+        <div class="flex items-center gap-3">
+          <div id="sess-user-initials" class="w-12 h-12 rounded-xl bg-gradient-to-br from-amber-400 to-amber-600 text-slate-950 font-black text-lg flex items-center justify-center shadow">
+            DD
+          </div>
+          <div>
+            <h3 id="sess-user-name" class="font-black text-base text-white">DIARRA Dolourou</h3>
+            <p id="sess-user-email" class="text-xs text-slate-300 font-mono">concepteur@scolapro.ci</p>
+          </div>
+        </div>
+        <button type="button" onclick="closeSessionModal()" class="text-slate-400 hover:text-white text-2xl font-bold cursor-pointer">&times;</button>
+      </div>
+      <div class="p-5 space-y-4 text-xs text-slate-700">
+        <div class="grid grid-cols-2 gap-3 bg-slate-50 p-3.5 rounded-xl border border-slate-200">
+          <div>
+            <span class="text-[10px] text-slate-400 uppercase font-bold block">Rôle Opérateur</span>
+            <span id="sess-user-role" class="font-extrabold text-indigo-900 text-xs">Concepteur Souverain</span>
+          </div>
+          <div>
+            <span class="text-[10px] text-slate-400 uppercase font-bold block">Périmètre de données</span>
+            <span id="sess-user-scope" class="font-extrabold text-slate-800 text-xs">Souverain (Global)</span>
+          </div>
+          <div class="col-span-2 pt-2 border-t border-slate-200/60">
+            <span class="text-[10px] text-slate-400 uppercase font-bold block">Établissement Actif</span>
+            <span id="sess-user-school" class="font-bold text-slate-900 text-xs">Groupe Scolaire Excellence Abidjan</span>
+          </div>
+        </div>
+        <div class="bg-emerald-50 border border-emerald-200 rounded-xl p-3 flex items-center justify-between">
+          <div class="flex items-center gap-2">
+            <span class="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse"></span>
+            <div>
+              <p class="font-bold text-emerald-950 text-xs">Connexion Sécurisée Active</p>
+              <p class="text-[10px] text-emerald-800">Session Cookie HttpOnly &bull; TLS 1.3</p>
+            </div>
+          </div>
+          <span id="sess-user-status" class="px-2 py-0.5 rounded text-[10px] font-bold bg-emerald-200 text-emerald-900">ACTIF</span>
+        </div>
+        <div class="text-[11px] text-slate-500 space-y-1">
+          <div class="flex justify-between">
+            <span>Dernière authentification :</span>
+            <strong id="sess-user-lastlogin" class="font-mono text-slate-700">Aujourd'hui</strong>
+          </div>
+          <div class="flex justify-between">
+            <span>Année académique :</span>
+            <strong class="font-mono text-slate-700">2026-2027</strong>
+          </div>
+        </div>
+      </div>
+      <div class="p-4 bg-slate-50 border-t border-slate-200 flex justify-between items-center gap-2">
+        <button type="button" onclick="closeSessionModal()" class="px-4 py-2 border border-slate-300 rounded-xl text-slate-700 hover:bg-slate-100 font-bold text-xs cursor-pointer">
+          Fermer
+        </button>
+        <button type="button" onclick="closeSessionModal(); logoutUser();" class="px-4 py-2 bg-rose-600 hover:bg-rose-700 text-white rounded-xl font-bold text-xs shadow transition flex items-center gap-1.5 cursor-pointer">
+          <span>🚪</span>
+          <span>Se déconnecter</span>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ================================================================= -->
+  <!-- MODAL : CRÉATION D'UNE CAISSE SECONDAIRE / GUICHET DÉDIÉ         -->
+  <!-- ================================================================= -->
+  <div id="modal-cash-desk-create" class="hidden fixed inset-0 bg-black/60 backdrop-blur-xs z-50 flex items-center justify-center p-3 sm:p-4 overflow-y-auto">
+    <div class="bg-white rounded-2xl shadow-2xl max-w-md w-full border border-slate-200 overflow-hidden my-6">
+      <div class="bg-gradient-to-r from-emerald-900 to-teal-900 text-white px-5 py-4 flex justify-between items-center">
+        <div class="flex items-center gap-2.5">
+          <span class="text-xl">🏦</span>
+          <div>
+            <h4 class="font-black text-sm text-white">Création d'une Caisse Secondaire</h4>
+            <p class="text-[11px] text-emerald-200">Guichet d'encaissement décentralisé</p>
+          </div>
+        </div>
+        <button type="button" onclick="closeCreateCashDeskModal()" class="text-emerald-200 hover:text-white text-xl font-bold cursor-pointer">&times;</button>
+      </div>
+      <form onsubmit="handleCreateCashDeskSubmit(event)" class="p-5 space-y-4 text-xs">
+        <div>
+          <label class="block text-slate-700 font-semibold mb-1">Désignation du Guichet / Caisse <span class="text-red-500">*</span></label>
+          <input type="text" id="cd-name" required placeholder="Ex: Caisse Secondaire 3 (Guichet C)" class="w-full border border-slate-300 rounded-lg px-3 py-2 outline-none font-bold focus:ring-2 focus:ring-emerald-600">
+        </div>
+        <div>
+          <label class="block text-slate-700 font-semibold mb-1">Caissier / Gestionnaire affecté</label>
+          <input type="text" id="cd-cashier" placeholder="Ex: Mlle KOUASSI Affoué (Caissière Adjointe)" class="w-full border border-slate-300 rounded-lg px-3 py-2 outline-none font-semibold focus:ring-2 focus:ring-emerald-600">
+        </div>
+        <div>
+          <label class="block text-slate-700 font-semibold mb-1">Fonds de Caisse d'Ouverture (XOF)</label>
+          <input type="number" id="cd-initial-float" min="0" value="0" step="500" class="w-full border border-slate-300 rounded-lg px-3 py-2 outline-none font-mono font-bold focus:ring-2 focus:ring-emerald-600">
+          <p class="text-[10px] text-slate-400 mt-1">Montant physique d'appoint remis pour le démarrage de session.</p>
+        </div>
+        <div class="pt-3 border-t border-slate-200 flex justify-end gap-2.5">
+          <button type="button" onclick="closeCreateCashDeskModal()" class="px-4 py-2 border border-slate-300 rounded-xl text-slate-700 hover:bg-slate-100 font-bold transition cursor-pointer">
+            Annuler
+          </button>
+          <button type="submit" class="px-5 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl font-black shadow-md transition flex items-center gap-2 cursor-pointer">
+            <span>💾</span>
+            <span>Créer la Caisse</span>
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- ================================================================= -->
+  <!-- MODAL : REFUS DE VERSEMENT INTER-CAISSE                           -->
+  <!-- ================================================================= -->
+  <div id="modal-reject-deposit" class="hidden fixed inset-0 bg-black/60 backdrop-blur-xs z-50 flex items-center justify-center p-3 sm:p-4 overflow-y-auto">
+    <div class="bg-white rounded-2xl shadow-2xl max-w-lg w-full border border-slate-200 overflow-hidden my-6">
+      <div class="bg-gradient-to-r from-rose-900 to-red-900 text-white px-5 py-4 flex justify-between items-center">
+        <div class="flex items-center gap-2.5">
+          <span class="text-xl">⛔</span>
+          <div>
+            <h4 class="font-black text-sm text-white">Refus Formel de Dépôt Inter-Caisse</h4>
+            <p class="text-[11px] text-rose-200">Rejet d'un versement vers la Caisse Principale</p>
+          </div>
+        </div>
+        <button type="button" onclick="closeRejectDepositModal()" class="text-rose-200 hover:text-white text-xl font-bold cursor-pointer">&times;</button>
+      </div>
+      <form onsubmit="handleRejectDepositSubmit(event)" class="p-5 space-y-4 text-xs">
+        <input type="hidden" id="rd-dep-id">
+        <div class="grid grid-cols-3 gap-2 bg-rose-50 border border-rose-200 p-3 rounded-xl">
+          <div>
+            <span class="text-[10px] text-rose-500 uppercase font-bold block">Référence</span>
+            <span id="rd-dep-ref" class="font-mono font-black text-rose-900 text-xs">DEP-001</span>
+          </div>
+          <div>
+            <span class="text-[10px] text-rose-500 uppercase font-bold block">Montant</span>
+            <span id="rd-dep-amount" class="font-mono font-black text-rose-900 text-xs">150 000 XOF</span>
+          </div>
+          <div>
+            <span class="text-[10px] text-rose-500 uppercase font-bold block">Émetteur</span>
+            <span id="rd-dep-sender" class="font-bold text-rose-900 text-xs">Caisse Secondaire 1</span>
+          </div>
+        </div>
+        <div>
+          <label class="block text-slate-700 font-semibold mb-1">Motif Principal du Refus <span class="text-red-500">*</span></label>
+          <select id="rd-reason-select" required class="w-full border border-slate-300 rounded-lg px-3 py-2 outline-none font-bold bg-white focus:ring-2 focus:ring-red-600">
+            <option value="Écart constaté entre le montant déclaré et les espèces physiques">Écart constaté entre le montant déclaré et les espèces physiques</option>
+            <option value="Billetage falsifié, maculé ou billets non conformes">Billetage falsifié, maculé ou billets non conformes</option>
+            <option value="Bordereau de versement non signé par le caissier émetteur">Bordereau de versement non signé par le caissier émetteur</option>
+            <option value="Dépassement du plafond d'encaissement journalier sans visa">Dépassement du plafond d'encaissement journalier sans visa</option>
+            <option value="Autre motif circonstancié">Autre motif circonstancié</option>
+          </select>
+        </div>
+        <div>
+          <label class="block text-slate-700 font-semibold mb-1">Observations détaillées pour le Caissier</label>
+          <textarea id="rd-reason-details" rows="2" placeholder="Précisez les anomalies constatées..." class="w-full border border-slate-300 rounded-lg p-2.5 outline-none focus:ring-2 focus:ring-red-600"></textarea>
+        </div>
+        <div class="pt-3 border-t border-slate-200 flex justify-end gap-2.5">
+          <button type="button" onclick="closeRejectDepositModal()" class="px-4 py-2 border border-slate-300 rounded-xl text-slate-700 hover:bg-slate-100 font-bold transition cursor-pointer">
+            Annuler
+          </button>
+          <button type="submit" class="px-5 py-2 bg-red-700 hover:bg-red-800 text-white rounded-xl font-black shadow-md transition flex items-center gap-2 cursor-pointer">
+            <span>⛔</span>
+            <span>Confirmer le Refus</span>
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- ================================================================= -->
+  <!-- MODAL : CONFIGURATION D'UNE TRANCHE D'ÉCOLAGE                    -->
+  <!-- ================================================================= -->
+  <div id="modal-fee-installment" class="hidden fixed inset-0 bg-black/60 backdrop-blur-xs z-50 flex items-center justify-center p-3 sm:p-4 overflow-y-auto">
+    <div class="bg-white rounded-2xl shadow-2xl max-w-md w-full border border-slate-200 overflow-hidden my-6">
+      <div class="bg-gradient-to-r from-slate-900 to-indigo-900 text-white px-5 py-4 flex justify-between items-center">
+        <div class="flex items-center gap-2.5">
+          <span class="text-xl">📅</span>
+          <div>
+            <h4 class="font-black text-sm text-white">Échéance d'Écolage (Tranche)</h4>
+            <p class="text-[11px] text-indigo-200">Calendrier d'exigibilité des frais scolaires</p>
+          </div>
+        </div>
+        <button type="button" onclick="closeFeeInstallmentModal()" class="text-indigo-200 hover:text-white text-xl font-bold cursor-pointer">&times;</button>
+      </div>
+      <form onsubmit="handleFeeInstallmentSubmit(event)" class="p-5 space-y-4 text-xs">
+        <input type="hidden" id="inst-id">
+        <div>
+          <label class="block text-slate-700 font-semibold mb-1">Nom / Libellé de la Tranche <span class="text-red-500">*</span></label>
+          <input type="text" id="inst-name" required placeholder="Ex: 1ère Tranche (Rentrée)" class="w-full border border-slate-300 rounded-lg px-3 py-2 outline-none font-bold focus:ring-2 focus:ring-indigo-600">
+        </div>
+        <div class="grid grid-cols-2 gap-3">
+          <div>
+            <label class="block text-slate-700 font-semibold mb-1">Date Limite <span class="text-red-500">*</span></label>
+            <input type="text" id="inst-date" required placeholder="JJ/MM/AAAA" class="w-full border border-slate-300 rounded-lg px-3 py-2 outline-none font-mono font-bold focus:ring-2 focus:ring-indigo-600">
+          </div>
+          <div>
+            <label class="block text-slate-700 font-semibold mb-1">Pourcentage Requis (%) <span class="text-red-500">*</span></label>
+            <input type="number" id="inst-pct" min="1" max="100" required placeholder="40" class="w-full border border-slate-300 rounded-lg px-3 py-2 outline-none font-mono font-bold focus:ring-2 focus:ring-indigo-600">
+          </div>
+        </div>
+        <div>
+          <label class="block text-slate-700 font-semibold mb-1">Montant Indicatif Collège (XOF)</label>
+          <input type="number" id="inst-amt-college" min="0" step="1000" placeholder="48000" class="w-full border border-slate-300 rounded-lg px-3 py-2 outline-none font-mono font-bold focus:ring-2 focus:ring-indigo-600">
+        </div>
+        <div class="flex items-center gap-2 pt-1">
+          <input type="checkbox" id="inst-obligatory" class="rounded border-slate-300 text-indigo-600">
+          <label for="inst-obligatory" class="text-slate-700 font-semibold cursor-pointer">Conditionne l'accès aux examens et la remise des bulletins</label>
+        </div>
+        <div class="pt-3 border-t border-slate-200 flex justify-end gap-2.5">
+          <button type="button" onclick="closeFeeInstallmentModal()" class="px-4 py-2 border border-slate-300 rounded-xl text-slate-700 hover:bg-slate-100 font-bold transition cursor-pointer">
+            Annuler
+          </button>
+          <button type="submit" class="px-5 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl font-black shadow-md transition flex items-center gap-2 cursor-pointer">
+            <span>💾</span>
+            <span>Enregistrer la Tranche</span>
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- ================================================================= -->
+  <!-- MODAL : CATALOGUE DES FRAIS ANNEXES & PARASCOLAIRES              -->
+  <!-- ================================================================= -->
+  <div id="modal-fee-type" class="hidden fixed inset-0 bg-black/60 backdrop-blur-xs z-50 flex items-center justify-center p-3 sm:p-4 overflow-y-auto">
+    <div class="bg-white rounded-2xl shadow-2xl max-w-md w-full border border-slate-200 overflow-hidden my-6">
+      <div class="bg-gradient-to-r from-slate-900 to-sky-900 text-white px-5 py-4 flex justify-between items-center">
+        <div class="flex items-center gap-2.5">
+          <span class="text-xl">🏷️</span>
+          <div>
+            <h4 class="font-black text-sm text-white">Type de Frais Annexe</h4>
+            <p class="text-[11px] text-sky-200">Catalogue des rubriques de facturation</p>
+          </div>
+        </div>
+        <button type="button" onclick="closeFeeTypeModal()" class="text-sky-200 hover:text-white text-xl font-bold cursor-pointer">&times;</button>
+      </div>
+      <form onsubmit="handleFeeTypeSubmit(event)" class="p-5 space-y-4 text-xs">
+        <div class="grid grid-cols-3 gap-3">
+          <div class="col-span-1">
+            <label class="block text-slate-700 font-semibold mb-1">Code <span class="text-red-500">*</span></label>
+            <input type="text" id="ft-code" required placeholder="ASSUR" class="w-full border border-slate-300 rounded-lg px-3 py-2 outline-none font-mono font-bold uppercase focus:ring-2 focus:ring-sky-600">
+          </div>
+          <div class="col-span-2">
+            <label class="block text-slate-700 font-semibold mb-1">Nature <span class="text-red-500">*</span></label>
+            <select id="ft-nature" required class="w-full border border-slate-300 rounded-lg px-3 py-2 outline-none font-bold bg-white focus:ring-2 focus:ring-sky-600">
+              <option value="Obligatoire">Obligatoire</option>
+              <option value="Facultatif">Facultatif</option>
+            </select>
+          </div>
+        </div>
+        <div>
+          <label class="block text-slate-700 font-semibold mb-1">Désignation Complète <span class="text-red-500">*</span></label>
+          <input type="text" id="ft-name" required placeholder="Ex: Assurance Scolaire & Mutuelle Santé" class="w-full border border-slate-300 rounded-lg px-3 py-2 outline-none font-bold focus:ring-2 focus:ring-sky-600">
+        </div>
+        <div>
+          <label class="block text-slate-700 font-semibold mb-1">Montant Forfaitaire (XOF) <span class="text-red-500">*</span></label>
+          <input type="number" id="ft-amount" min="0" step="500" required placeholder="5000" class="w-full border border-slate-300 rounded-lg px-3 py-2 outline-none font-mono font-bold focus:ring-2 focus:ring-sky-600">
+        </div>
+        <div class="flex items-center gap-2 pt-1">
+          <input type="checkbox" id="ft-recurring" checked class="rounded border-slate-300 text-sky-600">
+          <label for="ft-recurring" class="text-slate-700 font-semibold cursor-pointer">Paiement annuel récurrent (facturé à chaque rentrée)</label>
+        </div>
+        <div class="pt-3 border-t border-slate-200 flex justify-end gap-2.5">
+          <button type="button" onclick="closeFeeTypeModal()" class="px-4 py-2 border border-slate-300 rounded-xl text-slate-700 hover:bg-slate-100 font-bold transition cursor-pointer">
+            Annuler
+          </button>
+          <button type="submit" class="px-5 py-2 bg-sky-600 hover:bg-sky-700 text-white rounded-xl font-black shadow-md transition flex items-center gap-2 cursor-pointer">
+            <span>💾</span>
+            <span>Enregistrer le Frais</span>
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- ================================================================= -->
+  <!-- MODAL : GRILLE TARIFAIRE PAR NIVEAU ACADÉMIQUE                    -->
+  <!-- ================================================================= -->
+  <div id="modal-cost-level" class="hidden fixed inset-0 bg-black/60 backdrop-blur-xs z-50 flex items-center justify-center p-3 sm:p-4 overflow-y-auto">
+    <div class="bg-white rounded-2xl shadow-2xl max-w-md w-full border border-slate-200 overflow-hidden my-6">
+      <div class="bg-gradient-to-r from-slate-900 to-violet-900 text-white px-5 py-4 flex justify-between items-center">
+        <div class="flex items-center gap-2.5">
+          <span class="text-xl">🎓</span>
+          <div>
+            <h4 class="font-black text-sm text-white">Niveau Académique Tarifé</h4>
+            <p class="text-[11px] text-violet-200">Coûts de scolarité de base et droits d'examen</p>
+          </div>
+        </div>
+        <button type="button" onclick="closeCostLevelModal()" class="text-violet-200 hover:text-white text-xl font-bold cursor-pointer">&times;</button>
+      </div>
+      <form onsubmit="handleCostLevelSubmit(event)" class="p-5 space-y-4 text-xs">
+        <div class="grid grid-cols-2 gap-3">
+          <div>
+            <label class="block text-slate-700 font-semibold mb-1">Niveau <span class="text-red-500">*</span></label>
+            <input type="text" id="cl-level" required placeholder="Ex: 3EME, TLE D" class="w-full border border-slate-300 rounded-lg px-3 py-2 outline-none font-bold uppercase focus:ring-2 focus:ring-violet-600">
+          </div>
+          <div>
+            <label class="block text-slate-700 font-semibold mb-1">Cycle Académique <span class="text-red-500">*</span></label>
+            <select id="cl-cycle" required class="w-full border border-slate-300 rounded-lg px-3 py-2 outline-none font-bold bg-white focus:ring-2 focus:ring-violet-600">
+              <option value="Premier Cycle">Premier Cycle (Collège)</option>
+              <option value="Second Cycle">Second Cycle (Lycée)</option>
+              <option value="Primaire">Primaire</option>
+              <option value="Maternelle">Maternelle</option>
+            </select>
+          </div>
+        </div>
+        <div>
+          <label class="block text-slate-700 font-semibold mb-1">Scolarité Annuelle de Base (XOF) <span class="text-red-500">*</span></label>
+          <input type="number" id="cl-base" min="0" step="5000" required placeholder="140000" class="w-full border border-slate-300 rounded-lg px-3 py-2 outline-none font-mono font-bold focus:ring-2 focus:ring-violet-600">
+        </div>
+        <div>
+          <label class="block text-slate-700 font-semibold mb-1">Frais de Dossier & Examen d'État (XOF)</label>
+          <input type="number" id="cl-exam" min="0" step="1000" value="0" placeholder="10000" class="w-full border border-slate-300 rounded-lg px-3 py-2 outline-none font-mono font-bold focus:ring-2 focus:ring-violet-600">
+        </div>
+        <div class="pt-3 border-t border-slate-200 flex justify-end gap-2.5">
+          <button type="button" onclick="closeCostLevelModal()" class="px-4 py-2 border border-slate-300 rounded-xl text-slate-700 hover:bg-slate-100 font-bold transition cursor-pointer">
+            Annuler
+          </button>
+          <button type="submit" class="px-5 py-2 bg-violet-600 hover:bg-violet-700 text-white rounded-xl font-black shadow-md transition flex items-center gap-2 cursor-pointer">
+            <span>💾</span>
+            <span>Enregistrer le Niveau</span>
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- ================================================================= -->
+  <!-- MODAL : BARÈME DES BOURSES & RÉDUCTIONS TARIFAIRES                -->
+  <!-- ================================================================= -->
+  <div id="modal-reduction" class="hidden fixed inset-0 bg-black/60 backdrop-blur-xs z-50 flex items-center justify-center p-3 sm:p-4 overflow-y-auto">
+    <div class="bg-white rounded-2xl shadow-2xl max-w-md w-full border border-slate-200 overflow-hidden my-6">
+      <div class="bg-gradient-to-r from-slate-900 to-purple-900 text-white px-5 py-4 flex justify-between items-center">
+        <div class="flex items-center gap-2.5">
+          <span class="text-xl">🎁</span>
+          <div>
+            <h4 class="font-black text-sm text-white">Cas de Bourse / Réduction</h4>
+            <p class="text-[11px] text-purple-200">Allégement tarifaire ou exonération sociale</p>
+          </div>
+        </div>
+        <button type="button" onclick="closeReductionModal()" class="text-purple-200 hover:text-white text-xl font-bold cursor-pointer">&times;</button>
+      </div>
+      <form onsubmit="handleReductionSubmit(event)" class="p-5 space-y-4 text-xs">
+        <input type="hidden" id="red-code">
+        <div>
+          <label class="block text-slate-700 font-semibold mb-1">Intitulé de la Réduction <span class="text-red-500">*</span></label>
+          <input type="text" id="red-label" required placeholder="Ex: Bourse Sociale Partielle" class="w-full border border-slate-300 rounded-lg px-3 py-2 outline-none font-bold focus:ring-2 focus:ring-purple-600">
+        </div>
+        <div class="grid grid-cols-2 gap-3">
+          <div>
+            <label class="block text-slate-700 font-semibold mb-1">Type de Calcul <span class="text-red-500">*</span></label>
+            <select id="red-type" required class="w-full border border-slate-300 rounded-lg px-3 py-2 outline-none font-bold bg-white focus:ring-2 focus:ring-purple-600">
+              <option value="Pourcentage">Pourcentage (%)</option>
+              <option value="Montant fixe">Montant Fixe (XOF)</option>
+            </select>
+          </div>
+          <div>
+            <label class="block text-slate-700 font-semibold mb-1">Valeur de Réduction <span class="text-red-500">*</span></label>
+            <input type="text" id="red-val" required placeholder="30% ou 40000 XOF" class="w-full border border-slate-300 rounded-lg px-3 py-2 outline-none font-bold font-mono focus:ring-2 focus:ring-purple-600">
+          </div>
+        </div>
+        <div>
+          <label class="block text-slate-700 font-semibold mb-1">Périmètre d'Application <span class="text-red-500">*</span></label>
+          <select id="red-applies" required class="w-full border border-slate-300 rounded-lg px-3 py-2 outline-none font-bold bg-white focus:ring-2 focus:ring-purple-600">
+            <option value="Tous">Tous les cycles</option>
+            <option value="Collège">Premier Cycle (Collège uniquement)</option>
+            <option value="Lycée">Second Cycle (Lycée uniquement)</option>
+          </select>
+        </div>
+        <div class="pt-3 border-t border-slate-200 flex justify-end gap-2.5">
+          <button type="button" onclick="closeReductionModal()" class="px-4 py-2 border border-slate-300 rounded-xl text-slate-700 hover:bg-slate-100 font-bold transition cursor-pointer">
+            Annuler
+          </button>
+          <button type="submit" class="px-5 py-2 bg-purple-600 hover:bg-purple-700 text-white rounded-xl font-black shadow-md transition flex items-center gap-2 cursor-pointer">
+            <span>💾</span>
+            <span>Enregistrer la Réduction</span>
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- ================================================================= -->
+  <!-- MODAL : AFFECTATION DE CRÉNEAU SUR L'EMPLOI DU TEMPS             -->
+  <!-- ================================================================= -->
+  <div id="modal-timetable-slot" class="hidden fixed inset-0 bg-black/60 backdrop-blur-xs z-50 flex items-center justify-center p-3 sm:p-4 overflow-y-auto">
+    <div class="bg-white rounded-2xl shadow-2xl max-w-md w-full border border-slate-200 overflow-hidden my-6">
+      <div class="bg-gradient-to-r from-slate-900 to-blue-900 text-white px-5 py-4 flex justify-between items-center">
+        <div class="flex items-center gap-2.5">
+          <span class="text-xl">🕒</span>
+          <div>
+            <h4 class="font-black text-sm text-white">Planification de Cours</h4>
+            <p class="text-[11px] text-blue-200">Affectation d'un créneau hebdomadaire</p>
+          </div>
+        </div>
+        <button type="button" onclick="closeTimetableSlotModal()" class="text-blue-200 hover:text-white text-xl font-bold cursor-pointer">&times;</button>
+      </div>
+      <form onsubmit="handleTimetableSlotSubmit(event)" class="p-5 space-y-4 text-xs">
+        <input type="hidden" id="tt-class">
+        <input type="hidden" id="tt-day">
+        <input type="hidden" id="tt-slot">
+        
+        <div class="bg-blue-50 border border-blue-200 p-2.5 rounded-xl font-bold text-blue-900 text-center" id="tt-info-badge">
+          4EME 5 &bull; LUNDI &bull; 08h00 - 09h00
+        </div>
+
+        <div>
+          <label class="block text-slate-700 font-semibold mb-1">Matière Enseignée <span class="text-red-500">*</span></label>
+          <select id="tt-subject" required class="w-full border border-slate-300 rounded-lg px-3 py-2 outline-none font-bold bg-white focus:ring-2 focus:ring-blue-600">
+            <option value="Mathématiques">Mathématiques</option>
+            <option value="Français">Français</option>
+            <option value="Anglais">Anglais</option>
+            <option value="Sciences de la Vie et de la Terre (SVT)">Sciences de la Vie et de la Terre (SVT)</option>
+            <option value="Physique-Chimie">Physique-Chimie</option>
+            <option value="Histoire-Géographie">Histoire-Géographie</option>
+            <option value="Éducation Physique & Sportive (EPS)">Éducation Physique & Sportive (EPS)</option>
+            <option value="Philosophie">Philosophie</option>
+            <option value="Espagnol / Allemand">Espagnol / Allemand</option>
+            <option value="Informatique & TIC">Informatique & TIC</option>
+          </select>
+        </div>
+
+        <div class="grid grid-cols-2 gap-3">
+          <div>
+            <label class="block text-slate-700 font-semibold mb-1">Professeur Responsable</label>
+            <input type="text" id="tt-teacher" value="Prof. Titulaire" class="w-full border border-slate-300 rounded-lg px-3 py-2 outline-none font-semibold focus:ring-2 focus:ring-blue-600">
+          </div>
+          <div>
+            <label class="block text-slate-700 font-semibold mb-1">Salle de Classe</label>
+            <input type="text" id="tt-room" value="Salle 104" class="w-full border border-slate-300 rounded-lg px-3 py-2 outline-none font-semibold focus:ring-2 focus:ring-blue-600">
+          </div>
+        </div>
+
+        <div>
+          <label class="block text-slate-700 font-semibold mb-1">Thème Visuel</label>
+          <select id="tt-color" class="w-full border border-slate-300 rounded-lg px-3 py-2 outline-none font-bold bg-white focus:ring-2 focus:ring-blue-600">
+            <option value="bg-blue-100 text-blue-900 border-blue-300">Bleu (Sciences Exactes)</option>
+            <option value="bg-emerald-100 text-emerald-900 border-emerald-300">Vert (Sciences Naturelles)</option>
+            <option value="bg-amber-100 text-amber-900 border-amber-300">Ambre (Lettres & Langues)</option>
+            <option value="bg-purple-100 text-purple-900 border-purple-300">Violet (Histoire & Philosophie)</option>
+            <option value="bg-rose-100 text-rose-900 border-rose-300">Rose (Arts & EPS)</option>
+          </select>
+        </div>
+
+        <div class="pt-3 border-t border-slate-200 flex justify-end gap-2.5">
+          <button type="button" onclick="closeTimetableSlotModal()" class="px-4 py-2 border border-slate-300 rounded-xl text-slate-700 hover:bg-slate-100 font-bold transition cursor-pointer">
+            Annuler
+          </button>
+          <button type="submit" class="px-5 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-xl font-black shadow-md transition flex items-center gap-2 cursor-pointer">
+            <span>💾</span>
+            <span>Planifier le Cours</span>
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- ================================================================= -->
+  <!-- MODAL : PARAMÈTRES CONFECTION EMPLOI DU TEMPS AUTOMATIQUE        -->
+  <!-- ================================================================= -->
+  <div id="modal-timetable-config" class="hidden fixed inset-0 bg-black/60 backdrop-blur-xs z-50 flex items-center justify-center p-3 sm:p-4 overflow-y-auto">
+    <div class="bg-white rounded-2xl shadow-2xl max-w-lg w-full border border-slate-200 overflow-hidden my-6">
+      <div class="bg-gradient-to-r from-slate-900 to-indigo-900 text-white px-5 py-4 flex justify-between items-center">
+        <div class="flex items-center gap-2.5">
+          <span class="text-xl">⚙️</span>
+          <div>
+            <h4 class="font-black text-sm text-white">Moteur Heuristique de Répartition</h4>
+            <p class="text-[11px] text-indigo-200">Normes ministérielles MENA & Contraintes pédagogiques</p>
+          </div>
+        </div>
+        <button type="button" onclick="closeAutoTimetableModal()" class="text-indigo-200 hover:text-white text-xl font-bold cursor-pointer">&times;</button>
+      </div>
+      <div class="p-5 space-y-4 text-xs text-slate-700">
+        <div class="p-3 bg-indigo-50 border border-indigo-200 rounded-xl space-y-2">
+          <h5 class="font-black text-indigo-950 text-xs flex items-center gap-1.5">
+            <span>📋</span>
+            <span>Règles Réglementaires Appliquées :</span>
+          </h5>
+          <ul class="space-y-1.5 text-[11px] text-indigo-900 pl-4 list-disc">
+            <li><strong>Volumes horaires hebdomadaires :</strong> Extraits directement du programme officiel de chaque matière.</li>
+            <li><strong>Plafond journalier :</strong> Maximum 7 heures de cours par classe par journée d'étude.</li>
+            <li><strong>Pause méridienne :</strong> Plage horaire 12h00 - 14h00 sanctuarisée pour le déjeuner.</li>
+            <li><strong>Mercredi après-midi :</strong> Libéré conformément aux directives de la vie scolaire.</li>
+            <li><strong>Anti-collision :</strong> Détection et prévention des chevauchements d'enseignants et de salles.</li>
+          </ul>
+        </div>
+        <p class="text-[11px] text-slate-500">
+          La génération automatique créera une proposition d'emploi du temps optimisée sans modifier les cours déjà verrouillés.
+        </p>
+      </div>
+      <div class="p-4 bg-slate-50 border-t border-slate-200 flex justify-end gap-2.5">
+        <button type="button" onclick="closeAutoTimetableModal()" class="px-4 py-2 border border-slate-300 rounded-xl text-slate-700 hover:bg-slate-100 font-bold text-xs cursor-pointer">
+          Fermer
+        </button>
+        <button type="button" onclick="closeAutoTimetableModal(); runAutoTimetableGeneration();" class="px-5 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl font-black text-xs shadow-md transition flex items-center gap-2 cursor-pointer">
+          <span>⚡</span>
+          <span>Lancer la Confection Automatique</span>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- TOAST NOTIFICATION -->
   <div id="toast" class="fixed bottom-5 right-5 bg-slate-900 text-white px-4 py-2.5 rounded-lg shadow-xl text-xs flex items-center gap-2 transform transition-all duration-300 translate-y-20 opacity-0 pointer-events-none z-50">
     <span class="text-emerald-400 font-bold text-sm">✓</span>
     <span id="toast-msg">Action effectuée avec succès</span>
@@ -9689,7 +10188,7 @@
       const editPassword = document.getElementById('eu-password')?.value;
 
       if (editPassword && editPassword.length < 8) {
-        alert("Erreur : Le nouveau mot de passe doit comporter au moins 8 caractères.");
+        showToast("⚠️ Erreur : Le nouveau mot de passe doit comporter au moins 8 caractères.");
         return;
       }
 
@@ -9713,7 +10212,7 @@
           throw new Error(errData.error || `Erreur HTTP ${res.status}`);
         }
       } catch (err) {
-        alert("Erreur lors de la mise à jour : " + err.message);
+        showToast("⛔ Erreur lors de la mise à jour : " + err.message);
         return;
       }
 
@@ -9739,7 +10238,7 @@
         return;
       }
       if (userId === 0) {
-        alert("Le compte Concepteur Souverain ne peut jamais être supprimé.");
+        showToast("⛔ Le compte Concepteur Souverain ne peut jamais être supprimé.");
         return;
       }
 
@@ -9755,7 +10254,7 @@
           throw new Error(errData.error || `Erreur HTTP ${res.status}`);
         }
       } catch (err) {
-        alert("Erreur lors de la suppression : " + err.message);
+        showToast("⛔ Erreur lors de la suppression : " + err.message);
         return;
       }
 
@@ -10160,34 +10659,59 @@
       }
     }
 
-    async function rejectSecondaryDeposit(depositId) {
+    function openRejectDepositModal(depositId) {
       if (!hasPerm('cash.deposit.reject')) {
         showToast("Action refusée : permission cash.deposit.reject requise.");
         return;
       }
-      const reason = prompt("Motif du refus du versement :", "Écart constaté avec le montant physique");
-      if (reason) {
-        const dep = appState.cashDeposits.find(d => d.id === depositId);
-        if (dep) {
-          try {
-            await fetch(`/api/cash/deposits/${depositId}/reject`, {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({ reason }),
-              credentials: 'same-origin'
-            });
-          } catch (err) {
-            console.warn('API deposit rejection failed:', err);
-          }
+      const dep = appState.cashDeposits.find(d => d.id === depositId);
+      if (!dep) return;
+      const m = document.getElementById('modal-reject-deposit');
+      if (!m) return;
+      document.getElementById('rd-dep-id').value = dep.id;
+      document.getElementById('rd-dep-ref').innerText = dep.ref || `DEP-${dep.id}`;
+      document.getElementById('rd-dep-amount').innerText = `${dep.amount.toLocaleString()} XOF`;
+      document.getElementById('rd-dep-sender').innerText = dep.fromDesk || 'Caisse Secondaire';
+      document.getElementById('rd-reason-details').value = '';
+      m.classList.remove('hidden');
+    }
 
-          dep.status = 'REJECTED';
-          dep.rejectionReason = reason;
-          dep.validatedBy = getActiveUser().prenom + ' ' + getActiveUser().nom;
-          auditAction('CASH_DEPOSIT_REJECT', 'Caisse', `Dépôt #${esc(dep.id)}`, 'PENDING', `REFUSÉ : ${reason}`, 'SUCCÈS');
-          renderPendingDeposits();
-          showToast(`Dépôt ${esc(dep.ref)} refusé.`);
+    function closeRejectDepositModal() {
+      const m = document.getElementById('modal-reject-deposit');
+      if (m) m.classList.add('hidden');
+    }
+
+    async function handleRejectDepositSubmit(event) {
+      event.preventDefault();
+      const depId = document.getElementById('rd-dep-id')?.value;
+      const selectReason = document.getElementById('rd-reason-select')?.value;
+      const details = document.getElementById('rd-reason-details')?.value.trim();
+      const reason = details ? `${selectReason} - ${details}` : selectReason;
+
+      const dep = appState.cashDeposits.find(d => String(d.id) === String(depId));
+      if (dep) {
+        try {
+          await fetch(`/api/cash/deposits/${depId}/reject`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ reason }),
+            credentials: 'same-origin'
+          });
+        } catch (err) {
+          console.warn('API deposit rejection failed:', err);
         }
+        dep.status = 'REJECTED';
+        dep.rejectionReason = reason;
+        dep.validatedBy = getActiveUser().prenom + ' ' + getActiveUser().nom;
+        closeRejectDepositModal();
+        renderPendingDeposits();
+        auditAction('CASH_DEPOSIT_REJECT', 'Caisse', `Dépôt #${esc(dep.id)}`, 'PENDING', `REFUSÉ : ${reason}`, 'SUCCÈS');
+        showToast(`Dépôt ${esc(dep.ref)} refusé.`);
       }
+    }
+
+    function rejectSecondaryDeposit(depositId) {
+      openRejectDepositModal(depositId);
     }
 
     function renderSecondaryCashDesk() {
@@ -10400,7 +10924,7 @@
           throw new Error(errData.error || `Erreur HTTP ${res.status}`);
         }
       } catch (err) {
-        alert("Erreur lors de la mise à jour de la caisse : " + err.message);
+        showToast("⛔ Erreur lors de la mise à jour de la caisse : " + err.message);
         return;
       }
 
@@ -10424,12 +10948,12 @@
       if (!c) return;
 
       if (c.type === 'PRINCIPALE') {
-        alert("Impossible de supprimer la caisse principale de l'établissement.");
+        showToast("⛔ Impossible de supprimer la caisse principale de l'établissement.");
         return;
       }
 
       if (c.balance > 0) {
-        alert(`Impossible de supprimer cette caisse car elle dispose d'un solde positif (${c.balance.toLocaleString()} XOF). Effectuez d'abord un versement vers la caisse principale.`);
+        showToast(`⚠️ Solde positif (${c.balance.toLocaleString()} XOF). Effectuez d'abord un versement vers la caisse principale.`);
         return;
       }
 
@@ -10445,7 +10969,7 @@
           throw new Error(errData.error || `Erreur HTTP ${res.status}`);
         }
       } catch (err) {
-        alert("Erreur lors de la suppression de la caisse : " + err.message);
+        showToast("⛔ Erreur lors de la suppression de la caisse : " + err.message);
         return;
       }
 
@@ -10455,39 +10979,64 @@
       showToast(`Caisse ${deskName} supprimée avec succès.`);
     }
 
-    async function createNewCashDeskPrompt() {
-      const name = prompt("Nom de la nouvelle caisse secondaire :", "Caisse Secondaire 3 (Guichet C)");
-      if (name) {
-        const id = 'CAISSE_' + (appState.cashDesks.length);
-        const code = 'CAISSE-0' + (appState.cashDesks.length);
-        const newDesk = {
-          id: id,
-          code: code,
-          name: name,
-          type: 'SECONDAIRE',
-          balance: 0,
-          physical: 0,
-          status: 'ACTIVE',
-          cashier: "À assigner",
-          schoolId: appState.currentSchoolId || 1
-        };
+    function openCreateCashDeskModal() {
+      const m = document.getElementById('modal-cash-desk-create');
+      if (!m) return;
+      const nameInp = document.getElementById('cd-name');
+      if (nameInp) nameInp.value = `Caisse Secondaire ${appState.cashDesks.length} (Guichet ${String.fromCharCode(65 + appState.cashDesks.length)})`;
+      const cashierInp = document.getElementById('cd-cashier');
+      if (cashierInp) cashierInp.value = '';
+      const floatInp = document.getElementById('cd-initial-float');
+      if (floatInp) floatInp.value = '0';
+      m.classList.remove('hidden');
+    }
 
-        try {
-          await fetch('/api/cash/desks', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(newDesk),
-            credentials: 'same-origin'
-          });
-        } catch (err) {
-          console.warn('API cash desk create failed:', err);
-        }
+    function closeCreateCashDeskModal() {
+      const m = document.getElementById('modal-cash-desk-create');
+      if (m) m.classList.add('hidden');
+    }
 
-        appState.cashDesks.push(newDesk);
-        renderCashDesksConfig();
-        auditAction('CASH_DESK_CREATE', 'Caisse', name, '', 'Nouvelle caisse secondaire créée', 'SUCCÈS');
-        showToast(`${name} créée avec succès !`);
+    async function handleCreateCashDeskSubmit(event) {
+      event.preventDefault();
+      const name = document.getElementById('cd-name')?.value.trim();
+      const cashier = document.getElementById('cd-cashier')?.value.trim() || 'À assigner';
+      const initialFloat = parseInt(document.getElementById('cd-initial-float')?.value, 10) || 0;
+      if (!name) return;
+
+      const id = 'CAISSE_' + (appState.cashDesks.length);
+      const code = 'CAISSE-0' + (appState.cashDesks.length);
+      const newDesk = {
+        id: id,
+        code: code,
+        name: name,
+        type: 'SECONDAIRE',
+        balance: initialFloat,
+        physical: initialFloat,
+        status: 'ACTIVE',
+        cashier: cashier,
+        schoolId: appState.currentSchoolId || 1
+      };
+
+      try {
+        await fetch('/api/cash/desks', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(newDesk),
+          credentials: 'same-origin'
+        });
+      } catch (err) {
+        console.warn('API cash desk create failed:', err);
       }
+
+      appState.cashDesks.push(newDesk);
+      closeCreateCashDeskModal();
+      renderCashDesksConfig();
+      auditAction('CASH_DESK_CREATE', 'Caisse', name, '', `Fonds initial: ${initialFloat.toLocaleString()} XOF`, 'SUCCÈS');
+      showToast(`${name} créée avec succès !`);
+    }
+
+    function createNewCashDeskPrompt() {
+      openCreateCashDeskModal();
     }
 
     function toggleCashSession(deskType, action) {
@@ -11232,25 +11781,77 @@
       });
     }
 
-    function editFeeInstallment(id) {
-      const inst = appState.feeInstallments.find(i => i.id === id);
-      if (!inst) return;
-      const newName = prompt("Nom de la tranche :", inst.name);
-      if (!newName) return;
-      const newDate = prompt("Date limite (JJ/MM/AAAA) :", inst.date);
-      if (!newDate) return;
-      const newPct = prompt("Pourcentage requis (%) :", inst.pct);
-      const newAmt = prompt("Montant indicatif Collège (XOF) :", inst.montantCollege);
+    function openFeeInstallmentModal(id = null) {
+      const m = document.getElementById('modal-fee-installment');
+      if (!m) return;
+      document.getElementById('inst-id').value = id !== null ? id : '';
+      if (id !== null) {
+        const inst = appState.feeInstallments.find(i => i.id === id);
+        if (inst) {
+          document.getElementById('inst-name').value = inst.name || '';
+          document.getElementById('inst-date').value = inst.date || '';
+          document.getElementById('inst-pct').value = inst.pct || 10;
+          document.getElementById('inst-amt-college').value = inst.montantCollege || 0;
+          document.getElementById('inst-obligatory').checked = !!inst.isObligatory;
+        }
+      } else {
+        document.getElementById('inst-name').value = `Tranche ${appState.feeInstallments.length + 1}`;
+        document.getElementById('inst-date').value = '15/01/2027';
+        document.getElementById('inst-pct').value = 10;
+        document.getElementById('inst-amt-college').value = 12000;
+        document.getElementById('inst-obligatory').checked = false;
+      }
+      m.classList.remove('hidden');
+    }
 
-      const oldVal = `${inst.name} (${inst.date}, ${inst.pct}%)`;
-      inst.name = newName.trim();
-      inst.date = newDate.trim();
-      if (newPct) inst.pct = parseInt(newPct, 10) || inst.pct;
-      if (newAmt) inst.montantCollege = parseInt(newAmt, 10) || inst.montantCollege;
+    function closeFeeInstallmentModal() {
+      const m = document.getElementById('modal-fee-installment');
+      if (m) m.classList.add('hidden');
+    }
 
+    function handleFeeInstallmentSubmit(event) {
+      event.preventDefault();
+      const idVal = document.getElementById('inst-id')?.value;
+      const name = document.getElementById('inst-name')?.value.trim();
+      const date = document.getElementById('inst-date')?.value.trim();
+      const pct = parseInt(document.getElementById('inst-pct')?.value, 10) || 10;
+      const amt = parseInt(document.getElementById('inst-amt-college')?.value, 10) || 0;
+      const isOblig = document.getElementById('inst-obligatory')?.checked;
+      if (!name || !date) return;
+
+      if (idVal !== '') {
+        const id = parseInt(idVal, 10);
+        const inst = appState.feeInstallments.find(i => i.id === id);
+        if (inst) {
+          const oldVal = `${inst.name} (${inst.date}, ${inst.pct}%)`;
+          inst.name = name;
+          inst.date = date;
+          inst.pct = pct;
+          inst.montantCollege = amt;
+          inst.isObligatory = isOblig;
+          auditAction('ECOLAGE_INSTALLMENT_UPDATE', 'Écolage', `Tranche #${esc(inst.id)}`, oldVal, `${inst.name} (${inst.date}, ${inst.pct}%)`, 'SUCCÈS');
+          showToast("Tranche d'écolage modifiée avec succès !");
+        }
+      } else {
+        const newId = appState.feeInstallments.length ? Math.max(...appState.feeInstallments.map(i => i.id)) + 1 : 1;
+        appState.feeInstallments.push({
+          id: newId,
+          tranche: `${newId}e Tranche`,
+          name: name,
+          date: date,
+          pct: pct,
+          montantCollege: amt,
+          isObligatory: isOblig
+        });
+        auditAction('ECOLAGE_INSTALLMENT_ADD', 'Écolage', name, '', date, 'SUCCÈS');
+        showToast("Nouvelle tranche d'écolage ajoutée !");
+      }
+      closeFeeInstallmentModal();
       renderEcolageSchedule();
-      auditAction('ECOLAGE_INSTALLMENT_UPDATE', 'Écolage', `Tranche #${esc(inst.id)}`, oldVal, `${inst.name} (${inst.date}, ${inst.pct}%)`, 'SUCCÈS');
-      showToast("Tranche d'écolage modifiée avec succès !");
+    }
+
+    function editFeeInstallment(id) {
+      openFeeInstallmentModal(id);
     }
 
     function deleteFeeInstallment(id) {
@@ -11266,22 +11867,7 @@
     }
 
     function addNewInstallmentPrompt() {
-      const name = prompt("Nom de la tranche :", "Tranche Exceptionnelle");
-      const date = prompt("Date limite (JJ/MM/AAAA) :", "15/01/2027");
-      if (name && date) {
-        appState.feeInstallments.push({
-          id: appState.feeInstallments.length + 1,
-          tranche: `${appState.feeInstallments.length + 1}e Tranche`,
-          name: name,
-          date: date,
-          pct: 10,
-          montantCollege: 12000,
-          isObligatory: false
-        });
-        renderEcolageSchedule();
-        auditAction('ECOLAGE_INSTALLMENT_ADD', 'Écolage', name, '', date, 'SUCCÈS');
-        showToast("Nouvelle tranche d'écolage ajoutée !");
-      }
+      openFeeInstallmentModal();
     }
 
     function renderEcolageFees() {
@@ -11308,23 +11894,72 @@
       });
     }
 
-    function editFeeType(code) {
-      const f = appState.feeTypes.find(x => x.code === code);
-      if (!f) return;
-      const newName = prompt("Nom du frais :", f.name);
-      if (!newName) return;
-      const newAmt = prompt("Montant indicatif (XOF) :", f.amount);
-      if (!newAmt) return;
-      const isOblig = confirm("Ce frais est-il obligatoire ? (OK = Obligatoire, Annuler = Facultatif)");
+    function openFeeTypeModal(code = null) {
+      const m = document.getElementById('modal-fee-type');
+      if (!m) return;
+      const codeInp = document.getElementById('ft-code');
+      if (code !== null) {
+        const f = appState.feeTypes.find(x => x.code === code);
+        if (f) {
+          codeInp.value = f.code;
+          codeInp.readOnly = true;
+          document.getElementById('ft-name').value = f.name;
+          document.getElementById('ft-nature').value = f.nature || 'Obligatoire';
+          document.getElementById('ft-recurring').checked = !!f.recurring;
+          document.getElementById('ft-amount').value = f.amount || 0;
+        }
+      } else {
+        codeInp.value = 'FRAIS_' + (appState.feeTypes.length + 1);
+        codeInp.readOnly = false;
+        document.getElementById('ft-name').value = '';
+        document.getElementById('ft-nature').value = 'Obligatoire';
+        document.getElementById('ft-recurring').checked = true;
+        document.getElementById('ft-amount').value = 5000;
+      }
+      m.classList.remove('hidden');
+    }
 
-      const oldVal = `${f.name} (${f.amount} XOF)`;
-      f.name = newName.trim();
-      f.amount = parseInt(newAmt, 10) || f.amount;
-      f.nature = isOblig ? 'Obligatoire' : 'Facultatif';
+    function closeFeeTypeModal() {
+      const m = document.getElementById('modal-fee-type');
+      if (m) m.classList.add('hidden');
+    }
 
+    function handleFeeTypeSubmit(event) {
+      event.preventDefault();
+      const code = document.getElementById('ft-code')?.value.trim().toUpperCase();
+      const name = document.getElementById('ft-name')?.value.trim();
+      const nature = document.getElementById('ft-nature')?.value;
+      const recurring = document.getElementById('ft-recurring')?.checked;
+      const amount = parseInt(document.getElementById('ft-amount')?.value, 10) || 0;
+      if (!code || !name) return;
+
+      const existing = appState.feeTypes.find(x => x.code === code);
+      if (existing) {
+        const oldVal = `${existing.name} (${existing.amount} XOF)`;
+        existing.name = name;
+        existing.nature = nature;
+        existing.recurring = recurring;
+        existing.amount = amount;
+        auditAction('FEE_TYPE_UPDATE', 'Écolage', code, oldVal, `${name} (${amount} XOF)`, 'SUCCÈS');
+        showToast("Type de frais mis à jour !");
+      } else {
+        appState.feeTypes.push({
+          code: code,
+          name: name,
+          nature: nature,
+          recurring: recurring,
+          amount: amount,
+          status: 'Actif'
+        });
+        auditAction('FEE_TYPE_CREATE', 'Écolage', code, '', name, 'SUCCÈS');
+        showToast("Nouveau type de frais ajouté au catalogue !");
+      }
+      closeFeeTypeModal();
       renderEcolageFees();
-      auditAction('FEE_TYPE_UPDATE', 'Écolage', f.code, oldVal, `${f.name} (${f.amount} XOF)`, 'SUCCÈS');
-      showToast("Type de frais mis à jour !");
+    }
+
+    function editFeeType(code) {
+      openFeeTypeModal(code);
     }
 
     function deleteFeeType(code) {
@@ -11340,21 +11975,7 @@
     }
 
     function addNewFeeTypePrompt() {
-      const code = prompt("Code du frais (ex: ASSUR) :", "ASSUR");
-      const name = prompt("Nom du frais :", "Assurance Scolaire Annuelle");
-      if (code && name) {
-        appState.feeTypes.push({
-          code: code.toUpperCase(),
-          name: name,
-          nature: 'Facultatif',
-          recurring: true,
-          amount: 5000,
-          status: 'Actif'
-        });
-        renderEcolageFees();
-        auditAction('FEE_TYPE_CREATE', 'Écolage', code, '', name, 'SUCCÈS');
-        showToast("Nouveau type de frais ajouté au catalogue !");
-      }
+      openFeeTypeModal();
     }
 
     function renderEcolageCosts() {
@@ -11387,22 +12008,51 @@
       }
     }
 
-    function addNewCostLevelPrompt() {
-      const lvl = prompt("Nom du niveau (ex: TERMINALE, 6EME) :", "NOUVEAU_NIVEAU");
+    function openCostLevelModal() {
+      const m = document.getElementById('modal-cost-level');
+      if (!m) return;
+      document.getElementById('cl-level').value = '';
+      document.getElementById('cl-cycle').value = 'Premier Cycle';
+      document.getElementById('cl-base').value = '120000';
+      document.getElementById('cl-exam').value = '0';
+      m.classList.remove('hidden');
+    }
+
+    function closeCostLevelModal() {
+      const m = document.getElementById('modal-cost-level');
+      if (m) m.classList.add('hidden');
+    }
+
+    function handleCostLevelSubmit(event) {
+      event.preventDefault();
+      const lvl = document.getElementById('cl-level')?.value.trim().toUpperCase();
+      const cycle = document.getElementById('cl-cycle')?.value;
+      const base = parseInt(document.getElementById('cl-base')?.value, 10) || 120000;
+      const exam = parseInt(document.getElementById('cl-exam')?.value, 10) || 0;
       if (!lvl) return;
-      const cycle = prompt("Cycle (Premier Cycle / Second Cycle) :", "Second Cycle");
-      const base = prompt("Montant Scolarité de base (XOF) :", "150000");
 
-      appState.costsByLevel.push({
-        level: lvl.toUpperCase().trim(),
-        cycle: cycle || 'Second Cycle',
-        base: parseInt(base, 10) || 120000,
-        exam: 10000
-      });
-
+      const existing = appState.costsByLevel.find(c => c.level === lvl);
+      if (existing) {
+        existing.cycle = cycle;
+        existing.base = base;
+        existing.exam = exam;
+        showToast(`Niveau ${lvl} actualisé !`);
+      } else {
+        appState.costsByLevel.push({
+          level: lvl,
+          cycle: cycle,
+          base: base,
+          exam: exam
+        });
+        showToast(`Niveau ${lvl} ajouté à la grille tarifaire !`);
+      }
+      closeCostLevelModal();
       renderEcolageCosts();
       auditAction('ECOLAGE_COST_LEVEL_ADD', 'Écolage', lvl, '', `${base} XOF`, 'SUCCÈS');
-      showToast(`Niveau ${lvl} ajouté à la grille tarifaire !`);
+    }
+
+    function addNewCostLevelPrompt() {
+      openCostLevelModal();
     }
 
     function deleteCostLevel(lvl) {
@@ -11450,22 +12100,71 @@
       });
     }
 
-    function editReduction(code) {
-      const d = appState.discountCases.find(x => x.code === code);
-      if (!d) return;
-      const newLabel = prompt("Nom de la réduction :", d.label);
-      if (!newLabel) return;
-      const newVal = prompt("Valeur de la réduction (ex: 30% ou 40000 XOF) :", d.value);
-      if (!newVal) return;
+    function openReductionModal(code = null) {
+      const m = document.getElementById('modal-reduction');
+      if (!m) return;
+      document.getElementById('red-code').value = code || '';
+      if (code) {
+        const d = appState.discountCases.find(x => x.code === code);
+        if (d) {
+          document.getElementById('red-label').value = d.label || '';
+          document.getElementById('red-type').value = d.type || 'Pourcentage';
+          document.getElementById('red-val').value = d.value || '';
+          document.getElementById('red-applies').value = d.appliesTo || 'Tous';
+        }
+      } else {
+        document.getElementById('red-label').value = 'Bourse Sociale Partielle';
+        document.getElementById('red-type').value = 'Pourcentage';
+        document.getElementById('red-val').value = '30%';
+        document.getElementById('red-applies').value = 'Tous';
+      }
+      m.classList.remove('hidden');
+    }
 
-      const oldVal = `${d.label} (${d.value})`;
-      d.label = newLabel.trim();
-      d.value = newVal.trim();
-      d.type = newVal.includes('%') ? 'Pourcentage' : 'Montant fixe';
+    function closeReductionModal() {
+      const m = document.getElementById('modal-reduction');
+      if (m) m.classList.add('hidden');
+    }
 
+    function handleReductionSubmit(event) {
+      event.preventDefault();
+      const code = document.getElementById('red-code')?.value;
+      const label = document.getElementById('red-label')?.value.trim();
+      const type = document.getElementById('red-type')?.value;
+      const val = document.getElementById('red-val')?.value.trim();
+      const applies = document.getElementById('red-applies')?.value;
+      if (!label || !val) return;
+
+      if (code) {
+        const d = appState.discountCases.find(x => x.code === code);
+        if (d) {
+          const oldVal = `${d.label} (${d.value})`;
+          d.label = label;
+          d.type = type;
+          d.value = val;
+          d.appliesTo = applies;
+          auditAction('REDUCTION_UPDATE', 'Écolage', d.code, oldVal, `${d.label} (${d.value})`, 'SUCCÈS');
+          showToast("Cas de réduction mis à jour !");
+        }
+      } else {
+        const newCode = 'REDUC_' + (appState.discountCases.length + 1);
+        appState.discountCases.push({
+          code: newCode,
+          label: label,
+          type: type,
+          value: val,
+          appliesTo: applies,
+          status: 'Actif'
+        });
+        auditAction('REDUCTION_CREATE', 'Écolage', label, '', val, 'SUCCÈS');
+        showToast("Nouveau cas de réduction configuré !");
+      }
+      closeReductionModal();
       renderEcolageReductions();
-      auditAction('REDUCTION_UPDATE', 'Écolage', d.code, oldVal, `${d.label} (${d.value})`, 'SUCCÈS');
-      showToast("Cas de réduction mis à jour !");
+    }
+
+    function editReduction(code) {
+      openReductionModal(code);
     }
 
     function deleteReduction(code) {
@@ -11481,21 +12180,7 @@
     }
 
     function addNewReductionPrompt() {
-      const label = prompt("Nom du cas de réduction :", "Bourse Sociale Partielle");
-      const val = prompt("Valeur de la réduction (ex: 30% ou 40000 XOF) :", "30%");
-      if (label && val) {
-        appState.discountCases.push({
-          code: 'REDUC_' + (appState.discountCases.length + 1),
-          label: label,
-          type: val.includes('%') ? 'Pourcentage' : 'Montant fixe',
-          value: val,
-          appliesTo: 'Tous',
-          status: 'Actif'
-        });
-        renderEcolageReductions();
-        auditAction('REDUCTION_CREATE', 'Écolage', label, '', val, 'SUCCÈS');
-        showToast("Nouveau cas de réduction configuré !");
-      }
+      openReductionModal();
     }
 
     function populatePersonalSchedStudentSelect() {
@@ -12335,7 +13020,7 @@
       const st = appState.students.find(s => s.id === id);
       if (st) {
         if (st.feePaid > 0) {
-          alert(`⚠️ Règle de conformité comptable (Règle RG-04) : L'élève ${esc(st.nomPrenom)} dispose d'un historique de paiements validés (${st.feePaid.toLocaleString()} XOF). Conformément aux normes d'audit financier, vous devez préalablement annuler ou réaffecter les quittances comptables avant toute radiation.`);
+          showToast(`⚠️ Règle RG-04 : L'élève ${esc(st.nomPrenom)} dispose de quittances actives (${st.feePaid.toLocaleString()} XOF). Annulez-les d'abord.`);
           return;
         }
         if (confirm(`Êtes-vous sûr de vouloir supprimer définitivement l'inscription de ${esc(st.nomPrenom)} ?`)) {
@@ -12366,7 +13051,7 @@
       if (!st) return;
 
       if (st.feePaid > 0) {
-        alert(`⚠️ Règle de conformité comptable (Règle RG-04) : L'élève ${esc(st.nomPrenom)} dispose d'un historique de paiements validés (${st.feePaid.toLocaleString()} XOF). Conformément aux normes d'audit financier, vous ne pouvez pas supprimer un élève ayant des quittances comptables actives.`);
+        showToast(`⚠️ Règle RG-04 : L'élève ${esc(st.nomPrenom)} a des quittances actives (${st.feePaid.toLocaleString()} XOF). Suppression impossible.`);
         return;
       }
 
@@ -12382,7 +13067,7 @@
           throw new Error(errData.error || `Erreur HTTP ${res.status}`);
         }
       } catch (err) {
-        alert("Erreur lors de la suppression : " + err.message);
+        showToast("⛔ Erreur lors de la suppression : " + err.message);
         return;
       }
 
@@ -13597,7 +14282,30 @@
 
     function openSessionModal() {
       const u = getActiveUser();
-      alert(`=== SESSION ACTIVE ===\nUtilisateur : ${esc(u.prenom)} ${esc(u.nom)}\nRôle : ${esc(u.roleLabel)}\nPérimètre de données : ${esc(u.scopeLabel)}\nÉtablissement : ${esc(u.school)}\nStatut : ${esc(u.status)}\nDernière connexion : ${esc(u.lastLogin)}`);
+      const m = document.getElementById('modal-active-session');
+      if (!m) return;
+      const initEl = document.getElementById('sess-user-initials');
+      if (initEl) initEl.innerText = ((u.prenom ? u.prenom[0] : '') + (u.nom ? u.nom[0] : '')).toUpperCase() || 'SP';
+      const nameEl = document.getElementById('sess-user-name');
+      if (nameEl) nameEl.innerText = `${u.prenom || ''} ${u.nom || ''}`.trim() || 'Utilisateur';
+      const mailEl = document.getElementById('sess-user-email');
+      if (mailEl) mailEl.innerText = u.email || 'user@scolapro.ci';
+      const roleEl = document.getElementById('sess-user-role');
+      if (roleEl) roleEl.innerText = u.roleLabel || u.role || 'Opérateur';
+      const scopeEl = document.getElementById('sess-user-scope');
+      if (scopeEl) scopeEl.innerText = u.scopeLabel || 'Établissement';
+      const schoolEl = document.getElementById('sess-user-school');
+      if (schoolEl) schoolEl.innerText = u.school || (appState.schools && appState.schools[0]?.name) || 'Établissement Scolaire';
+      const statusEl = document.getElementById('sess-user-status');
+      if (statusEl) statusEl.innerText = u.status ? u.status.toUpperCase() : 'ACTIF';
+      const loginEl = document.getElementById('sess-user-lastlogin');
+      if (loginEl) loginEl.innerText = u.lastLogin || new Date().toLocaleDateString('fr-FR');
+      m.classList.remove('hidden');
+    }
+
+    function closeSessionModal() {
+      const m = document.getElementById('modal-active-session');
+      if (m) m.classList.add('hidden');
     }
 
     function toggleSidebar() {
@@ -14235,7 +14943,7 @@
         updateCustomLogoPreview(dataUrl);
         showToast("Logo de l'école chargé avec succès !");
       } catch (err) {
-        alert("Erreur chargement logo : " + err.message);
+        showToast("⛔ Erreur chargement logo : " + err.message);
       }
     }
 
@@ -14268,7 +14976,7 @@
         updateFoundCustomLogoPreview(dataUrl);
         showToast("Logo de la fondation chargé avec succès !");
       } catch (err) {
-        alert("Erreur chargement logo : " + err.message);
+        showToast("⛔ Erreur chargement logo : " + err.message);
       }
     }
 
@@ -14301,7 +15009,7 @@
         updateEditFoundCustomLogoPreview(dataUrl);
         showToast("Logo chargé avec succès !");
       } catch (err) {
-        alert("Erreur chargement logo : " + err.message);
+        showToast("⛔ Erreur chargement logo : " + err.message);
       }
     }
 
@@ -14334,7 +15042,7 @@
         updateEditSchoolCustomLogoPreview(dataUrl);
         showToast("Logo de l'école chargé avec succès !");
       } catch (err) {
-        alert("Erreur chargement logo : " + err.message);
+        showToast("⛔ Erreur chargement logo : " + err.message);
       }
     }
 
@@ -14851,7 +15559,7 @@
     async function deleteFoundationFromConsole(id, name) {
       const user = getCurrentUser();
       if (user.role !== 'concepteur') {
-        alert("Accès refusé : Seul le Concepteur du SaaS peut dissoudre ou supprimer une Fondation Mère.");
+        showToast("⛔ Accès refusé : Seul le Concepteur du SaaS peut dissoudre une Fondation Mère.");
         return;
       }
       if (!confirm(`Confirmez-vous la suppression définitive de la Fondation #${id} (${name}) ?\nLes écoles affiliées seront automatiquement détachées.`)) {
@@ -14876,7 +15584,7 @@
           renderSuperAdminEntities();
           showToast(`🏛️ Fondation "${name}" supprimée avec succès.`);
         } else {
-          alert(`Erreur : ${res.error || res.message || 'Échec de la suppression'}`);
+          showToast(`⛔ Erreur : ${res.error || res.message || 'Échec de la suppression'}`);
         }
       } catch (err) {
         appState.foundations = (appState.foundations || []).filter(f => f.id !== id);
@@ -14889,7 +15597,7 @@
     async function deleteSchoolFromConsole(id, name) {
       const user = getCurrentUser();
       if (user.role !== 'concepteur' && user.role !== 'fondateur') {
-        alert("Accès refusé : La suppression d'un établissement est strictement réservée au Concepteur ou à la Fondation de tutelle.");
+        showToast("⛔ Accès refusé : Réservé au Concepteur ou à la Fondation de tutelle.");
         return;
       }
       if (!confirm(`Confirmez-vous la suppression définitive de l'établissement #${id} (${name}) ?\nToutes ses classes, caisses et données associées seront définitivement purgées.`)) {
@@ -14908,7 +15616,7 @@
           renderSuperAdminEntities();
           showToast(`🏫 Établissement "${name}" supprimé avec succès.`);
         } else {
-          alert(`Erreur : ${res.error || res.message || 'Échec de la suppression'}`);
+          showToast(`⛔ Erreur : ${res.error || res.message || 'Échec de la suppression'}`);
         }
       } catch (err) {
         appState.schools = (appState.schools || []).filter(s => s.id !== id);
@@ -17508,7 +18216,7 @@ async function deleteClass(id) {
   // Vérification de sécurité : vérifier si des élèves y sont inscrits
   const count = appState.students ? appState.students.filter(s => s.classe === c.name).length : 0;
   if (count > 0) {
-    alert(`Impossible de supprimer la classe ${esc(c.name)} : ${count} élèves y sont actuellement inscrits. Veuillez réaffecter les élèves d'abord.`);
+    showToast(`⚠️ Impossible de supprimer ${esc(c.name)} : ${count} élève(s) inscrit(s).`);
     return;
   }
   if (!confirm(`Supprimer définitivement la classe ${esc(c.name)} ?`)) return;
@@ -17917,7 +18625,7 @@ function saveTeacherScheduleForm(e) {
   const className = document.getElementById('m-sched-class').value;
 
   if (start >= end) {
-    alert("L'heure de début doit précéder l'heure de fin.");
+    showToast("⚠️ L'heure de début doit précéder l'heure de fin.");
     return;
   }
 
@@ -18038,21 +18746,61 @@ function renderTimetableGrid() {
   });
 }
 
-function quickAssignSlot(className, day, slotIdx) {
-  const subj = prompt(`Affecter une matière pour ${className} (${day}, créneau N°${slotIdx + 1}) :`, "Mathématiques");
-  if (!subj) return;
+function openTimetableSlotModal(className, day, slotIdx) {
+  const m = document.getElementById('modal-timetable-slot');
+  if (!m) return;
+  document.getElementById('tt-class').value = className;
+  document.getElementById('tt-day').value = day;
+  document.getElementById('tt-slot').value = slotIdx;
+  const slotTime = appState.timeNorms?.slots && appState.timeNorms.slots[slotIdx] 
+    ? `${appState.timeNorms.slots[slotIdx].start} - ${appState.timeNorms.slots[slotIdx].end}` 
+    : `Créneau N°${slotIdx + 1}`;
+  document.getElementById('tt-info-badge').innerText = `${className} • ${day} • ${slotTime}`;
+
+  // Remplir sélecteur de matières dynamiquement
+  const subSelect = document.getElementById('tt-subject');
+  if (subSelect && appState.matieres && appState.matieres.length) {
+    const uniqueMatieres = [...new Set(appState.matieres.map(m => m.name))];
+    subSelect.innerHTML = uniqueMatieres.map(s => `<option value="${esc(s)}">${esc(s)}</option>`).join('');
+  }
+  m.classList.remove('hidden');
+}
+
+function closeTimetableSlotModal() {
+  const m = document.getElementById('modal-timetable-slot');
+  if (m) m.classList.add('hidden');
+}
+
+function handleTimetableSlotSubmit(event) {
+  event.preventDefault();
+  const className = document.getElementById('tt-class')?.value;
+  const day = document.getElementById('tt-day')?.value;
+  const slotIdx = parseInt(document.getElementById('tt-slot')?.value, 10);
+  const subj = document.getElementById('tt-subject')?.value;
+  const teacher = document.getElementById('tt-teacher')?.value || 'Prof. Assigné';
+  const room = document.getElementById('tt-room')?.value || 'Salle 104';
+  const color = document.getElementById('tt-color')?.value || 'bg-blue-100 text-blue-900 border-blue-300';
+  if (!subj || !className) return;
+
   if (!appState.timetables[className]) appState.timetables[className] = [];
+  appState.timetables[className] = appState.timetables[className].filter(s => !(s.day === day && s.slotIdx === slotIdx));
   appState.timetables[className].push({
-    day,
-    slotIdx,
+    day: day,
+    slotIdx: slotIdx,
     subject: subj,
-    teacher: 'Prof. Assigné',
-    room: 'Salle 104',
-    color: 'bg-blue-100 text-blue-900 border-blue-300'
+    teacher: teacher,
+    room: room,
+    color: color
   });
+
+  closeTimetableSlotModal();
   auditAction('TIMETABLE_SLOT_ASSIGN', 'Pédagogie', `EDT ${className}`, '', `${day} créneau ${slotIdx + 1} -> ${subj}`, 'SUCCÈS');
-  showToast('Cours planifié sur la grille');
+  showToast('Cours planifié sur la grille avec succès');
   renderTimetableGrid();
+}
+
+function quickAssignSlot(className, day, slotIdx) {
+  openTimetableSlotModal(className, day, slotIdx);
 }
 
 function printCurrentTimetable() {
@@ -18095,7 +18843,13 @@ function renderConfectionEDT() {
 }
 
 function configureAutoTimetablePrompt() {
-  alert("Paramètres de confection automatique :\n- Volumes horaires hebdomadaires lus depuis la table Matières\n- Plafond journalier : 7 heures max par classe\n- Pause méridienne : 12h00 - 14h00 respectée\n- Mercredi après-midi libéré\n- Détection automatique des collisions de professeurs et de salles.");
+  const m = document.getElementById('modal-timetable-config');
+  if (m) m.classList.remove('hidden');
+}
+
+function closeAutoTimetableModal() {
+  const m = document.getElementById('modal-timetable-config');
+  if (m) m.classList.add('hidden');
 }
 
 function runAutoTimetableGeneration() {
@@ -18209,7 +18963,7 @@ function resetAutoTimetableDraft() {
 
 function saveAutoTimetableDraft() {
   if (!autoDraftEDT) {
-    alert("Veuillez d'abord générer un emploi du temps avant de l'enregistrer.");
+    showToast("⚠️ Veuillez d'abord générer un emploi du temps avant de l'enregistrer.");
     return;
   }
   appState.timetables[autoDraftEDT.targetClass] = autoDraftEDT.draft;
@@ -18331,7 +19085,7 @@ function saveHomeworkForm(e) {
 
   // Contrôle strict de périmètre de données
   if (user.role === 'enseignant' && Array.isArray(user.scopeValue) && !user.scopeValue.includes(className)) {
-    alert(`Accès refusé : Vous n'êtes pas autorisé à créer un devoir pour la classe ${className} (Périmètre non attribué).`);
+    showToast(`⛔ Accès refusé : Devoir non autorisé pour la classe ${className}.`);
     return;
   }
 

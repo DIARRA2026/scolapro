@@ -120,3 +120,70 @@ test('ERP-07 : Consultation certifiée des actes officiels et bulletin dynamique
   assert.ok(content.includes('id="b-school-name"'), 'Le nom dynamique de l\'école sur le bulletin doit exister');
   assert.ok(content.includes('id="b-student-finance-status"'), 'Le statut financier de l\'élève sur le bulletin doit exister');
 });
+
+test('ERP-08 : Éradication totale des boîtes de dialogue natives bloquantes (0 prompt, 0 alert)', () => {
+  const content = fs.readFileSync(path.join(__dirname, '..', 'index.html'), 'utf8');
+  
+  // Compter les occurrences de prompt( et alert( dans les scripts
+  const scriptRegex = /<script\b[^>]*>([\s\S]*?)<\/script>/gi;
+  let match;
+  let promptCount = 0;
+  let alertCount = 0;
+
+  while ((match = scriptRegex.exec(content)) !== null) {
+    const code = match[1];
+    // Chercher prompt( et alert( qui ne sont pas dans des commentaires simples
+    const lines = code.split('\n');
+    lines.forEach(line => {
+      const trimmed = line.trim();
+      if (!trimmed.startsWith('//') && !trimmed.startsWith('/*')) {
+        if (/\bprompt\s*\(/.test(trimmed)) promptCount++;
+        if (/\balert\s*\(/.test(trimmed)) alertCount++;
+      }
+    });
+  }
+
+  assert.equal(promptCount, 0, `Nombre de prompt() détectés dans les scripts : ${promptCount} (doit être 0)`);
+  assert.equal(alertCount, 0, `Nombre d'alert() détectés dans les scripts : ${alertCount} (doit être 0)`);
+});
+
+test('ERP-09 : Modaux comptables et financiers intégrés dans le DOM (Guichet, Refus, Échéances, Tarifs, Réductions)', () => {
+  const content = fs.readFileSync(path.join(__dirname, '..', 'index.html'), 'utf8');
+
+  // Modal session
+  assert.ok(content.includes('id="modal-active-session"'), 'modal-active-session doit exister');
+  assert.ok(content.includes('id="sess-user-initials"'), 'sess-user-initials doit exister');
+
+  // Modal caisse secondaire
+  assert.ok(content.includes('id="modal-cash-desk-create"'), 'modal-cash-desk-create doit exister');
+  assert.ok(content.includes('id="cd-name"'), 'cd-name doit exister');
+
+  // Modal refus versement
+  assert.ok(content.includes('id="modal-reject-deposit"'), 'modal-reject-deposit doit exister');
+  assert.ok(content.includes('id="rd-reason-select"'), 'rd-reason-select doit exister');
+
+  // Modal échéances écolage
+  assert.ok(content.includes('id="modal-fee-installment"'), 'modal-fee-installment doit exister');
+  assert.ok(content.includes('id="inst-name"'), 'inst-name doit exister');
+
+  // Modal types de frais
+  assert.ok(content.includes('id="modal-fee-type"'), 'modal-fee-type doit exister');
+  assert.ok(content.includes('id="ft-code"'), 'ft-code doit exister');
+
+  // Modal grille tarifaire
+  assert.ok(content.includes('id="modal-cost-level"'), 'modal-cost-level doit exister');
+  assert.ok(content.includes('id="cl-level"'), 'cl-level doit exister');
+
+  // Modal bourses et réductions
+  assert.ok(content.includes('id="modal-reduction"'), 'modal-reduction doit exister');
+  assert.ok(content.includes('id="red-label"'), 'red-label doit exister');
+});
+
+test('ERP-10 : Modaux pédagogiques intégrés dans le DOM (Emploi du temps & Confection heuristique)', () => {
+  const content = fs.readFileSync(path.join(__dirname, '..', 'index.html'), 'utf8');
+
+  assert.ok(content.includes('id="modal-timetable-slot"'), 'modal-timetable-slot doit exister');
+  assert.ok(content.includes('id="tt-subject"'), 'tt-subject doit exister');
+  assert.ok(content.includes('id="modal-timetable-config"'), 'modal-timetable-config doit exister');
+});
+
