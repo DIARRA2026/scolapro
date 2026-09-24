@@ -214,7 +214,7 @@
       <!-- Sélecteur de Mode : Code Établissement vs Email -->
       <div class="login-tabs">
         <button type="button" id="tabCode" class="login-tab active" onclick="setLoginMode('code')">
-          <span>🏫</span> Code Établissement
+          <span>🏫</span> Code Établissement / Fondation
         </button>
         <button type="button" id="tabEmail" class="login-tab" onclick="setLoginMode('email')">
           <span>📧</span> Adresse E-mail
@@ -222,9 +222,9 @@
       </div>
 
       <div class="form-group">
-        <label id="identifierLabel" for="identifier">Code de l'établissement</label>
-        <input type="text" id="identifier" name="identifier" required autocomplete="username" placeholder="Ex: GSH-01, LSM, COL-01...">
-        <p id="identifierHint" class="hint">Saisissez le code officiel attribué à votre école lors de sa création.</p>
+        <label id="identifierLabel" for="identifier">Code Établissement ou Fondation</label>
+        <input type="text" id="identifier" name="identifier" required autocomplete="username" placeholder="Ex: GSH-01, LSM, FND-01...">
+        <p id="identifierHint" class="hint">Saisissez le code officiel de votre école ou de votre fondation.</p>
       </div>
 
       <div class="form-group">
@@ -274,9 +274,9 @@
       if (mode === 'code') {
         tabCode.classList.add('active');
         tabEmail.classList.remove('active');
-        label.textContent = "Code de l'établissement";
-        input.placeholder = "Ex: GSH-01, LSM, COL-01...";
-        hint.textContent = "Saisissez le code officiel attribué à votre école lors de sa création.";
+        label.textContent = "Code Établissement ou Fondation";
+        input.placeholder = "Ex: GSH-01, LSM, FND-01...";
+        hint.textContent = "Saisissez le code officiel de votre école ou de votre fondation.";
       } else {
         tabEmail.classList.add('active');
         tabCode.classList.remove('active');

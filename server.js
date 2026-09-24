@@ -470,9 +470,41 @@ const server = http.createServer(async (req, res) => {
       }
 
       const body = await readJsonBody(req);
-      const targetUserId = parseInt(body.userId, 10);
-      const targetUser = db.getUserById(targetUserId);
-      if (!targetUser) throw new Error("Utilisateur cible d'impersonation introuvable.");
+      let targetUser = null;
+      if (body.userId !== undefined && body.userId !== null && body.userId !== '') {
+        const targetUserId = parseInt(body.userId, 10);
+        targetUser = db.getUserById(targetUserId);
+      } else if (body.code) {
+        const cleanCode = String(body.code).trim().toLowerCase();
+        // 1. Chercher dans les écoles
+        const school = db.db.prepare('SELECT id FROM schools WHERE lower(code) = ? AND is_active = 1').get(cleanCode);
+        if (school) {
+          const u = db.db.prepare("SELECT id FROM users WHERE school_id = ? AND role = 'admin' AND is_active = 1 LIMIT 1").get(school.id) ||
+                    db.db.prepare("SELECT id FROM users WHERE school_id = ? AND is_active = 1 LIMIT 1").get(school.id);
+          if (u) targetUser = db.getUserById(u.id);
+        }
+        // 2. Chercher dans les fondations
+        if (!targetUser) {
+          const found = db.db.prepare('SELECT id FROM foundations WHERE lower(code) = ? AND is_active = 1').get(cleanCode);
+          if (found) {
+            const u = db.db.prepare("SELECT id FROM users WHERE foundation_id = ? AND (role = 'fondateur' OR role = 'admin') AND is_active = 1 LIMIT 1").get(found.id) ||
+                      db.db.prepare("SELECT id FROM users WHERE foundation_id = ? AND is_active = 1 LIMIT 1").get(found.id);
+            if (u) targetUser = db.getUserById(u.id);
+          }
+        }
+      } else if (body.schoolId) {
+        const sId = parseInt(body.schoolId, 10);
+        const u = db.db.prepare("SELECT id FROM users WHERE school_id = ? AND role = 'admin' AND is_active = 1 LIMIT 1").get(sId) ||
+                  db.db.prepare("SELECT id FROM users WHERE school_id = ? AND is_active = 1 LIMIT 1").get(sId);
+        if (u) targetUser = db.getUserById(u.id);
+      } else if (body.foundationId) {
+        const fId = parseInt(body.foundationId, 10);
+        const u = db.db.prepare("SELECT id FROM users WHERE foundation_id = ? AND (role = 'fondateur' OR role = 'admin') AND is_active = 1 LIMIT 1").get(fId) ||
+                  db.db.prepare("SELECT id FROM users WHERE foundation_id = ? AND is_active = 1 LIMIT 1").get(fId);
+        if (u) targetUser = db.getUserById(u.id);
+      }
+
+      if (!targetUser) throw new Error("Utilisateur ou entité cible d'impersonation introuvable.");
 
       const newSession = db.createSession(targetUser.id, {
         ip: clientIp,

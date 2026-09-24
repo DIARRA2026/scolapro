@@ -208,3 +208,146 @@ test('AUTH-CODE-05 : Mise à jour du mot de passe école via PUT /api/schools/:i
   assert.strictEqual(newLogin.statusCode, 200);
   assert.ok(newLogin.json.success);
 });
+
+test('AUTH-CODE-06 : Connexion réussie avec un Code Fondation (insensible à la casse) et mot de passe dédié', async () => {
+  const adminLogin = await loginUser(baseUrl, TEST_USERS.concepteur, TEST_PASSWORD);
+  const foundCode = 'FND-TEST-' + Math.floor(Math.random() * 9000 + 1000);
+  const foundPassword = 'FoundationPwd2026!';
+
+  const createRes = await makeRequest(baseUrl, {
+    path: '/api/foundations',
+    method: 'POST',
+    headers: { cookie: adminLogin.cookie }
+  }, {
+    name: 'Fondation Éducation Test',
+    code: foundCode,
+    sigle: 'FET',
+    password: foundPassword
+  });
+
+  assert.strictEqual(createRes.statusCode, 201);
+  assert.ok(createRes.json.foundation);
+
+  // Connexion en minuscules
+  const loginRes = await makeRequest(baseUrl, {
+    path: '/api/auth/login',
+    method: 'POST'
+  }, {
+    identifier: foundCode.toLowerCase(),
+    password: foundPassword
+  });
+
+  assert.strictEqual(loginRes.statusCode, 200);
+  assert.ok(loginRes.json.success);
+  assert.strictEqual(loginRes.json.user.role, 'fondateur');
+  assert.strictEqual(loginRes.json.user.foundationId, createRes.json.foundation.id);
+});
+
+test('AUTH-CODE-07 : Accès Souverain : Le Concepteur accède à un compte École avec le code établissement et son mot de passe Concepteur', async () => {
+  const adminLogin = await loginUser(baseUrl, TEST_USERS.concepteur, TEST_PASSWORD);
+  const schoolCode = 'SCH-SOV-' + Math.floor(Math.random() * 9000 + 1000);
+  const schoolPassword = 'SchoolOwnPassword2026!';
+
+  await makeRequest(baseUrl, {
+    path: '/api/schools',
+    method: 'POST',
+    headers: { cookie: adminLogin.cookie }
+  }, {
+    name: 'École Souveraine Test',
+    code: schoolCode,
+    password: schoolPassword
+  });
+
+  // Le Concepteur utilise le code établissement et SON mot de passe maître (TEST_PASSWORD)
+  const masterLoginRes = await makeRequest(baseUrl, {
+    path: '/api/auth/login',
+    method: 'POST'
+  }, {
+    identifier: schoolCode,
+    password: TEST_PASSWORD
+  });
+
+  assert.strictEqual(masterLoginRes.statusCode, 200);
+  assert.ok(masterLoginRes.json.success);
+  assert.strictEqual(masterLoginRes.json.user.role, 'admin');
+
+  // Vérifier qu'un audit log souverain a été tracé
+  const audit = db.db.prepare("SELECT action, module FROM audit_logs WHERE action = 'SOVEREIGN_TENANT_LOGIN' ORDER BY id DESC LIMIT 1").get();
+  assert.ok(audit, 'Un audit SOVEREIGN_TENANT_LOGIN doit être tracé');
+  assert.strictEqual(audit.action, 'SOVEREIGN_TENANT_LOGIN');
+});
+
+test('AUTH-CODE-08 : Accès Souverain : Le Concepteur accède à un compte Fondation avec le code fondation et son mot de passe Concepteur', async () => {
+  const adminLogin = await loginUser(baseUrl, TEST_USERS.concepteur, TEST_PASSWORD);
+  const foundCode = 'FND-SOV-' + Math.floor(Math.random() * 9000 + 1000);
+  const foundPassword = 'FoundationOwnPwd2026!';
+
+  await makeRequest(baseUrl, {
+    path: '/api/foundations',
+    method: 'POST',
+    headers: { cookie: adminLogin.cookie }
+  }, {
+    name: 'Fondation Souveraine Test',
+    code: foundCode,
+    password: foundPassword
+  });
+
+  // Le Concepteur utilise le code fondation et SON mot de passe maître
+  const masterLoginRes = await makeRequest(baseUrl, {
+    path: '/api/auth/login',
+    method: 'POST'
+  }, {
+    identifier: foundCode,
+    password: TEST_PASSWORD
+  });
+
+  assert.strictEqual(masterLoginRes.statusCode, 200);
+  assert.ok(masterLoginRes.json.success);
+  assert.strictEqual(masterLoginRes.json.user.role, 'fondateur');
+});
+
+test('AUTH-CODE-09 : Basculement souverain /api/auth/switch par code d\'établissement ou de fondation', async () => {
+  const adminLogin = await loginUser(baseUrl, TEST_USERS.concepteur, TEST_PASSWORD);
+  const schoolCode = 'SW-SCH-' + Math.floor(Math.random() * 9000 + 1000);
+
+  const schRes = await makeRequest(baseUrl, {
+    path: '/api/schools',
+    method: 'POST',
+    headers: { cookie: adminLogin.cookie }
+  }, {
+    name: 'École Switch Test',
+    code: schoolCode,
+    password: 'SchoolPassword2026!'
+  });
+
+  // Switch direct via le code de l'école
+  const switchRes = await makeRequest(baseUrl, {
+    path: '/api/auth/switch',
+    method: 'POST',
+    headers: { cookie: adminLogin.cookie }
+  }, {
+    code: schoolCode
+  });
+
+  assert.strictEqual(switchRes.statusCode, 200);
+  assert.ok(switchRes.json.success);
+  assert.strictEqual(switchRes.json.user.schoolId, schRes.json.school.id);
+});
+
+test('AUTH-CODE-10 : Vérification des fonctions et éléments DOM d\'ouverture d\'interface et barre d\'accès rapide', () => {
+  const fs = require('node:fs');
+  const path = require('node:path');
+  const content = fs.readFileSync(path.join(__dirname, '..', 'index.html'), 'utf8');
+
+  // Fonctions JS globales
+  assert.ok(content.includes('function openFoundationInterface('), 'openFoundationInterface doit exister');
+  assert.ok(content.includes('function openSchoolInterface('), 'openSchoolInterface doit exister');
+  assert.ok(content.includes('function openConcepteurInterface('), 'openConcepteurInterface doit exister');
+  assert.ok(content.includes('function accessTenantByCode('), 'accessTenantByCode doit exister');
+
+  // Boutons et barre d'accès rapide
+  assert.ok(content.includes('id="quick-access-tenant-code"'), 'quick-access-tenant-code doit exister');
+  assert.ok(content.includes('accessTenantByCode()'), 'accessTenantByCode doit être appelé');
+  assert.ok(content.includes('openFoundationInterface()'), 'openFoundationInterface doit être relié');
+  assert.ok(content.includes('openSchoolInterface()'), 'openSchoolInterface doit être relié');
+});
