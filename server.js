@@ -16,6 +16,7 @@ const path = require('node:path');
 const db = require('./db.js');
 const auth = require('./lib/auth.js');
 const { AccessError, ROLES, assertRank } = require('./lib/rbac.js');
+const aiEngine = require('./lib/ai-engine.js');
 const {
   securityHeaders,
   checkRequestOrigin,
@@ -571,6 +572,55 @@ const server = http.createServer(async (req, res) => {
     // Données de bootstrap
     if (reqPath === '/api/bootstrap' && method === 'GET') {
       return sendJson(res, 200, db.getBootstrapData(user));
+    }
+
+    // -----------------------------------------------------------------
+    // MODULE D'INTELLIGENCE ARTIFICIELLE SCOLAPRO (ScolaIA Copilot)
+    // -----------------------------------------------------------------
+
+    // Requête conversationnelle en langage naturel ScolaIA
+    if (reqPath === '/api/ai/query' && method === 'POST') {
+      const body = await readJsonBody(req);
+      const bootstrapData = db.getBootstrapData(user);
+      const answer = aiEngine.processScolaAINLPQuery(body.query, bootstrapData);
+      return sendJson(res, 200, { success: true, answer });
+    }
+
+    // Audit prédictif et score de risque de décrochage d'un élève
+    if (reqPath === '/api/ai/student-risk' && method === 'POST') {
+      const body = await readJsonBody(req);
+      let student = null;
+      if (body.studentId) {
+        student = db.getStudentByIdScoped(user, body.studentId);
+      }
+      if (!student && body.student) {
+        student = body.student;
+      }
+      if (!student) return sendError(res, new Error("Élève introuvable."), 404);
+      const risk = aiEngine.computeStudentAIRiskScore(student, body.context || {});
+      return sendJson(res, 200, { success: true, student, risk });
+    }
+
+    // Générateur d'appréciation pédagogique pour bulletin
+    if (reqPath === '/api/ai/evaluation' && method === 'POST') {
+      const body = await readJsonBody(req);
+      let student = null;
+      if (body.studentId) {
+        student = db.getStudentByIdScoped(user, body.studentId);
+      }
+      if (!student && body.student) {
+        student = body.student;
+      }
+      if (!student) return sendError(res, new Error("Élève introuvable."), 404);
+      const evaluation = aiEngine.generateStudentAIEvaluation(student, body.stats || {});
+      return sendJson(res, 200, { success: true, evaluation });
+    }
+
+    // Prévisionnel financier et audit des encaissements
+    if (reqPath === '/api/ai/financial-forecast' && method === 'GET') {
+      const bootstrapData = db.getBootstrapData(user);
+      const forecast = aiEngine.computeFinancialAIPredictions(bootstrapData.students, bootstrapData.cashDesks);
+      return sendJson(res, 200, { success: true, forecast });
     }
 
     // Élèves

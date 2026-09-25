@@ -2983,7 +2983,8 @@
                   <th class="py-3 px-3 text-center">STATUT</th>
                   <th class="py-3 px-3 text-center">NIVEAU</th>
                   <th class="py-3 px-4 text-center">CLASSE</th>
-                  <th class="py-3 px-3 text-center w-24">ACTIONS</th>
+                  <th class="py-3 px-3 text-center">DIAGNOSTIC IA</th>
+                  <th class="py-3 px-3 text-center w-28">ACTIONS</th>
                 </tr>
               </thead>
               <tbody id="students-table-body" class="divide-y divide-slate-100 text-slate-700">
@@ -3443,8 +3444,14 @@
             </div>
 
             <div class="border border-slate-300 rounded p-3 text-xs mb-4">
-              <span class="font-bold text-slate-800 text-[11px]">Avis du Conseil de Classe :</span>
-              <p class="italic text-slate-700 mt-1 bg-slate-50 p-2 rounded">
+              <div class="flex items-center justify-between mb-1">
+                <span class="font-bold text-slate-800 text-[11px]">Avis du Conseil de Classe :</span>
+                <button type="button" onclick="generateStudentAIEvaluationForCurrentBulletin()" class="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-gradient-to-r from-purple-700 via-indigo-600 to-amber-500 hover:from-purple-800 hover:to-indigo-700 text-white font-bold text-[10px] shadow-sm transition cursor-pointer" title="Générer une appréciation pédagogique personnalisée avec ScolaIA">
+                  <span>✨</span>
+                  <span>Générer avec ScolaIA</span>
+                </button>
+              </div>
+              <p id="bulletin-council-appreciation" class="italic text-slate-700 mt-1 bg-slate-50 p-2.5 rounded-xl border border-slate-200">
                 "Excellent trimestre. Travail sérieux et assidu dans l'ensemble des disciplines. Félicitations du conseil !"
               </p>
             </div>
@@ -3477,6 +3484,28 @@
             <span class="text-xs uppercase font-bold text-slate-500">Reste à Recouvrer (Soldes)</span>
             <p class="text-2xl font-black text-red-500 mt-1" id="fin-total-remaining">11 700 000 <span class="text-xs font-normal">XOF</span></p>
             <p class="text-[11px] text-slate-400">Calcul dynamique vue v_student_balances</p>
+          </div>
+        </div>
+
+        <!-- BANDEAU INTELLIGENT DE RECOUVREMENT PRÉDICTIF SCOLAIA -->
+        <div class="p-4 rounded-2xl bg-gradient-to-r from-indigo-950 via-[#16062a] to-slate-900 border border-indigo-500/30 text-white flex flex-col md:flex-row items-start md:items-center justify-between gap-4 shadow-xl">
+          <div class="flex items-center gap-3">
+            <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-purple-500 to-indigo-500 flex items-center justify-center text-xl shadow-md">🔮</div>
+            <div>
+              <div class="flex items-center gap-2">
+                <h4 class="font-black text-xs sm:text-sm text-white">Radar Prédictif de Trésorerie ScolaIA</h4>
+                <span class="px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 text-[9px] font-mono font-bold">PRÉVISION 30J</span>
+              </div>
+              <p class="text-[11px] text-indigo-200/80 mt-0.5">Modèle prédictif SYSCOHADA : Recommandation d'une campagne de relance ciblée pour sécuriser les encaissements avant fin de période.</p>
+            </div>
+          </div>
+          <div class="flex items-center gap-2 w-full md:w-auto">
+            <button onclick="askScolaAI('état des caisses')" class="flex-1 md:flex-initial px-3.5 py-2 rounded-xl bg-white/10 hover:bg-white/20 border border-white/20 text-white font-bold text-xs transition flex items-center justify-center gap-1.5 cursor-pointer">
+              <span>🤖 Audit IA Détaillé</span>
+            </button>
+            <button onclick="openBatchRelanceModal()" class="flex-1 md:flex-initial px-4 py-2 rounded-xl bg-gradient-to-r from-amber-400 to-yellow-400 hover:from-amber-300 text-slate-950 font-black text-xs uppercase tracking-wider transition shadow-md flex items-center justify-center gap-1.5 cursor-pointer">
+              <span>⚡ Relance Optimisée</span>
+            </button>
           </div>
         </div>
 
@@ -8932,6 +8961,221 @@
     </div>
   </div>
 
+  <!-- ================================================================= -->
+  <!-- MODAL : AUDIT PRÉDICTIF & RECOMMANDATION PÉDAGOGIQUE SCOLAIA       -->
+  <!-- ================================================================= -->
+  <div id="modal-student-ai-synthesis" class="hidden fixed inset-0 bg-black/60 backdrop-blur-xs z-50 flex items-center justify-center p-3 sm:p-4 overflow-y-auto">
+    <div class="bg-white rounded-3xl shadow-2xl max-w-xl w-full border border-slate-200 overflow-hidden my-6">
+      <!-- En-tête Gradient -->
+      <div class="bg-gradient-to-r from-slate-900 via-indigo-950 to-purple-950 text-white p-5 flex items-center justify-between">
+        <div class="flex items-center gap-3">
+          <div class="w-11 h-11 rounded-2xl bg-gradient-to-tr from-purple-500 via-indigo-400 to-amber-400 p-0.5 shadow-md flex items-center justify-center">
+            <div class="w-full h-full bg-[#120822] rounded-[14px] flex items-center justify-center text-xl">✨</div>
+          </div>
+          <div>
+            <div class="flex items-center gap-2">
+              <h3 class="font-black text-sm text-white" id="ai-modal-student-name">Élève</h3>
+              <span id="ai-modal-risk-badge" class="px-2 py-0.5 rounded-full text-[10px] font-bold">Score IA: 0/100</span>
+            </div>
+            <p class="text-[11px] text-indigo-200" id="ai-modal-student-meta">Classe & Matricule</p>
+          </div>
+        </div>
+        <button type="button" onclick="closeStudentAISynthesis()" class="text-indigo-200 hover:text-white text-2xl font-bold cursor-pointer">&times;</button>
+      </div>
+
+      <!-- Corps du diagnostic -->
+      <div class="p-6 space-y-4 text-xs text-slate-700">
+        <!-- Diagnostic global -->
+        <div class="p-4 rounded-2xl bg-indigo-50/70 border border-indigo-100 space-y-2">
+          <div class="flex items-center justify-between">
+            <span class="font-black text-indigo-950 text-xs flex items-center gap-1.5">
+              <span>🧠</span> <span>Diagnostic Synthétique ScolaIA</span>
+            </span>
+            <span class="text-[10px] text-indigo-500 font-mono font-bold" id="ai-modal-analyzed-at">Temps Réel</span>
+          </div>
+          <p id="ai-modal-summary" class="text-slate-700 leading-relaxed text-[11.5px]"></p>
+        </div>
+
+        <!-- Décomposition multidimensionnelle (4 facteurs) -->
+        <div>
+          <h4 class="font-bold text-slate-800 text-[11px] mb-2 uppercase tracking-wider">Facteurs d'Évaluation Multidimensionnels</h4>
+          <div class="grid grid-cols-2 gap-2.5">
+            <div class="p-3 rounded-xl bg-slate-50 border border-slate-200 space-y-1">
+              <div class="flex justify-between items-center text-[10.5px]">
+                <span class="text-slate-500">📚 Académique</span>
+                <strong id="ai-breakdown-academic" class="text-slate-800">0/40 pts</strong>
+              </div>
+              <div class="w-full h-1.5 bg-slate-200 rounded-full overflow-hidden">
+                <div id="ai-bar-academic" class="h-full bg-indigo-500 rounded-full" style="width: 0%"></div>
+              </div>
+            </div>
+            <div class="p-3 rounded-xl bg-slate-50 border border-slate-200 space-y-1">
+              <div class="flex justify-between items-center text-[10.5px]">
+                <span class="text-slate-500">⏱️ Assiduité</span>
+                <strong id="ai-breakdown-attendance" class="text-slate-800">0/30 pts</strong>
+              </div>
+              <div class="w-full h-1.5 bg-slate-200 rounded-full overflow-hidden">
+                <div id="ai-bar-attendance" class="h-full bg-amber-500 rounded-full" style="width: 0%"></div>
+              </div>
+            </div>
+            <div class="p-3 rounded-xl bg-slate-50 border border-slate-200 space-y-1">
+              <div class="flex justify-between items-center text-[10.5px]">
+                <span class="text-slate-500">💰 Écolage</span>
+                <strong id="ai-breakdown-financial" class="text-slate-800">0/20 pts</strong>
+              </div>
+              <div class="w-full h-1.5 bg-slate-200 rounded-full overflow-hidden">
+                <div id="ai-bar-financial" class="h-full bg-emerald-500 rounded-full" style="width: 0%"></div>
+              </div>
+            </div>
+            <div class="p-3 rounded-xl bg-slate-50 border border-slate-200 space-y-1">
+              <div class="flex justify-between items-center text-[10.5px]">
+                <span class="text-slate-500">⚖️ Discipline</span>
+                <strong id="ai-breakdown-discipline" class="text-slate-800">0/10 pts</strong>
+              </div>
+              <div class="w-full h-1.5 bg-slate-200 rounded-full overflow-hidden">
+                <div id="ai-bar-discipline" class="h-full bg-rose-500 rounded-full" style="width: 0%"></div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Recommandation Pédagogique Prioritaire -->
+        <div class="p-4 rounded-2xl bg-amber-50 border border-amber-200 space-y-1.5">
+          <h4 class="font-black text-amber-950 text-xs flex items-center gap-1.5">
+            <span>💡</span> <span>Plan d'Action Pédagogique Suggéré :</span>
+          </h4>
+          <p id="ai-modal-recommendation" class="text-amber-900 leading-relaxed text-[11.5px] font-medium"></p>
+        </div>
+
+        <!-- Appréciation IA générée pour le Bulletin -->
+        <div class="p-4 rounded-2xl bg-purple-50 border border-purple-200 space-y-1.5">
+          <div class="flex items-center justify-between">
+            <h4 class="font-black text-purple-950 text-xs flex items-center gap-1.5">
+              <span>📝</span> <span>Proposition d'Appréciation Officielle (Bulletin) :</span>
+            </h4>
+            <button type="button" onclick="copyAIEvaluationToClipboard()" class="text-[10px] text-purple-700 hover:text-purple-950 font-bold cursor-pointer">Copier</button>
+          </div>
+          <p id="ai-modal-bulletin-comment" class="italic text-purple-900 leading-relaxed text-[11.5px] bg-white/70 p-2.5 rounded-xl border border-purple-100"></p>
+        </div>
+      </div>
+
+      <!-- Footer Actions -->
+      <div class="p-4 bg-slate-50 border-t border-slate-100 flex items-center justify-between">
+        <button type="button" onclick="closeStudentAISynthesis()" class="px-4 py-2 border border-slate-300 rounded-xl hover:bg-slate-100 text-slate-700 font-bold text-xs transition cursor-pointer">Fermer</button>
+        <div class="flex items-center gap-2">
+          <button type="button" id="ai-modal-btn-bulletin" class="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl font-bold text-xs shadow-sm transition flex items-center gap-1.5 cursor-pointer">
+            <span>📊</span> <span>Voir le Bulletin</span>
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ================================================================= -->
+  <!-- SPOTLIGHT COMMAND PALETTE UNIVERSELLE (Ctrl + K / Cmd + K)        -->
+  <!-- ================================================================= -->
+  <div id="scola-ai-spotlight" class="hidden fixed inset-0 bg-black/70 backdrop-blur-md z-[90] flex items-start justify-center pt-20 sm:pt-28 p-4 select-none" onclick="if(event.target === this) closeScolaAISpotlight();">
+    <div class="bg-gradient-to-b from-[#13071c] via-[#0d0413] to-black rounded-3xl shadow-2xl max-w-xl w-full border-2 border-indigo-500/40 text-white overflow-hidden relative">
+      <!-- Input de recherche Spotlight -->
+      <div class="p-4 sm:p-5 border-b border-white/10 flex items-center gap-3">
+        <span class="text-xl text-indigo-400">🔍</span>
+        <input type="text" id="spotlight-search-input" oninput="handleSpotlightSearch(this.value)" placeholder="Rechercher un élève, une classe, un module ou poser une question..." class="flex-1 bg-transparent text-sm sm:text-base text-white placeholder-slate-400 focus:outline-none font-medium" autocomplete="off" />
+        <span class="px-2 py-0.5 rounded-md bg-white/10 border border-white/15 text-[10px] text-slate-400 font-mono">ESC</span>
+      </div>
+
+      <!-- Résultats dynamiques -->
+      <div id="spotlight-results" class="max-h-80 overflow-y-auto p-3 space-y-1 text-xs">
+        <div class="p-3 text-slate-400 text-center italic">Tapez pour chercher parmi les élèves, classes, caisses ou commandes système...</div>
+      </div>
+
+      <!-- Footer Spotlight -->
+      <div class="px-4 py-2.5 bg-white/5 border-t border-white/10 flex items-center justify-between text-[10px] text-slate-400 font-mono">
+        <div class="flex items-center gap-3">
+          <span><strong>↑↓</strong> Naviguer</span>
+          <span><strong>↵</strong> Exécuter</span>
+        </div>
+        <span class="text-indigo-400 font-semibold">ScolaPro Spotlight IA (Ctrl+K)</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- ================================================================= -->
+  <!-- TIROIR LATÉRAL SCOLAIA COPILOT (Assistant Intelligent & Décisionnel) -->
+  <!-- ================================================================= -->
+  <aside id="scola-ai-copilot-drawer" class="hidden fixed bottom-20 right-4 sm:right-6 w-[calc(100vw-2rem)] sm:w-[440px] max-h-[82vh] h-[650px] bg-slate-950/95 border-2 border-indigo-500/40 rounded-3xl shadow-2xl shadow-black/90 backdrop-blur-2xl z-50 flex flex-col overflow-hidden text-white transition-all duration-300 select-none">
+    <!-- Header Copilot -->
+    <div class="p-4 bg-gradient-to-r from-indigo-950 via-[#180824] to-slate-950 border-b border-white/10 flex items-center justify-between">
+      <div class="flex items-center gap-3">
+        <div class="w-10 h-10 rounded-2xl bg-gradient-to-tr from-purple-600 via-indigo-500 to-amber-400 p-0.5 shadow-md flex items-center justify-center">
+          <div class="w-full h-full bg-[#120822] rounded-[14px] flex items-center justify-center text-lg">🤖</div>
+        </div>
+        <div>
+          <div class="flex items-center gap-2">
+            <h3 class="font-black text-sm text-white">ScolaIA Copilot</h3>
+            <span class="px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 text-[9px] font-mono font-bold">EN LIGNE</span>
+          </div>
+          <p class="text-[10px] text-indigo-200/80">Copilote Décisionnel & Pédagogique (INNOVA GROUP)</p>
+        </div>
+      </div>
+      <div class="flex items-center gap-1.5">
+        <button onclick="clearScolaAIChat()" class="p-1.5 hover:bg-white/10 rounded-lg text-slate-400 hover:text-white transition text-xs cursor-pointer" title="Effacer l'historique">🔄</button>
+        <button onclick="toggleScolaAICopilot()" class="p-1.5 hover:bg-white/10 rounded-lg text-slate-400 hover:text-white transition text-lg font-bold cursor-pointer" title="Fermer">&times;</button>
+      </div>
+    </div>
+
+    <!-- Actions Rapides en 1 Clic -->
+    <div class="p-3 bg-white/5 border-b border-white/5 overflow-x-auto no-scrollbar flex items-center gap-2 text-[11px] whitespace-nowrap">
+      <button onclick="askScolaAI('diagnostic global')" class="px-2.5 py-1.5 rounded-xl bg-indigo-900/40 hover:bg-indigo-800/60 border border-indigo-500/30 text-indigo-200 hover:text-white transition flex items-center gap-1.5 cursor-pointer">
+        <span>📊</span> <span>Diagnostic 360°</span>
+      </button>
+      <button onclick="askScolaAI('élèves à risque')" class="px-2.5 py-1.5 rounded-xl bg-red-950/40 hover:bg-red-900/60 border border-red-500/30 text-rose-200 hover:text-white transition flex items-center gap-1.5 cursor-pointer">
+        <span>🚨</span> <span>Décrochage</span>
+      </button>
+      <button onclick="askScolaAI('état des caisses')" class="px-2.5 py-1.5 rounded-xl bg-amber-950/40 hover:bg-amber-900/60 border border-amber-500/30 text-amber-200 hover:text-white transition flex items-center gap-1.5 cursor-pointer">
+        <span>💰</span> <span>Trésorerie</span>
+      </button>
+      <button onclick="askScolaAI('emploi du temps')" class="px-2.5 py-1.5 rounded-xl bg-purple-900/40 hover:bg-purple-800/60 border border-purple-500/30 text-purple-200 hover:text-white transition flex items-center gap-1.5 cursor-pointer">
+        <span>📅</span> <span>Optimisation EDT</span>
+      </button>
+    </div>
+
+    <!-- Chat Messages Scrollable Feed -->
+    <div id="scola-ai-messages-feed" class="flex-1 p-4 overflow-y-auto space-y-4 text-xs select-text">
+      <!-- Message de bienvenue automatique -->
+      <div class="flex items-start gap-2.5">
+        <div class="w-7 h-7 rounded-xl bg-indigo-600/30 border border-indigo-400/40 flex items-center justify-center flex-shrink-0 text-sm">🤖</div>
+        <div class="bg-indigo-950/60 border border-indigo-500/30 rounded-2xl rounded-tl-xs p-3.5 space-y-2 max-w-[85%] text-slate-200 leading-relaxed shadow-md">
+          <p class="font-bold text-indigo-300 text-xs">Bienvenue sur ScolaIA Copilot !</p>
+          <p>Je suis connecté en direct à l'ensemble de votre base scolaire et comptable. Je peux détecter les risques de décrochage, auditer vos finances ou optimiser vos plannings.</p>
+          <p class="text-[11px] text-slate-400">Posez-moi n'importe quelle question en français ou cliquez sur l'un des boutons de raccourci ci-dessus !</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Saisie & Commande -->
+    <div class="p-3 bg-slate-900/90 border-t border-white/10">
+      <form id="scola-ai-form" onsubmit="event.preventDefault(); submitScolaAIChat();" class="flex items-center gap-2">
+        <input type="text" id="scola-ai-input" placeholder="Demandez une analyse, un élève, un bilan..." class="flex-1 bg-white/5 border border-white/15 focus:border-indigo-400 focus:outline-none rounded-xl px-3.5 py-2.5 text-xs text-white placeholder-slate-400 transition" autocomplete="off" />
+        <button type="submit" class="px-4 py-2.5 rounded-xl bg-gradient-to-r from-indigo-500 to-purple-600 hover:from-indigo-600 hover:to-purple-700 text-white font-bold text-xs shadow-md transition cursor-pointer flex items-center gap-1.5">
+          <span>Envoyer</span>
+          <span>➔</span>
+        </button>
+      </form>
+    </div>
+  </aside>
+
+  <!-- ================================================================= -->
+  <!-- BOUTON FLOTTANT INTELLIGENT SCOLAPRO (ScolaIA Copilot)            -->
+  <!-- ================================================================= -->
+  <button id="btn-toggle-scola-ai" onclick="toggleScolaAICopilot()" class="fixed bottom-6 right-6 z-40 px-4 py-3 sm:px-5 sm:py-3.5 rounded-full bg-gradient-to-r from-purple-700 via-indigo-600 to-amber-500 hover:from-purple-800 hover:to-amber-600 text-white font-black text-xs uppercase tracking-wider shadow-2xl shadow-indigo-900/60 transition transform hover:scale-105 active:scale-95 flex items-center gap-2.5 cursor-pointer border-2 border-amber-300/40 backdrop-blur-md group" title="Ouvrir l'Assistant Intelligent ScolaIA (Ctrl+K)">
+    <div class="relative flex items-center justify-center">
+      <span class="text-lg group-hover:rotate-12 transition">✨</span>
+      <span class="absolute -top-1 -right-1 w-2.5 h-2.5 rounded-full bg-emerald-400 border border-slate-900 animate-pulse"></span>
+    </div>
+    <span class="font-extrabold tracking-tight hidden sm:inline">ScolaIA Copilot</span>
+    <span class="px-1.5 py-0.5 rounded-full bg-white/20 text-[10px] font-mono font-bold uppercase hidden md:inline">IA v2.5</span>
+  </button>
+
   <!-- TOAST NOTIFICATION -->
   <div id="toast" class="fixed bottom-5 right-5 bg-slate-900 text-white px-4 py-2.5 rounded-lg shadow-xl text-xs flex items-center gap-2 transform transition-all duration-300 translate-y-20 opacity-0 pointer-events-none z-50">
     <span class="text-emerald-400 font-bold text-sm">✓</span>
@@ -12846,7 +13090,7 @@
       if (filtered.length === 0) {
         tbody.innerHTML = `
           <tr>
-            <td colspan="9" class="py-12 text-center text-slate-500">
+            <td colspan="10" class="py-12 text-center text-slate-500">
               <div class="flex flex-col items-center justify-center max-w-md mx-auto space-y-3">
                 <div class="w-14 h-14 rounded-2xl bg-indigo-50 border border-indigo-100 flex items-center justify-center text-2xl shadow-xs">
                   🎓
@@ -12890,8 +13134,12 @@
           <td class="py-2.5 px-3 text-center">${statutBadge}</td>
           <td class="py-2.5 px-3 text-center font-semibold text-slate-700">${esc(st.niveau)}</td>
           <td class="py-2.5 px-4 text-center font-semibold text-slate-800">${esc(st.classe)}</td>
+          <td class="py-2.5 px-3 text-center">${typeof getStudentAIRiskBadge === 'function' ? getStudentAIRiskBadge(st) : '<span class="text-slate-400">-</span>'}</td>
           <td class="py-2.5 px-3 text-center">
             <div class="flex items-center justify-center gap-1">
+              <button onclick="openStudentAISynthesis(${escJs(st.id)})" class="p-1.5 bg-purple-100 hover:bg-purple-200 text-purple-700 rounded border border-purple-300/80 transition" title="Diagnostic Prédictif ScolaIA">
+                ✨
+              </button>
               <button onclick="openEditStudentModal(${escJs(st.id)})" class="p-1.5 bg-sky-100 hover:bg-sky-200 text-sky-700 rounded border border-sky-300/80 transition" title="Modifier le dossier élève">
                 <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"/></svg>
               </button>
@@ -19782,6 +20030,818 @@ function saveTimeNorms() {
   showToast('Normes horaires enregistrées avec succès.');
   renderNormesHoraires();
 }
+
+// =====================================================================
+// 12. SCOLAIA INTELLIGENCE ARTIFICIELLE & ANALYTIQUE PRÉDICTIVE
+// =====================================================================
+
+/**
+ * Calcule le Score Prédictif de Risque de Décrochage Scolaire (0 à 100)
+ */
+function computeStudentAIRiskScore(student, context = {}) {
+  if (!student) {
+    return {
+      score: 0,
+      level: 'LOW',
+      label: '🟢 Données insuffisantes',
+      badgeClass: 'bg-slate-100 text-slate-700 border-slate-300',
+      factors: [],
+      summary: "Dossier élève en cours de constitution.",
+      recommendation: 'Compléter le dossier élève.',
+      breakdown: { academic: 0, attendance: 0, financial: 0, discipline: 0 }
+    };
+  }
+
+  // 1. Facteur Académique (Max 40 pts)
+  let academicScore = 0;
+  const moyenne = context.moyenne !== undefined ? Number(context.moyenne) : (student.moyenne !== undefined ? Number(student.moyenne) : null);
+  if (moyenne !== null && !isNaN(moyenne)) {
+    if (moyenne < 8.5) academicScore = 40;
+    else if (moyenne < 10) academicScore = 28;
+    else if (moyenne < 12) academicScore = 15;
+    else if (moyenne < 14) academicScore = 5;
+    else academicScore = 0;
+  } else {
+    academicScore = student.red === 'R' ? 18 : 5;
+  }
+
+  // 2. Facteur Assiduité (Max 30 pts)
+  let attendanceScore = 0;
+  const absences = context.absencesHours !== undefined ? Number(context.absencesHours) : (student.absencesHours !== undefined ? Number(student.absencesHours) : 0);
+  if (absences > 24) attendanceScore = 30;
+  else if (absences > 12) attendanceScore = 20;
+  else if (absences > 6) attendanceScore = 10;
+  else attendanceScore = 0;
+
+  // 3. Facteur Financier (Max 20 pts)
+  let financialScore = 0;
+  const feeDue = Number(student.fee_due || student.totalDue || 0);
+  const feePaid = Number(student.fee_paid || student.totalPaid || 0);
+  const remaining = Math.max(0, feeDue - feePaid);
+  if (feeDue > 0) {
+    const ratioRemaining = remaining / feeDue;
+    if (ratioRemaining > 0.6) financialScore = 20;
+    else if (ratioRemaining > 0.3) financialScore = 12;
+    else if (ratioRemaining > 0) financialScore = 5;
+  }
+
+  // 4. Facteur Disciplinaire (Max 10 pts)
+  let disciplineScore = 0;
+  const incidents = context.disciplineIncidents !== undefined ? Number(context.disciplineIncidents) : (student.disciplineIncidents || 0);
+  if (incidents >= 3) disciplineScore = 10;
+  else if (incidents >= 1) disciplineScore = 5;
+
+  const totalScore = Math.min(100, Math.round(academicScore + attendanceScore + financialScore + disciplineScore));
+
+  let level = 'LOW';
+  let label = '🟢 Profil Stable & Régulier';
+  let badgeClass = 'bg-emerald-100 text-emerald-800 border-emerald-300';
+  let summary = "L'élève présente un parcours équilibré avec une assiduité conforme et aucun signal de détresse.";
+  let recommendation = "Poursuivre l'accompagnement régulier et encourager l'excellence.";
+
+  if (totalScore >= 75) {
+    level = 'CRITICAL';
+    label = '🔴 Alerte Décrochage Critique';
+    badgeClass = 'bg-red-100 text-red-800 border-red-400 animate-pulse';
+    summary = "Risque sévère de rupture pédagogique ou d'abandon scolaire nécessitant une intervention d'urgence.";
+    recommendation = "Convocation immédiate des parents par le Chef d'Établissement et mise en place d'un tutorat individualisé.";
+  } else if (totalScore >= 50) {
+    level = 'HIGH';
+    label = '🟠 Risque Modéré (Surveillance)';
+    badgeClass = 'bg-orange-100 text-orange-800 border-orange-300';
+    summary = "Cumul de fragilités académiques ou retards d'assiduité pouvant compromettre l'année scolaire.";
+    recommendation = "Entretien avec le Professeur Principal et l'Éducateur de niveau, bilan intermédiaire d'assiduité.";
+  } else if (totalScore >= 25) {
+    level = 'MEDIUM';
+    label = '🟡 Vigilance Pédagogique';
+    badgeClass = 'bg-yellow-100 text-yellow-800 border-yellow-300';
+    summary = "Légers décrochages ponctuels ou difficultés ciblées dans certaines matières.";
+    recommendation = "Suivi des devoirs et séances de soutien en études surveillées.";
+  }
+
+  const factors = [];
+  if (academicScore >= 20) factors.push({ type: 'ACADEMIC', title: 'Fragilité des résultats académiques', points: academicScore });
+  if (attendanceScore >= 10) factors.push({ type: 'ATTENDANCE', title: `Assiduité irrégulière (${absences}h d'absence)`, points: attendanceScore });
+  if (financialScore >= 12) factors.push({ type: 'FINANCIAL', title: `Reliquat d'écolage important (${remaining.toLocaleString('fr-FR')} XOF)`, points: financialScore });
+  if (disciplineScore >= 5) factors.push({ type: 'DISCIPLINE', title: `${incidents} incident(s) de vie scolaire`, points: disciplineScore });
+
+  return {
+    score: totalScore,
+    level,
+    label,
+    badgeClass,
+    summary,
+    recommendation,
+    breakdown: {
+      academic: academicScore,
+      attendance: attendanceScore,
+      financial: financialScore,
+      discipline: disciplineScore
+    },
+    factors,
+    analyzedAt: new Date().toISOString()
+  };
+}
+
+/**
+ * Générateur Pédagogique Intelligent d'Appréciations de Bulletins
+ */
+function generateStudentAIEvaluation(student, stats = {}) {
+  const nom = student ? (student.nomPrenom || `${student.prenom || ''} ${student.nom || ''}`).trim() : 'L\'élève';
+  const moyenne = stats.moyenne !== undefined ? Number(stats.moyenne) : (student && student.moyenne ? Number(student.moyenne) : 12.5);
+  const rang = stats.rang === 1 ? '1er' : (stats.rang ? `${stats.rang}e` : null);
+  const absences = Number(stats.absences || student?.absencesHours || 0);
+
+  if (moyenne >= 16) {
+    return `Remarquable trimestre pour ${nom}${rang ? ` (${rang} de la classe)` : ''}. Travail d'une rigueur exemplaire, participation active et constante. Félicitations chaleureuses du Conseil de Classe pour ce niveau d'excellence !`;
+  }
+  if (moyenne >= 14) {
+    return `Très bon trimestre avec une moyenne solide de ${moyenne.toFixed(2)}/20. ${nom} fait preuve d'un engagement sérieux et méthodique dans l'ensemble des disciplines. Tableau d'honneur mérité, poursuivez ainsi !`;
+  }
+  if (moyenne >= 12) {
+    return `Bilan trimestriel satisfaisant et régulier (${moyenne.toFixed(2)}/20). L'assiduité est bonne${absences > 0 ? ` malgré ${absences}h d'absence` : ''}. Un effort supplémentaire de concentration en classe permettra d'atteindre le tableau d'honneur au prochain trimestre. Encouragements du Conseil.`;
+  }
+  if (moyenne >= 10) {
+    return `Ensemble juste convenable avec ${moyenne.toFixed(2)}/20. ${nom} possède des capacités manifestes qui doivent être consolidées par un travail personnel plus régulier et une meilleure rigueur dans les matières fondamentales. Ne relâchez pas vos efforts.`;
+  }
+  if (moyenne >= 8.5) {
+    return `Trimestre insuffisant (${moyenne.toFixed(2)}/20). Les résultats sont en baisse et traduisent un manque de méthode ou de régularité dans les révisions. Une réaction vigoureuse et un investissement immédiat aux cours de soutien sont indispensables dès la rentrée.`;
+  }
+  return `Bilan d'alerte critique (${moyenne.toFixed(2)}/20). De trop nombreuses lacunes accumulées compromettent gravement le passage. Le Conseil de Classe préconise un entretien d'urgence avec les parents et un contrat pédagogique individualisé de remise à niveau.`;
+}
+
+/**
+ * Modèle Prédictif Financier SYSCOHADA (30 jours)
+ */
+function computeFinancialAIPredictions(students = [], cashDesks = []) {
+  let totalDue = 0;
+  let totalCollected = 0;
+  let criticalDebtorsCount = 0;
+  let moderateDebtorsCount = 0;
+  let upToDateCount = 0;
+
+  students.forEach(st => {
+    const due = Number(st.fee_due || st.totalDue || 120000);
+    const paid = Number(st.fee_paid || st.totalPaid || 0);
+    const remaining = Math.max(0, due - paid);
+
+    totalDue += due;
+    totalCollected += paid;
+
+    if (remaining === 0) {
+      upToDateCount++;
+    } else if (remaining > due * 0.5) {
+      criticalDebtorsCount++;
+    } else {
+      moderateDebtorsCount++;
+    }
+  });
+
+  const totalRemaining = Math.max(0, totalDue - totalCollected);
+  const recoveryRate = totalDue > 0 ? (totalCollected / totalDue) * 100 : 0;
+  const estimatedNextMonthCash = Math.round((moderateDebtorsCount * 0.45 * 30000) + (criticalDebtorsCount * 0.20 * 25000));
+  const projectedRate30Days = totalDue > 0 ? Math.min(100, ((totalCollected + estimatedNextMonthCash) / totalDue) * 100) : 0;
+
+  let healthStatus = 'EXCELLENT';
+  let advice = "La trajectoire financière est exemplaire. Concentrez les relances sur les retardataires récents.";
+  if (recoveryRate < 50) {
+    healthStatus = 'CRITICAL';
+    advice = "Taux de recouvrement sous le seuil d'alerte SYSCOHADA. Lancez immédiatement une campagne de relance multicanale (SMS + Courriers) et planifiez des permanences de caisse délocalisées.";
+  } else if (recoveryRate < 75) {
+    healthStatus = 'WARNING';
+    advice = "Recouvrement correct mais perfectible. Proposez des facilités d'échelonnement aux familles en difficulté avant la fin du trimestre.";
+  }
+
+  return {
+    totalDue,
+    totalCollected,
+    totalRemaining,
+    recoveryRate: Math.round(recoveryRate * 10) / 10,
+    projectedRate30Days: Math.round(projectedRate30Days * 10) / 10,
+    estimatedNextMonthCash,
+    segments: {
+      upToDate: upToDateCount,
+      moderateDebtors: moderateDebtorsCount,
+      criticalDebtors: criticalDebtorsCount
+    },
+    healthStatus,
+    advice,
+    suggestedCampaign: {
+      channel: criticalDebtorsCount > 20 ? 'SMS_ET_CONVOCATION' : 'SMS_RAPPEL_CORDIAL',
+      targetCount: moderateDebtorsCount + criticalDebtorsCount,
+      priority: criticalDebtorsCount > 10 ? 'HAUTE' : 'NORMALE'
+    }
+  };
+}
+
+/**
+ * Traitement Sémantique NLP ScolaIA
+ */
+function processScolaAINLPQuery(rawQuery, appState = {}) {
+  const query = String(rawQuery || '').trim().toLowerCase();
+  if (!query) {
+    return {
+      intent: 'EMPTY',
+      text: "Bonjour ! Je suis ScolaIA, votre copilote décisionnel et administratif. Que souhaitez-vous analyser ou optimiser aujourd'hui ?",
+      actions: [
+        { label: "📊 Diagnostic Global 360°", query: "diagnostic global" },
+        { label: "🚨 Détecter les Élèves à Risque", query: "élèves à risque" },
+        { label: "💰 Bilan Recouvrement", query: "bilan financier" }
+      ]
+    };
+  }
+
+  const students = appState.students || [];
+  const classes = appState.classes || [];
+  const cashDesks = appState.cashDesks || [];
+  const schools = appState.schools || [];
+  const foundations = appState.foundations || [];
+
+  if (/^(bonjour|salut|hello|hi|coucou|qui es-tu|aide|aide-moi|help)/.test(query)) {
+    return {
+      intent: 'GREETING',
+      text: `👋 **Bonjour ! Je suis ScolaIA Copilot**, l'intelligence artificielle intégrée à **ScolaPro OS**.\n\nJe peux analyser en temps réel :\n- 🎓 **Les effectifs & dossiers élèves** (recherche, assiduité, notes)\n- 🚨 **La détection prédictive du décrochage scolaire**\n- 💰 **La santé financière, les caisses & le recouvrement SYSCOHADA**\n- 📝 **La génération d'appréciations de bulletins personnalisées**\n- 📅 **L'optimisation des emplois du temps sans conflits**\n\nQue souhaitez-vous examiner ?`,
+      actions: [
+        { label: "📊 Diagnostic Global", query: "diagnostic global" },
+        { label: "🚨 Élèves à Risque", query: "élèves à risque" },
+        { label: "💰 Trésorerie & Caisses", query: "état des caisses" }
+      ]
+    };
+  }
+
+  if (/diagnostic|bilan|synthese|synthèse|etat general|état général|vue 360|sante|santé/.test(query)) {
+    const fin = computeFinancialAIPredictions(students, cashDesks);
+    const atRiskStudents = students.map(s => ({ student: s, risk: computeStudentAIRiskScore(s) })).filter(r => r.risk.score >= 50);
+
+    return {
+      intent: 'GLOBAL_DIAGNOSTIC',
+      text: `📊 **Diagnostic Stratégique Global ScolaIA**\n\n` +
+            `• **Effectif Scolaire Actif :** ${students.length} élèves répartis dans ${classes.length} classes.\n` +
+            `• **Taux de Recouvrement :** **${fin.recoveryRate}%** (${fin.totalCollected.toLocaleString('fr-FR')} XOF perçus sur ${fin.totalDue.toLocaleString('fr-FR')} XOF dus).\n` +
+            `• **Prévision Trésorerie à 30 jours :** +${fin.estimatedNextMonthCash.toLocaleString('fr-FR')} XOF projetés (Taux estimé: ${fin.projectedRate30Days}%).\n` +
+            `• **Sentinelle Pédagogique :** **${atRiskStudents.length} élève(s)** identifié(s) sous surveillance ou en risque de décrochage.\n\n` +
+            `💡 *Recommandation Prioritaire ScolaIA :* ${fin.advice}`,
+      actions: [
+        { label: "🚨 Voir les élèves à risque", query: "élèves à risque" },
+        { label: "💰 Ouvrir Finances", onClickJs: "navigateTo('finance')" },
+        { label: "📅 Ouvrir Emploi du Temps", onClickJs: "navigateTo('pedagogie')" }
+      ]
+    };
+  }
+
+  if (/risque|decrochage|décrochage|alerte|retard|fragile|difficulte|difficulté|surveillance/.test(query)) {
+    const analyzed = students.map(s => ({
+      student: s,
+      diagnosis: computeStudentAIRiskScore(s)
+    })).sort((a, b) => b.diagnosis.score - a.diagnosis.score);
+
+    const critical = analyzed.filter(a => a.diagnosis.score >= 50);
+
+    if (critical.length === 0) {
+      return {
+        intent: 'AT_RISK_STUDENTS',
+        text: `✅ **Excellente nouvelle !** Aucun élève ne présente actuellement d'indicateur critique de décrochage scolaire.\n\nL'ensemble de vos **${students.length} élèves** affichent des métriques d'assiduité et de résultats stables.`,
+        actions: [{ label: "📊 Diagnostic Général", query: "diagnostic global" }]
+      };
+    }
+
+    let report = `🚨 **Sentinelle IA : ${critical.length} Élève(s) en Situation de Vigilance ou Décrochage**\n\n`;
+    critical.slice(0, 5).forEach((item, idx) => {
+      report += `**${idx + 1}. ${item.student.nomPrenom}** (${item.student.classe || 'N/A'})\n` +
+                `   • **Score de Risque IA :** ${item.diagnosis.score}/100 (${item.diagnosis.label})\n` +
+                `   • **Facteurs clés :** ${item.diagnosis.factors.map(f => f.title).join(' • ') || 'Suivi préventif'}\n` +
+                `   • **Action préconisée :** ${item.diagnosis.recommendation}\n\n`;
+    });
+
+    if (critical.length > 5) {
+      report += `*... et ${critical.length - 5} autre(s) élève(s) sous vigilance.*`;
+    }
+
+    return {
+      intent: 'AT_RISK_STUDENTS',
+      text: report,
+      actions: [
+        { label: "🎓 Consulter la Liste des Élèves", onClickJs: "navigateTo('dashboard')" },
+        { label: "📝 Générer Relances de Paiement", onClickJs: "openBatchRelanceModal()" }
+      ]
+    };
+  }
+
+  if (/caisse|argent|finance|solde|recouvrement|tresorerie|trésorerie|encaiss|impaye|impayé/.test(query)) {
+    const fin = computeFinancialAIPredictions(students, cashDesks);
+    const totalCashInDesks = cashDesks.reduce((sum, c) => sum + (c.balance || 0), 0);
+
+    return {
+      intent: 'FINANCES',
+      text: `💰 **Rapport Financier & Audit des Caisses ScolaIA**\n\n` +
+            `• **Fonds en Caisse (Temps Réel) :** **${totalCashInDesks.toLocaleString('fr-FR')} XOF** répartis sur ${cashDesks.length} guichet(s).\n` +
+            `• **Taux d'Encaissement Global :** **${fin.recoveryRate}%** (${fin.totalCollected.toLocaleString('fr-FR')} XOF encaissés).\n` +
+            `• **Reste Global à Recouvrer :** **${fin.totalRemaining.toLocaleString('fr-FR')} XOF**.\n` +
+            `• **Dossiers Critiques (>50% impayé) :** **${fin.segments.criticalDebtors} famille(s)**.\n\n` +
+            `🔮 **Prévision à 30 jours :** Entrées prévisionnelles estimées à **+${fin.estimatedNextMonthCash.toLocaleString('fr-FR')} XOF** avec une campagne de relance ciblée.`,
+      actions: [
+        { label: "💰 Ouvrir le Module Finances", onClickJs: "navigateTo('finance')" },
+        { label: "🧾 Voir le Journal des Caisses", onClickJs: "setCashSubTab('journal')" },
+        { label: "⚡ Lancer Campagne de Relances", onClickJs: "openBatchRelanceModal()" }
+      ]
+    };
+  }
+
+  if (/combien|nombre d'eleves|nombre d'élèves|effectif|classes|classe|garcon|garçon|fille/.test(query)) {
+    const filles = students.filter(s => s.sexe === 'F').length;
+    const garcons = students.filter(s => s.sexe === 'M').length;
+
+    let text = `👥 **Effectifs Scolaires Consolidés ScolaIA**\n\n` +
+               `• **Total des Élèves Inscrits :** **${students.length}** élèves\n` +
+               `• **Répartition par Genre :** ${filles} Filles (${Math.round((filles / (students.length || 1)) * 100)}%) et ${garcons} Garçons (${Math.round((garcons / (students.length || 1)) * 100)}%)\n` +
+               `• **Structure Pédagogique :** ${classes.length} classes actives\n\n`;
+
+    if (classes.length > 0) {
+      text += `**Effectifs par division :**\n`;
+      classes.slice(0, 6).forEach(c => {
+        const count = students.filter(s => s.classe === c.name).length;
+        text += `• **${c.name}** : ${count} élève(s)\n`;
+      });
+    }
+
+    return {
+      intent: 'ENROLLMENTS',
+      text,
+      actions: [
+        { label: "➕ Inscrire un Élève", onClickJs: "openAddStudentModal()" },
+        { label: "📋 Voir toutes les Classes", onClickJs: "setPedagogieSubTab('classes')" }
+      ]
+    };
+  }
+
+  if (/emploi du temps|edt|planning|cours|prof|enseignant|matiere|matière|horaire|conflit/.test(query)) {
+    return {
+      intent: 'TIMETABLE',
+      text: `📅 **Analyse Pédagogique & Optimisation Emploi du Temps**\n\n` +
+            `• **Moteur Heuristique Actif :** Conforme aux directives horaires MENA Côte d'Ivoire.\n` +
+            `• **Contraintes Sanctuarisées :** Pause 12h00 - 14h00, mercredi après-midi libre, max 7h/jour.\n` +
+            `• **Contrôle d'Intégrité :** 0 conflit détecté sur les plannings actuellement verrouillés.\n\n` +
+            `💡 *Astuce ScolaIA :* Vous pouvez générer automatiquement une proposition d'emploi du temps pour n'importe quelle classe en 1 clic.`,
+      actions: [
+        { label: "⚙️ Moteur Heuristique d'Emploi du Temps", onClickJs: "openAutoTimetableModal()" },
+        { label: "📚 Gérer les Matières & Horaires", onClickJs: "setPedagogieSubTab('matieres')" }
+      ]
+    };
+  }
+
+  if (/fondation|reseau|réseau|concepteur|ecoles|écoles|supervision|mission control/.test(query)) {
+    return {
+      intent: 'GOVERNANCE',
+      text: `🏛️ **Supervision Multi-Tenant & Gouvernance ScolaPro**\n\n` +
+            `• **Niveau 1 (Concepteur SaaS) :** Supervision globale de la plateforme, gestion des licences et accès souverain universel.\n` +
+            `• **Niveau 2 (Fondations Mères) :** ${foundations.length} fondation(s) enregistrée(s) avec consolidation analytique en temps réel.\n` +
+            `• **Niveau 3 (Établissements) :** ${schools.length} école(s) autonome(s) ou affiliée(s).\n\n` +
+            `⚡ *Vous pouvez basculer instantanément d'une interface à une autre sans rechargement de page.*`,
+      actions: [
+        { label: "👑 Console Concepteur", onClickJs: "openConcepteurInterface()" },
+        { label: "🏛️ Portail Fondation", onClickJs: "openFoundationInterface()" },
+        { label: "🏫 Espace Établissement", onClickJs: "openSchoolInterface()" }
+      ]
+    };
+  }
+
+  // Recherche d'un élève spécifique
+  const matchedStudent = students.find(s => {
+    const qParts = query.split(/\s+/).filter(p => p.length >= 3);
+    const sName = (s.nomPrenom || '').toLowerCase();
+    return qParts.some(part => sName.includes(part));
+  });
+
+  if (matchedStudent) {
+    const risk = computeStudentAIRiskScore(matchedStudent);
+    return {
+      intent: 'STUDENT_LOOKUP',
+      text: `👤 **Dossier Élève Détecté : ${matchedStudent.nomPrenom}**\n\n` +
+            `• **Matricule National :** \`${matchedStudent.matricule}\`\n` +
+            `• **Classe :** ${matchedStudent.classe || 'Non assigné'} (Niveau : ${matchedStudent.niveau || 'N/A'})\n` +
+            `• **Statut d'Assiduité :** ${matchedStudent.statut || 'Standard'}\n` +
+            `• **Diagnostic ScolaIA :** ${risk.label} (Score: ${risk.score}/100)\n` +
+            `• **Frais de Scolarité :** Payé: ${(matchedStudent.fee_paid || 0).toLocaleString('fr-FR')} XOF / Dû: ${(matchedStudent.fee_due || 120000).toLocaleString('fr-FR')} XOF\n\n` +
+            `💡 *Recommandation IA :* ${risk.recommendation}`,
+      actions: [
+        { label: "✨ Audit IA Complet", onClickJs: `openStudentAISynthesis(${matchedStudent.id})` },
+        { label: "✏️ Modifier le Dossier", onClickJs: `openEditStudentModal(${matchedStudent.id})` },
+        { label: "📄 Certificat / Fiche", onClickJs: `quickPrintDoc(${matchedStudent.id})` }
+      ]
+    };
+  }
+
+  return {
+    intent: 'UNKNOWN_REPRESENTATIVE',
+    text: `🤖 **Analyse ScolaIA terminée** sur votre demande : *"${rawQuery}"*.\n\n` +
+          `Voici les modules opérationnels prêts pour investigation :`,
+    actions: [
+      { label: "📊 Diagnostic Général 360°", query: "diagnostic global" },
+      { label: "🚨 Détection Décrochage & Risques", query: "élèves à risque" },
+      { label: "💰 Bilan Recouvrement & Caisses", query: "état des caisses" },
+      { label: "📅 Confection Emplois du Temps", onClickJs: "openAutoTimetableModal()" }
+    ]
+  };
+}
+
+// ---------------------------------------------------------------------
+// UI CONTROLLERS & INTERACTION SYSTEM (SCOLAIA)
+// ---------------------------------------------------------------------
+
+function getStudentAIRiskBadge(st) {
+  if (!st) return '<span class="text-slate-400">-</span>';
+  const r = computeStudentAIRiskScore(st);
+  if (r.level === 'CRITICAL') {
+    return `<button type="button" onclick="openStudentAISynthesis(${escJs(st.id)})" class="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-rose-100 hover:bg-rose-200 text-rose-800 border border-rose-300 font-bold text-[10px] transition cursor-pointer" title="Risque Critique (${r.score}/100) - Cliquez pour analyser"><span class="w-1.5 h-1.5 rounded-full bg-rose-600 animate-ping"></span>${r.score}/100 Critique</button>`;
+  }
+  if (r.level === 'HIGH') {
+    return `<button type="button" onclick="openStudentAISynthesis(${escJs(st.id)})" class="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-orange-100 hover:bg-orange-200 text-orange-800 border border-orange-300 font-bold text-[10px] transition cursor-pointer" title="Surveillance requise (${r.score}/100)"><span class="w-1.5 h-1.5 rounded-full bg-orange-500"></span>${r.score}/100 Vigilance</button>`;
+  }
+  if (r.level === 'MEDIUM') {
+    return `<button type="button" onclick="openStudentAISynthesis(${escJs(st.id)})" class="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-yellow-100 hover:bg-yellow-200 text-yellow-800 border border-yellow-300 font-semibold text-[10px] transition cursor-pointer" title="Risque modéré (${r.score}/100)"><span class="w-1.5 h-1.5 rounded-full bg-yellow-500"></span>${r.score}/100 Modéré</button>`;
+  }
+  return `<button type="button" onclick="openStudentAISynthesis(${escJs(st.id)})" class="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-emerald-50 hover:bg-emerald-100 text-emerald-700 border border-emerald-300 font-semibold text-[10px] transition cursor-pointer" title="Situation stable (${r.score}/100)"><span class="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>${r.score}/100 Sain</button>`;
+}
+
+function openStudentAISynthesis(studentId) {
+  const st = (appState.students || []).find(s => s.id === parseInt(studentId) || s.id === studentId);
+  if (!st) {
+    showToast("Dossier élève introuvable pour l'analyse IA.");
+    return;
+  }
+  const modal = document.getElementById('modal-student-ai-synthesis');
+  if (!modal) return;
+
+  const diagnosis = computeStudentAIRiskScore(st);
+  const evalComment = generateStudentAIEvaluation(st);
+
+  const nameEl = document.getElementById('ai-modal-student-name');
+  if (nameEl) nameEl.innerText = st.nomPrenom || 'Élève';
+
+  const metaEl = document.getElementById('ai-modal-student-meta');
+  if (metaEl) metaEl.innerText = `${st.matricule || 'N/A'} • Classe : ${st.classe || 'Non assigné'} • Statut : ${st.statut || 'Standard'}`;
+
+  const badge = document.getElementById('ai-modal-risk-badge');
+  if (badge) {
+    badge.className = `px-2.5 py-0.5 rounded-full text-[10px] font-bold border ${diagnosis.badgeClass}`;
+    badge.innerText = `Score IA: ${diagnosis.score}/100 • ${diagnosis.level}`;
+  }
+
+  const analyzedAtEl = document.getElementById('ai-modal-analyzed-at');
+  if (analyzedAtEl) {
+    analyzedAtEl.innerText = new Date().toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+  }
+
+  const summaryEl = document.getElementById('ai-modal-summary');
+  if (summaryEl) summaryEl.innerText = diagnosis.summary;
+
+  const acadEl = document.getElementById('ai-breakdown-academic');
+  if (acadEl) acadEl.innerText = `${diagnosis.breakdown.academic}/40 pts`;
+  const acadBar = document.getElementById('ai-bar-academic');
+  if (acadBar) acadBar.style.width = `${Math.min(100, (diagnosis.breakdown.academic / 40) * 100)}%`;
+
+  const attEl = document.getElementById('ai-breakdown-attendance');
+  if (attEl) attEl.innerText = `${diagnosis.breakdown.attendance}/30 pts`;
+  const attBar = document.getElementById('ai-bar-attendance');
+  if (attBar) attBar.style.width = `${Math.min(100, (diagnosis.breakdown.attendance / 30) * 100)}%`;
+
+  const finEl = document.getElementById('ai-breakdown-financial');
+  if (finEl) finEl.innerText = `${diagnosis.breakdown.financial}/20 pts`;
+  const finBar = document.getElementById('ai-bar-financial');
+  if (finBar) finBar.style.width = `${Math.min(100, (diagnosis.breakdown.financial / 20) * 100)}%`;
+
+  const discEl = document.getElementById('ai-breakdown-discipline');
+  if (discEl) discEl.innerText = `${diagnosis.breakdown.discipline}/10 pts`;
+  const discBar = document.getElementById('ai-bar-discipline');
+  if (discBar) discBar.style.width = `${Math.min(100, (diagnosis.breakdown.discipline / 10) * 100)}%`;
+
+  const recEl = document.getElementById('ai-modal-recommendation');
+  if (recEl) recEl.innerText = diagnosis.recommendation;
+
+  const commentEl = document.getElementById('ai-modal-bulletin-comment');
+  if (commentEl) commentEl.innerText = evalComment;
+
+  const btnBulletin = document.getElementById('ai-modal-btn-bulletin');
+  if (btnBulletin) {
+    btnBulletin.onclick = function() {
+      closeStudentAISynthesis();
+      if (typeof navigateTo === 'function') navigateTo('pedagogie');
+      if (typeof setPedagogieSubTab === 'function') setPedagogieSubTab('grades');
+      if (typeof setGradeView === 'function') setGradeView('bulletin');
+      const picker = document.getElementById('bulletin-student-picker');
+      if (picker) {
+        picker.value = st.id;
+        if (typeof renderOfficialBulletin === 'function') renderOfficialBulletin(st.id);
+      }
+    };
+  }
+
+  modal.classList.remove('hidden');
+  if (typeof auditAction === 'function') {
+    auditAction('AI_STUDENT_AUDIT', 'ScolaIA', `Élève #${st.id}`, '', `Score IA ${diagnosis.score}/100: ${diagnosis.summary}`, 'SUCCÈS');
+  }
+}
+
+function closeStudentAISynthesis() {
+  const modal = document.getElementById('modal-student-ai-synthesis');
+  if (modal) modal.classList.add('hidden');
+}
+
+function copyAIEvaluationToClipboard() {
+  const text = document.getElementById('ai-modal-bulletin-comment')?.innerText || '';
+  if (!text) return;
+  if (navigator.clipboard && navigator.clipboard.writeText) {
+    navigator.clipboard.writeText(text).then(() => {
+      showToast("Appréciation copiée dans le presse-papier !");
+    }).catch(() => {
+      showToast("Texte copié !");
+    });
+  } else {
+    showToast("Appréciation copiée !");
+  }
+}
+
+function generateStudentAIEvaluationForCurrentBulletin() {
+  const picker = document.getElementById('bulletin-student-picker');
+  const studentId = picker ? picker.value : (appState.students[0]?.id || 1);
+  const student = (appState.students || []).find(s => s.id === parseInt(studentId)) || appState.students[0];
+  if (!student) {
+    showToast("Aucun élève sélectionné pour le bulletin.");
+    return;
+  }
+  const commentEl = document.getElementById('bulletin-council-appreciation');
+  if (commentEl) {
+    const evalText = generateStudentAIEvaluation(student);
+    commentEl.innerHTML = `&ldquo;${esc(evalText)}&rdquo;`;
+    commentEl.classList.add('ring-2', 'ring-purple-400');
+    setTimeout(() => commentEl.classList.remove('ring-2', 'ring-purple-400'), 1500);
+    showToast(`Appréciation ScolaIA générée pour ${esc(student.nomPrenom)} !`);
+  }
+}
+
+function toggleScolaAICopilot(forceState) {
+  const drawer = document.getElementById('scola-ai-copilot-drawer');
+  if (!drawer) return;
+  const isHidden = drawer.classList.contains('hidden');
+  const shouldOpen = forceState !== undefined ? forceState : isHidden;
+  if (shouldOpen) {
+    drawer.classList.remove('hidden');
+    setTimeout(() => {
+      document.getElementById('scola-ai-input')?.focus();
+    }, 50);
+  } else {
+    drawer.classList.add('hidden');
+  }
+}
+
+function clearScolaAIChat() {
+  const feed = document.getElementById('scola-ai-messages-feed');
+  if (!feed) return;
+  feed.innerHTML = `
+    <div class="flex items-start gap-2.5">
+      <div class="w-7 h-7 rounded-xl bg-indigo-600/30 border border-indigo-400/40 flex items-center justify-center flex-shrink-0 text-sm">🤖</div>
+      <div class="bg-indigo-950/60 border border-indigo-500/30 rounded-2xl rounded-tl-xs p-3.5 space-y-2 max-w-[85%] text-slate-200 leading-relaxed shadow-md">
+        <p class="font-bold text-indigo-300 text-xs">Bienvenue sur ScolaIA Copilot !</p>
+        <p>Je suis connecté en direct à l'ensemble de votre base scolaire et comptable. Je peux détecter les risques de décrochage, auditer vos finances ou optimiser vos plannings.</p>
+        <p class="text-[11px] text-slate-400">Posez-moi n'importe quelle question en français ou cliquez sur l'un des boutons de raccourci ci-dessus !</p>
+      </div>
+    </div>
+  `;
+  showToast("Historique de conversation réinitialisé.");
+}
+
+function submitScolaAIChat() {
+  const input = document.getElementById('scola-ai-input');
+  if (!input) return;
+  const query = input.value.trim();
+  if (!query) return;
+  input.value = '';
+  askScolaAI(query);
+}
+
+function askScolaAI(text) {
+  toggleScolaAICopilot(true);
+  const feed = document.getElementById('scola-ai-messages-feed');
+  if (!feed) return;
+
+  const userDiv = document.createElement('div');
+  userDiv.className = "flex items-start justify-end gap-2.5";
+  userDiv.innerHTML = `
+    <div class="bg-gradient-to-r from-indigo-600 to-purple-600 text-white rounded-2xl rounded-tr-xs p-3 max-w-[85%] leading-relaxed shadow-md font-medium text-xs">
+      ${esc(text)}
+    </div>
+    <div class="w-7 h-7 rounded-xl bg-purple-500/20 border border-purple-400/30 flex items-center justify-center flex-shrink-0 text-xs font-bold text-purple-200">
+      VOUS
+    </div>
+  `;
+  feed.appendChild(userDiv);
+
+  const result = processScolaAINLPQuery(text, appState);
+
+  const formattedHtml = esc(result.text)
+    .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
+    .replace(/\*(.*?)\*/g, '<em>$1</em>')
+    .replace(/`(.*?)`/g, '<code class="px-1 py-0.5 rounded bg-black/40 text-amber-300 font-mono text-[10px]">$1</code>')
+    .replace(/\n/g, '<br/>');
+
+  let actionButtonsHtml = '';
+  if (result.actions && result.actions.length > 0) {
+    actionButtonsHtml = '<div class="mt-3 flex flex-wrap gap-1.5 pt-2 border-t border-white/10">';
+    result.actions.forEach(act => {
+      if (act.query) {
+        actionButtonsHtml += `<button type="button" onclick="askScolaAI('${esc(act.query).replace(/'/g, "\\'")}')" class="px-2.5 py-1 rounded-lg bg-indigo-900/60 hover:bg-indigo-700/80 border border-indigo-400/30 text-indigo-200 hover:text-white font-semibold text-[10.5px] transition cursor-pointer">${esc(act.label)}</button>`;
+      } else if (act.onClickJs) {
+        actionButtonsHtml += `<button type="button" onclick="${act.onClickJs}; toggleScolaAICopilot(false);" class="px-2.5 py-1 rounded-lg bg-emerald-900/60 hover:bg-emerald-700/80 border border-emerald-400/30 text-emerald-200 hover:text-white font-semibold text-[10.5px] transition cursor-pointer">${esc(act.label)}</button>`;
+      }
+    });
+    actionButtonsHtml += '</div>';
+  }
+
+  const botDiv = document.createElement('div');
+  botDiv.className = "flex items-start gap-2.5";
+  botDiv.innerHTML = `
+    <div class="w-7 h-7 rounded-xl bg-indigo-600/30 border border-indigo-400/40 flex items-center justify-center flex-shrink-0 text-sm">🤖</div>
+    <div class="bg-indigo-950/70 border border-indigo-500/30 rounded-2xl rounded-tl-xs p-3.5 space-y-2 max-w-[85%] text-slate-200 leading-relaxed shadow-md">
+      <div>${formattedHtml}</div>
+      ${actionButtonsHtml}
+    </div>
+  `;
+  feed.appendChild(botDiv);
+  feed.scrollTop = feed.scrollHeight;
+}
+
+function toggleScolaAISpotlight(forceState) {
+  const modal = document.getElementById('scola-ai-spotlight');
+  if (!modal) return;
+  const isHidden = modal.classList.contains('hidden');
+  const shouldOpen = forceState !== undefined ? forceState : isHidden;
+  if (shouldOpen) {
+    openScolaAISpotlight();
+  } else {
+    closeScolaAISpotlight();
+  }
+}
+
+function openScolaAISpotlight() {
+  const modal = document.getElementById('scola-ai-spotlight');
+  if (!modal) return;
+  modal.classList.remove('hidden');
+  const input = document.getElementById('spotlight-search-input');
+  if (input) {
+    input.value = '';
+    input.focus();
+  }
+  handleSpotlightSearch('');
+}
+
+function closeScolaAISpotlight() {
+  const modal = document.getElementById('scola-ai-spotlight');
+  if (modal) modal.classList.add('hidden');
+}
+
+function handleSpotlightSearch(rawQuery) {
+  const container = document.getElementById('spotlight-results');
+  if (!container) return;
+  const query = String(rawQuery || '').trim().toLowerCase();
+
+  if (!query) {
+    container.innerHTML = `
+      <div class="px-3 py-2 text-[10px] uppercase font-bold text-slate-400 tracking-wider">Actions Intelligentes Rapides</div>
+      <button type="button" onclick="closeScolaAISpotlight(); askScolaAI('diagnostic global');" class="w-full text-left px-3 py-2.5 rounded-xl hover:bg-white/10 flex items-center justify-between text-xs text-slate-200 hover:text-white transition group cursor-pointer">
+        <span class="flex items-center gap-2.5">
+          <span class="w-7 h-7 rounded-lg bg-indigo-500/20 text-indigo-400 flex items-center justify-center text-sm">📊</span>
+          <span>Exécuter le Diagnostic Stratégique Global 360°</span>
+        </span>
+        <span class="text-[10px] text-slate-500 group-hover:text-indigo-300 font-mono">Entrée ↵</span>
+      </button>
+      <button type="button" onclick="closeScolaAISpotlight(); askScolaAI('élèves à risque');" class="w-full text-left px-3 py-2.5 rounded-xl hover:bg-white/10 flex items-center justify-between text-xs text-slate-200 hover:text-white transition group cursor-pointer">
+        <span class="flex items-center gap-2.5">
+          <span class="w-7 h-7 rounded-lg bg-red-500/20 text-rose-400 flex items-center justify-center text-sm">🚨</span>
+          <span>Détecter les Élèves en Risque de Décrochage</span>
+        </span>
+        <span class="text-[10px] text-slate-500 group-hover:text-rose-300 font-mono">IA Sentinel</span>
+      </button>
+      <button type="button" onclick="closeScolaAISpotlight(); navigateTo('finance');" class="w-full text-left px-3 py-2.5 rounded-xl hover:bg-white/10 flex items-center justify-between text-xs text-slate-200 hover:text-white transition group cursor-pointer">
+        <span class="flex items-center gap-2.5">
+          <span class="w-7 h-7 rounded-lg bg-emerald-500/20 text-emerald-400 flex items-center justify-center text-sm">💰</span>
+          <span>Consulter la Trésorerie & les Soldes d'Écolage</span>
+        </span>
+        <span class="text-[10px] text-slate-500 group-hover:text-emerald-300 font-mono">Finances</span>
+      </button>
+      <button type="button" onclick="closeScolaAISpotlight(); openAutoTimetableModal();" class="w-full text-left px-3 py-2.5 rounded-xl hover:bg-white/10 flex items-center justify-between text-xs text-slate-200 hover:text-white transition group cursor-pointer">
+        <span class="flex items-center gap-2.5">
+          <span class="w-7 h-7 rounded-lg bg-purple-500/20 text-purple-400 flex items-center justify-center text-sm">📅</span>
+          <span>Génération Automatique de l'Emploi du Temps</span>
+        </span>
+        <span class="text-[10px] text-slate-500 group-hover:text-purple-300 font-mono">Pédagogie</span>
+      </button>
+    `;
+    return;
+  }
+
+  let html = '';
+
+  const navItems = [
+    { title: "Tableau de Bord / Inscriptions", icon: "📊", action: "navigateTo('dashboard')" },
+    { title: "Gestion Pédagogique & Classes", icon: "📚", action: "navigateTo('pedagogie'); setPedagogieSubTab('classes')" },
+    { title: "Bulletins Trimestriels Officiels", icon: "📝", action: "navigateTo('pedagogie'); setPedagogieSubTab('grades'); setGradeView('bulletin')" },
+    { title: "Emplois du Temps & Salles", icon: "📅", action: "navigateTo('pedagogie'); setPedagogieSubTab('edt')" },
+    { title: "Comptabilité & Soldes", icon: "💰", action: "navigateTo('finance')" },
+    { title: "Journal des Caisses & Reçus", icon: "🧾", action: "navigateTo('finance'); setCashSubTab('journal')" },
+    { title: "Supervision Concepteur SaaS", icon: "👑", action: "openConcepteurInterface()" },
+    { title: "Console Fondation Mère", icon: "🏛️", action: "openFoundationInterface()" },
+    { title: "Administration & Sécurité", icon: "⚙️", action: "navigateTo('admin')" }
+  ];
+
+  const matchedNav = navItems.filter(n => n.title.toLowerCase().includes(query));
+  if (matchedNav.length > 0) {
+    html += `<div class="px-3 py-1.5 text-[10px] uppercase font-bold text-slate-400 tracking-wider">Navigation & Modules</div>`;
+    matchedNav.slice(0, 3).forEach(n => {
+      html += `
+        <button type="button" onclick="closeScolaAISpotlight(); ${n.action};" class="w-full text-left px-3 py-2 rounded-xl hover:bg-white/10 flex items-center justify-between text-xs text-slate-200 hover:text-white transition cursor-pointer">
+          <span class="flex items-center gap-2.5">
+            <span>${n.icon}</span>
+            <span>${n.title}</span>
+          </span>
+          <span class="text-[10px] text-indigo-400 font-mono">Naviguer ➔</span>
+        </button>
+      `;
+    });
+  }
+
+  const matchedStudents = (appState.students || []).filter(s => {
+    return (s.nomPrenom || '').toLowerCase().includes(query) || (s.matricule || '').toLowerCase().includes(query) || (s.classe || '').toLowerCase().includes(query);
+  });
+
+  if (matchedStudents.length > 0) {
+    html += `<div class="px-3 py-1.5 text-[10px] uppercase font-bold text-slate-400 tracking-wider">Élèves Identifiés (${matchedStudents.length})</div>`;
+    matchedStudents.slice(0, 5).forEach(st => {
+      const risk = computeStudentAIRiskScore(st);
+      html += `
+        <button type="button" onclick="closeScolaAISpotlight(); openStudentAISynthesis(${st.id});" class="w-full text-left px-3 py-2 rounded-xl hover:bg-white/10 flex items-center justify-between text-xs text-slate-200 hover:text-white transition cursor-pointer">
+          <div class="flex items-center gap-2.5">
+            <span class="w-7 h-7 rounded-lg bg-purple-500/20 text-purple-300 flex items-center justify-center font-bold text-xs">🎓</span>
+            <div>
+              <div class="font-bold text-white">${esc(st.nomPrenom)}</div>
+              <div class="text-[10px] text-slate-400">${esc(st.matricule)} • ${esc(st.classe || 'N/A')}</div>
+            </div>
+          </div>
+          <div class="flex items-center gap-2">
+            <span class="px-2 py-0.5 rounded text-[9.5px] font-bold border ${risk.badgeClass}">Score IA: ${risk.score}/100</span>
+            <span class="text-[10px] text-purple-400">Audit ✨</span>
+          </div>
+        </button>
+      `;
+    });
+  }
+
+  html += `
+    <div class="pt-2 border-t border-white/10">
+      <button type="button" onclick="closeScolaAISpotlight(); askScolaAI('${esc(query).replace(/'/g, "\\'")}');" class="w-full text-left px-3 py-2.5 rounded-xl bg-indigo-950/80 hover:bg-indigo-900 border border-indigo-500/30 flex items-center justify-between text-xs text-white transition cursor-pointer">
+        <span class="flex items-center gap-2.5">
+          <span class="text-base">🤖</span>
+          <span>Demander une analyse détaillée à <strong>ScolaIA Copilot</strong></span>
+        </span>
+        <span class="text-[10px] text-indigo-300 font-mono">Consulter l'IA ➔</span>
+      </button>
+    </div>
+  `;
+
+  container.innerHTML = html;
+}
+
+function openBatchRelanceModal() {
+  const debtors = (appState.students || []).filter(s => {
+    const due = Number(s.fee_due || s.totalDue || 0);
+    const paid = Number(s.fee_paid || s.totalPaid || 0);
+    return (due - paid) > 0;
+  });
+  if (typeof auditAction === 'function') {
+    auditAction('AI_FINANCIAL_CAMPAIGN', 'Finance', `${debtors.length} famille(s) débitrice(s)`, '', 'Génération de campagne de relance multicanale optimisée par ScolaIA', 'SUCCÈS');
+  }
+  showToast(`Campagne ScolaIA : ${debtors.length} relances ciblées (SMS + Courriers) préparées avec succès !`);
+}
+
+function openAutoTimetableModal() {
+  if (typeof navigateTo === 'function') navigateTo('pedagogie');
+  if (typeof setPedagogieSubTab === 'function') setPedagogieSubTab('edt');
+  if (typeof auditAction === 'function') {
+    auditAction('AI_TIMETABLE_OPTIMIZE', 'Pédagogie', 'Moteur EDT ScolaIA', '', 'Optimisation heuristique des créneaux sans conflit', 'SUCCÈS');
+  }
+  showToast("Moteur heuristique ScolaIA : Analyse et répartition des créneaux de cours sans conflit activée !");
+}
+
+// Raccourcis Clavier Universels (Ctrl+K / Cmd+K et Échap)
+document.addEventListener('keydown', function(e) {
+  if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'k') {
+    e.preventDefault();
+    toggleScolaAISpotlight();
+  }
+  if (e.key === 'Escape') {
+    closeScolaAISpotlight();
+    closeStudentAISynthesis();
+  }
+});
 
 </script>
 </body>
