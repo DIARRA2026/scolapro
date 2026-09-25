@@ -308,6 +308,32 @@ const server = http.createServer(async (req, res) => {
     }
   }
 
+  // 3b. Authentification Démo Publique : Exploration en direct (/api/auth/demo)
+  if (reqPath === '/api/auth/demo' && (method === 'POST' || method === 'GET')) {
+    try {
+      const demoUser = db.getUserById(0) || db.getUserById(2) || (db.getUsers && db.getUsers({ role: 'concepteur' })[0]);
+      if (!demoUser) {
+        return sendError(res, new Error("Compte d'exploration en direct introuvable."), 404);
+      }
+
+      const session = db.createSession(demoUser.id, {
+        ip: clientIp,
+        userAgent: req.headers['user-agent']
+      });
+
+      const sessionCookie = formatSessionCookie(session.token, isProduction);
+      return sendJson(res, 200, {
+        success: true,
+        user: session.user,
+        mode: 'LIVE_EXPLORATION'
+      }, {
+        'Set-Cookie': sessionCookie
+      });
+    } catch (err) {
+      return sendError(res, err, 500);
+    }
+  }
+
   // 4. Déconnexion (/api/auth/logout)
   if (reqPath === '/api/auth/logout') {
     const cookies = parseCookies(req);
@@ -388,6 +414,18 @@ const server = http.createServer(async (req, res) => {
         ...securityHeaders(true, isProduction)
       });
       return fs.createReadStream(inscPath).pipe(res);
+    }
+  }
+
+  // 6b. Vitrine Publique Principale (Landing Page SPA : / et /index.html)
+  if (reqPath === '/' || reqPath === '/index.html') {
+    const indexPath = path.join(PUBLIC_DIR, 'index.html');
+    if (fs.existsSync(indexPath)) {
+      res.writeHead(200, {
+        'Content-Type': 'text/html; charset=utf-8',
+        ...securityHeaders(true, isProduction)
+      });
+      return fs.createReadStream(indexPath).pipe(res);
     }
   }
 

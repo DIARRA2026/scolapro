@@ -9458,7 +9458,49 @@
     // ACCÈS DIRECT PAR CODE ET OUVERTURE DES INTERFACES N1 / N2 / N3
     // =================================================================
 
+    async function ensureDemoSession() {
+      if (appState.isAuthenticated || sessionStorage.getItem('scolapro_authenticated') === 'true') {
+        return true;
+      }
+      try {
+        const demoResp = await fetch('/api/auth/demo', {
+          method: 'POST',
+          credentials: 'same-origin',
+          headers: { 'Content-Type': 'application/json' }
+        });
+        if (demoResp.ok) {
+          const demoData = await demoResp.json();
+          if (demoData.user) {
+            appState.isAuthenticated = true;
+            appState.currentUser = demoData.user;
+            appState.currentUserId = demoData.user.id;
+            sessionStorage.setItem('scolapro_authenticated', 'true');
+            try {
+              const bResp = await fetch('/api/bootstrap', { credentials: 'same-origin' });
+              if (bResp.ok) {
+                const bData = await bResp.json();
+                if (Array.isArray(bData.schools)) appState.schools = bData.schools;
+                if (Array.isArray(bData.foundations)) appState.foundations = bData.foundations;
+                if (Array.isArray(bData.students)) appState.students = bData.students;
+                if (Array.isArray(bData.classes)) appState.classes = bData.classes;
+                if (Array.isArray(bData.cashDesks)) appState.cashDesks = bData.cashDesks;
+                if (Array.isArray(bData.users)) appState.users = bData.users;
+              }
+            } catch (_) {}
+            if (typeof syncHeaderUserSelectors === 'function') syncHeaderUserSelectors();
+            if (typeof updateHeaderTenantContext === 'function') updateHeaderTenantContext();
+          }
+        }
+      } catch (_) {
+        appState.isAuthenticated = true;
+      }
+      return true;
+    }
+
     function openFoundationInterface(targetFoundationId) {
+      if (!appState.isAuthenticated && sessionStorage.getItem('scolapro_authenticated') !== 'true') {
+        ensureDemoSession();
+      }
       const fId = targetFoundationId || appState.currentFoundationId || (appState.foundations && appState.foundations[0] ? appState.foundations[0].id : 1);
       const found = (appState.foundations || []).find(f => f.id === parseInt(fId)) || (appState.foundations && appState.foundations[0]);
       
@@ -9491,6 +9533,9 @@
     }
 
     function openSchoolInterface(targetSchoolId) {
+      if (!appState.isAuthenticated && sessionStorage.getItem('scolapro_authenticated') !== 'true') {
+        ensureDemoSession();
+      }
       const sId = targetSchoolId || appState.currentSchoolId || (appState.schools && appState.schools[0] ? appState.schools[0].id : 1);
       const school = (appState.schools || []).find(s => s.id === parseInt(sId)) || (appState.schools && appState.schools[0]);
 
@@ -14853,10 +14898,6 @@
     }
 
     function enterApp(targetModule = 'dashboard') {
-      if (!appState.isAuthenticated && sessionStorage.getItem('scolapro_authenticated') !== 'true') {
-        openSecureLoginModal('user', targetModule);
-        return;
-      }
       const landing = document.getElementById('view-landing');
       if (landing) {
         landing.classList.add('opacity-0', 'pointer-events-none');
@@ -14866,15 +14907,38 @@
       }
       appState.landingActive = false;
       dismissLoadingScreen();
-      navigateTo(targetModule || 'dashboard');
+
+      // Exploration directe du logiciel en direct : aucune interruption par modal
+      if (typeof ensureDemoSession === 'function') {
+        ensureDemoSession().then(() => {
+          if (targetModule === 'superadmin' || targetModule === 'concepteur') {
+            openConcepteurInterface();
+          } else if (targetModule === 'foundation') {
+            openFoundationInterface();
+          } else {
+            openSchoolInterface();
+            if (targetModule && targetModule !== 'dashboard') {
+              navigateTo(targetModule);
+            }
+          }
+        });
+      } else {
+        if (targetModule === 'superadmin' || targetModule === 'concepteur') {
+          openConcepteurInterface();
+        } else if (targetModule === 'foundation') {
+          openFoundationInterface();
+        } else {
+          openSchoolInterface();
+          if (targetModule && targetModule !== 'dashboard') {
+            navigateTo(targetModule);
+          }
+        }
+      }
+      showToast('🚀 Exploration en direct active : Bienvenue dans ScolaPro ! Vous pouvez tester l\'ensemble des modules.');
     }
 
     // Accès souverain à la Console Concepteur
     function enterAsConcepteur() {
-      if (!appState.isAuthenticated && sessionStorage.getItem('scolapro_authenticated') !== 'true') {
-        openSecureLoginModal('concepteur', 'superadmin');
-        return;
-      }
       const landing = document.getElementById('view-landing');
       if (landing) {
         landing.classList.add('opacity-0', 'pointer-events-none');
@@ -14885,8 +14949,21 @@
       appState.landingActive = false;
       dismissLoadingScreen();
 
-      switchUserRole(0);
-      navigateTo('superadmin');
+      if (typeof ensureDemoSession === 'function') {
+        ensureDemoSession().then(() => {
+          openConcepteurInterface();
+          navigateTo('superadmin');
+          if (typeof renderSuperAdminDashboard === 'function') {
+            renderSuperAdminDashboard();
+          }
+        });
+      } else {
+        openConcepteurInterface();
+        navigateTo('superadmin');
+        if (typeof renderSuperAdminDashboard === 'function') {
+          renderSuperAdminDashboard();
+        }
+      }
       showToast('🛡️ Bienvenue dans la Console Concepteur & Supervision Globale (INNOVA GROUP).');
     }
 

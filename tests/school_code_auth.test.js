@@ -351,3 +351,59 @@ test('AUTH-CODE-10 : Vérification des fonctions et éléments DOM d\'ouverture 
   assert.ok(content.includes('openFoundationInterface()'), 'openFoundationInterface doit être relié');
   assert.ok(content.includes('openSchoolInterface()'), 'openSchoolInterface doit être relié');
 });
+
+test('AUTH-CODE-11 : Exploration en direct /api/auth/demo délivre une session active valide', async () => {
+  const demoRes = await makeRequest(baseUrl, {
+    path: '/api/auth/demo',
+    method: 'POST'
+  });
+
+  assert.strictEqual(demoRes.statusCode, 200);
+  assert.ok(demoRes.json.success);
+  assert.strictEqual(demoRes.json.mode, 'LIVE_EXPLORATION');
+  assert.ok(demoRes.headers['set-cookie'], 'Un cookie de session doit être délivré');
+
+  // La session démo permet d'accéder au bootstrap et aux données
+  const bootRes = await makeRequest(baseUrl, {
+    path: '/api/bootstrap',
+    headers: { cookie: demoRes.headers['set-cookie'] }
+  });
+  assert.strictEqual(bootRes.statusCode, 200);
+  assert.ok(Array.isArray(bootRes.json.schools));
+});
+
+test('AUTH-CODE-12 : La vitrine publique (/ et /index.html) est accessible publiquement (200 OK)', async () => {
+  const rootRes = await makeRequest(baseUrl, { path: '/' });
+  assert.strictEqual(rootRes.statusCode, 200);
+  assert.ok(rootRes.headers['content-type'].includes('text/html'));
+  assert.ok(rootRes.body.includes('Explorer le Logiciel en Direct'));
+
+  const indexRes = await makeRequest(baseUrl, { path: '/index.html' });
+  assert.strictEqual(indexRes.statusCode, 200);
+  assert.ok(indexRes.headers['content-type'].includes('text/html'));
+});
+
+test('AUTH-CODE-13 : Le bouton et contrôleurs d\'exploration directe n\'appellent pas openSecureLoginModal', () => {
+  const fs = require('node:fs');
+  const path = require('node:path');
+  const content = fs.readFileSync(path.join(__dirname, '..', 'index.html'), 'utf8');
+
+  // Vérifier le bouton "Explorer le Logiciel en Direct"
+  assert.ok(content.includes('Explorer le Logiciel en Direct'), 'Bouton explorer doit exister');
+  assert.ok(content.includes("onclick=\"enterApp('dashboard')\""), 'Bouton relié à enterApp');
+
+  // Extraire le corps de enterApp
+  const enterAppMatch = content.match(/function enterApp\([^)]*\)\s*\{([\s\S]*?)\n    \}/);
+  assert.ok(enterAppMatch, 'enterApp doit être défini');
+  const enterAppBody = enterAppMatch[1];
+
+  // enterApp ne doit pas bloquer avec openSecureLoginModal
+  assert.ok(!enterAppBody.includes('openSecureLoginModal'), 'enterApp ne doit pas appeler openSecureLoginModal');
+  assert.ok(enterAppBody.includes('ensureDemoSession'), 'enterApp doit appeler ensureDemoSession');
+
+  // enterAsConcepteur ne doit pas bloquer avec openSecureLoginModal
+  const enterConcepteurMatch = content.match(/function enterAsConcepteur\([^)]*\)\s*\{([\s\S]*?)\n    \}/);
+  assert.ok(enterConcepteurMatch, 'enterAsConcepteur doit être défini');
+  assert.ok(!enterConcepteurMatch[1].includes('openSecureLoginModal'), 'enterAsConcepteur ne doit pas appeler openSecureLoginModal');
+});
+
