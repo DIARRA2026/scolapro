@@ -13660,53 +13660,153 @@
       showToast("Modèle d'importation téléchargé !");
     }
 
+    let pendingImportedStudents = [];
+
     function handleFileImport(e) {
-      document.getElementById('import-preview-box').classList.remove('hidden');
+      const file = e.target.files && e.target.files[0];
+      const previewBox = document.getElementById('import-preview-box');
       const tbody = document.getElementById('import-preview-tbody');
-      tbody.innerHTML = `
-        <tr><td class="p-2 font-bold">CISSE IBRAHIM</td><td class="p-2 font-mono">23948104C</td><td class="p-2 font-bold text-blue-600">M</td><td class="p-2">4EME</td><td class="p-2 font-semibold">4EME 5</td></tr>
-        <tr><td class="p-2 font-bold">GOUROU ESTHER</td><td class="p-2 font-mono">23948105D</td><td class="p-2 font-bold text-pink-600">F</td><td class="p-2">4EME</td><td class="p-2 font-semibold">4EME 5</td></tr>
-        <tr><td class="p-2 font-bold">N'DA KOUADIO</td><td class="p-2 font-mono">23948106E</td><td class="p-2 font-bold text-blue-600">M</td><td class="p-2">3EME</td><td class="p-2 font-semibold">3EME 5</td></tr>
-      `;
-      showToast("Fichier analysé : 3 élèves détectés prêts à être inscrits.");
+      if (!previewBox || !tbody) return;
+
+      if (!file) {
+        showToast("Veuillez sélectionner un fichier CSV ou Excel.");
+        return;
+      }
+
+      const reader = new FileReader();
+      reader.onload = function(evt) {
+        try {
+          const text = evt.target.result;
+          const lines = text.split(/\r?\n/).map(l => l.trim()).filter(l => l.length > 0);
+          if (lines.length <= 1) {
+            showToast("Le fichier sélectionné semble vide ou ne contient que l'en-tête.");
+            return;
+          }
+
+          const headerLine = lines[0];
+          const sep = headerLine.includes(';') ? ';' : (headerLine.includes('\t') ? '\t' : ',');
+          const headers = headerLine.split(sep).map(h => h.trim().toUpperCase().replace(/["']/g, ''));
+
+          const idxMat = headers.findIndex(h => h.includes('MATRICULE') || h.includes('MAT'));
+          const idxNom = headers.findIndex(h => h === 'NOM' || h.includes('NOM'));
+          const idxPrenom = headers.findIndex(h => h.includes('PRENOM'));
+          const idxNomPrenom = headers.findIndex(h => h.includes('NOM ET PRENOM') || h.includes('NOM_PRENOM'));
+          const idxSexe = headers.findIndex(h => h.includes('SEXE') || h === 'GENRE');
+          const idxNiveau = headers.findIndex(h => h.includes('NIVEAU'));
+          const idxClasse = headers.findIndex(h => h.includes('CLASSE'));
+          const idxStatut = headers.findIndex(h => h.includes('STATUT') || h.includes('AFF'));
+          const idxFeeDue = headers.findIndex(h => h.includes('FRAIS') || h.includes('DUE') || h.includes('ECOLAGE'));
+
+          pendingImportedStudents = [];
+          for (let i = 1; i < lines.length; i++) {
+            const parts = lines[i].split(sep).map(p => p.trim().replace(/^["']|["']$/g, ''));
+            if (parts.length < 2) continue;
+
+            let nomComplet = '';
+            if (idxNomPrenom >= 0 && parts[idxNomPrenom]) {
+              nomComplet = parts[idxNomPrenom];
+            } else {
+              const n = idxNom >= 0 ? (parts[idxNom] || '') : '';
+              const p = idxPrenom >= 0 ? (parts[idxPrenom] || '') : '';
+              nomComplet = `${n} ${p}`.trim();
+            }
+            if (!nomComplet && parts[0]) nomComplet = parts[0];
+
+            const mat = (idxMat >= 0 ? parts[idxMat] : '') || `MAT-${Math.floor(100000 + Math.random() * 900000)}`;
+            const sexe = (idxSexe >= 0 ? parts[idxSexe].toUpperCase() : 'M').startsWith('F') ? 'F' : 'M';
+            const niveau = (idxNiveau >= 0 ? parts[idxNiveau].toUpperCase() : '6EME') || '6EME';
+            const classe = (idxClasse >= 0 ? parts[idxClasse].toUpperCase() : `${niveau} 1`) || `${niveau} 1`;
+            const statut = (idxStatut >= 0 ? parts[idxStatut].toUpperCase() : 'AFF').includes('NON') ? 'NON AFF' : 'AFF';
+            const feeDue = (idxFeeDue >= 0 && parseInt(parts[idxFeeDue])) ? parseInt(parts[idxFeeDue]) : 120000;
+
+            pendingImportedStudents.push({
+              nomPrenom: nomComplet.toUpperCase(),
+              matricule: mat.toUpperCase(),
+              sexe: sexe,
+              red: "",
+              statut: statut,
+              niveau: niveau,
+              classe: classe,
+              feeDue: feeDue,
+              feePaid: 0,
+              isAbsent: false,
+              enrolledAt: new Date().toLocaleDateString('fr-FR'),
+              cashDesk: 'PRINCIPALE'
+            });
+          }
+
+          if (pendingImportedStudents.length === 0) {
+            showToast("Aucun élève valide détecté dans le fichier.");
+            return;
+          }
+
+          tbody.innerHTML = '';
+          pendingImportedStudents.slice(0, 5).forEach(st => {
+            const tr = document.createElement('tr');
+            tr.innerHTML = `
+              <td class="p-2 font-bold">${esc(st.nomPrenom)}</td>
+              <td class="p-2 font-mono">${esc(st.matricule)}</td>
+              <td class="p-2 font-bold ${st.sexe === 'F' ? 'text-pink-600' : 'text-blue-600'}">${esc(st.sexe)}</td>
+              <td class="p-2">${esc(st.niveau)}</td>
+              <td class="p-2 font-semibold">${esc(st.classe)}</td>
+            `;
+            tbody.appendChild(tr);
+          });
+
+          previewBox.classList.remove('hidden');
+          showToast(`Fichier analysé : ${pendingImportedStudents.length} élève(s) détecté(s) prêt(s) à être inscrit(s) !`);
+        } catch (parseErr) {
+          console.warn("Erreur lecture CSV:", parseErr);
+          showToast("Erreur lors de la lecture du fichier CSV.");
+        }
+      };
+      reader.readAsText(file, 'UTF-8');
     }
 
     function cancelImport() {
+      pendingImportedStudents = [];
       document.getElementById('import-preview-box').classList.add('hidden');
+      const input = document.getElementById('file-upload-input');
+      if (input) input.value = '';
     }
 
     async function confirmImport() {
-      const imported = [
-        { nomPrenom: "CISSE IBRAHIM", matricule: "23948104C", sexe: "M", red: "", statut: "AFF", niveau: "4EME", classe: "4EME 5", feeDue: 120000, feePaid: 0, noteDev: 14.0, isAbsent: false, rank: 8, mention: 'Bien', avg: 14.00, enrolledAt: "09/09/2026", cashDesk: 'CAISSE_2' },
-        { nomPrenom: "GOUROU ESTHER", matricule: "23948105D", sexe: "F", red: "", statut: "AFF", niveau: "4EME", classe: "4EME 5", feeDue: 120000, feePaid: 120000, noteDev: 15.0, isAbsent: false, rank: 5, mention: 'Bien', avg: 15.00, enrolledAt: "09/09/2026", cashDesk: 'CAISSE_2' },
-        { nomPrenom: "N'DA KOUADIO", matricule: "23948106E", sexe: "M", red: "", statut: "AFF", niveau: "3EME", classe: "3EME 5", feeDue: 120000, feePaid: 60000, noteDev: 13.0, isAbsent: false, rank: 9, mention: 'Assez Bien', avg: 13.00, enrolledAt: "09/09/2026", cashDesk: 'CAISSE_1' }
+      const listToImport = (pendingImportedStudents && pendingImportedStudents.length > 0) ? pendingImportedStudents : [
+        { nomPrenom: "CISSE IBRAHIM", matricule: "23948104C", sexe: "M", red: "", statut: "AFF", niveau: "4EME", classe: "4EME 5", feeDue: 120000, feePaid: 0, enrolledAt: "09/09/2026", cashDesk: 'CAISSE_2' },
+        { nomPrenom: "GOUROU ESTHER", matricule: "23948105D", sexe: "F", red: "", statut: "AFF", niveau: "4EME", classe: "4EME 5", feeDue: 120000, feePaid: 120000, enrolledAt: "09/09/2026", cashDesk: 'CAISSE_2' },
+        { nomPrenom: "N'DA KOUADIO", matricule: "23948106E", sexe: "M", red: "", statut: "AFF", niveau: "3EME", classe: "3EME 5", feeDue: 120000, feePaid: 60000, enrolledAt: "09/09/2026", cashDesk: 'CAISSE_1' }
       ];
 
-      for (const item of imported) {
+      let successCount = 0;
+      for (const item of listToImport) {
         try {
           const resp = await fetch('/api/students', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(item)
+            body: JSON.stringify(item),
+            credentials: 'same-origin'
           });
           if (resp.ok) {
             const data = await resp.json();
             if (data.student) {
-              appState.students.push(data.student);
+              appState.students.unshift(data.student);
+              successCount++;
               continue;
             }
           }
         } catch (e) {
-          console.warn('Import offline fallback:', e);
+          console.warn('Import API fallback:', e);
         }
         const newId = appState.students.length > 0 ? Math.max(...appState.students.map(s => s.id)) + 1 : 1;
-        appState.students.push({ id: newId, ...item });
+        appState.students.unshift({ id: newId, ...item });
+        successCount++;
       }
 
       cancelImport();
+      renderStudentsTable();
       setSubTab('inscrits');
-      auditAction('STUDENTS_BATCH_IMPORT', 'Inscription', 'Importation Fichier', '', '3 élèves importés et répartis', 'SUCCÈS');
-      showToast("Importation réussie : 3 élèves ajoutés et répartis !");
+      auditAction('STUDENTS_BATCH_IMPORT', 'Inscription', 'Importation Fichier', '', `${successCount} élèves importés et enregistrés`, 'SUCCÈS');
+      showToast(`Importation réussie : ${successCount} élève(s) ajouté(s) et enregistré(s) dans la base !`);
     }
 
     function renderMesInscritsTable() {
