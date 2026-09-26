@@ -407,3 +407,64 @@ test('AUTH-CODE-13 : Le bouton et contrôleurs d\'exploration directe n\'appelle
   assert.ok(!enterConcepteurMatch[1].includes('openSecureLoginModal'), 'enterAsConcepteur ne doit pas appeler openSecureLoginModal');
 });
 
+test('AUTH-CODE-14 : Mot de passe fondation défini lors de l\'inscription et contrôle d\'accès sécurisé', async () => {
+  const fs = require('node:fs');
+  const path = require('node:path');
+  const content = fs.readFileSync(path.join(__dirname, '..', 'index.html'), 'utf8');
+
+  // 1. Vérification des éléments DOM de définition de mot de passe dans le générateur de fondation
+  assert.ok(content.includes('id="gen-found-password"'), 'gen-found-password doit exister dans index.html');
+  assert.ok(content.includes('id="gen-found-password-confirm"'), 'gen-found-password-confirm doit exister dans index.html');
+  assert.ok(content.includes("generateRandomPasswordForField('gen-found-password', 'gen-found-password-confirm')"), 'Générateur rapide de mot de passe fondation');
+  assert.ok(content.includes('id="edit-found-password"'), 'edit-found-password doit exister dans le modal d\'édition');
+
+  // 2. Vérification que openFoundationInterface exige l'authentification par mot de passe si non connecté
+  const openFoundMatch = content.match(/function openFoundationInterface\([^)]*\)\s*\{([\s\S]*?)\n    \}/);
+  assert.ok(openFoundMatch, 'openFoundationInterface doit être défini');
+  const openFoundBody = openFoundMatch[1];
+  assert.ok(openFoundBody.includes("openSecureLoginModal('foundation'"), 'openFoundationInterface doit ouvrir le modal de login si non authentifié');
+
+  // 3. Création d'une fondation avec son mot de passe dédié
+  const adminLogin = await loginUser(baseUrl, TEST_USERS.concepteur, TEST_PASSWORD);
+  const foundCode = 'FND-PWD-' + Math.floor(Math.random() * 9000 + 1000);
+  const foundPassword = 'FoundSecurePwd2026!';
+
+  const createRes = await makeRequest(baseUrl, {
+    path: '/api/foundations',
+    method: 'POST',
+    headers: { cookie: adminLogin.cookie }
+  }, {
+    name: 'Fondation Sécurisée Test',
+    code: foundCode,
+    sigle: 'FST',
+    password: foundPassword
+  });
+
+  assert.strictEqual(createRes.statusCode, 201);
+  assert.ok(createRes.json.success);
+
+  // 4. Connexion réussie avec le code fondation et son mot de passe défini lors de l'inscription
+  const loginRes = await makeRequest(baseUrl, {
+    path: '/api/auth/login',
+    method: 'POST'
+  }, {
+    identifier: foundCode,
+    password: foundPassword
+  });
+
+  assert.strictEqual(loginRes.statusCode, 200);
+  assert.ok(loginRes.json.success);
+  assert.strictEqual(loginRes.json.user.role, 'fondateur');
+
+  // 5. Échec de connexion avec mot de passe erroné
+  const badLoginRes = await makeRequest(baseUrl, {
+    path: '/api/auth/login',
+    method: 'POST'
+  }, {
+    identifier: foundCode,
+    password: 'MauvaisMotDePasse123!'
+  });
+
+  assert.strictEqual(badLoginRes.statusCode, 401);
+});
+

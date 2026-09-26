@@ -7809,6 +7809,42 @@
             </div>
           </div>
 
+          <!-- Sécurité & Mot de Passe de la Fondation (Conseil d'Administration) -->
+          <div class="p-3.5 bg-purple-50/80 border border-purple-200 rounded-xl space-y-2.5">
+            <div class="flex items-center justify-between">
+              <label class="font-bold text-purple-950 flex items-center gap-1.5 text-xs">
+                <span>🔐</span>
+                <span>Mot de Passe Administrateur de la Fondation *</span>
+              </label>
+              <span class="text-[10px] text-purple-700 bg-purple-100 px-2 py-0.5 rounded font-bold">Connexion par Code ou Email</span>
+            </div>
+            <p class="text-[11px] text-slate-600">
+              Définissez le mot de passe qui permettra à la Présidence / Conseil de Fondation de se connecter immédiatement avec le <strong>Code Fondation</strong> ou l'email officiel.
+            </p>
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <div class="space-y-1">
+                <label class="font-bold text-slate-700 text-[11px]">Mot de passe (min. 8 caractères) *</label>
+                <div class="relative">
+                  <input type="password" id="gen-found-password" required minlength="8" placeholder="Min. 8 caractères" class="w-full border border-slate-300 rounded-lg p-2 pr-9 font-mono text-xs focus:ring-2 focus:ring-purple-600 focus:outline-none">
+                  <button type="button" onclick="togglePasswordVisibilityField('gen-found-password', this)" class="absolute right-2 top-2 text-slate-400 hover:text-slate-600 text-xs cursor-pointer">👁️</button>
+                </div>
+              </div>
+              <div class="space-y-1">
+                <label class="font-bold text-slate-700 text-[11px]">Confirmer le mot de passe *</label>
+                <div class="relative">
+                  <input type="password" id="gen-found-password-confirm" required minlength="8" placeholder="Confirmer mot de passe" class="w-full border border-slate-300 rounded-lg p-2 pr-9 font-mono text-xs focus:ring-2 focus:ring-purple-600 focus:outline-none">
+                  <button type="button" onclick="togglePasswordVisibilityField('gen-found-password-confirm', this)" class="absolute right-2 top-2 text-slate-400 hover:text-slate-600 text-xs cursor-pointer">👁️</button>
+                </div>
+              </div>
+            </div>
+            <div class="flex items-center gap-2 pt-1">
+              <button type="button" onclick="generateRandomPasswordForField('gen-found-password', 'gen-found-password-confirm')" class="text-[11px] text-purple-700 hover:text-purple-900 font-bold underline flex items-center gap-1 cursor-pointer">
+                <span>⚡</span> Générer un mot de passe sécurisé
+              </button>
+              <span id="gen-found-password-generated-badge" class="hidden text-[10px] bg-emerald-100 text-emerald-800 font-bold px-1.5 py-0.5 rounded">Généré !</span>
+            </div>
+          </div>
+
           <!-- Bouton de soumission Fondation -->
           <div class="pt-3 border-t border-slate-200 flex justify-end gap-2.5">
             <button type="button" onclick="closeSchoolGeneratorModal()" class="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl font-bold transition cursor-pointer">
@@ -7924,6 +7960,36 @@
                 <button type="button" onclick="selectEditFoundLogoPreset('📚')" class="w-7 h-7 rounded-lg bg-slate-100 hover:bg-slate-200 border border-slate-300 flex items-center justify-center text-sm cursor-pointer">📚</button>
               </div>
               <input type="text" id="edit-found-custom-logo" oninput="updateEditFoundCustomLogoPreview(this.value)" placeholder="Ou saisir une URL d'image (PNG/SVG)..." class="w-full border border-slate-300 rounded-lg p-1.5 text-[11px] font-mono focus:ring-2 focus:ring-purple-600 focus:outline-none">
+            </div>
+          </div>
+        </div>
+
+        <!-- Sécurité & Mot de Passe Administrateur Fondation (Optionnel) -->
+        <div class="p-3 bg-purple-50/70 border border-purple-200 rounded-xl space-y-2">
+          <div class="flex items-center justify-between">
+            <label class="font-bold text-purple-950 flex items-center gap-1.5 text-xs">
+              <span>🔐</span>
+              <span>Modifier le mot de passe de la Fondation (Optionnel)</span>
+            </label>
+            <span class="text-[10px] text-purple-700 bg-purple-100 px-2 py-0.5 rounded font-bold">Admin / Code Fondation</span>
+          </div>
+          <p class="text-[10.5px] text-slate-500">
+            Laissez vide pour conserver le mot de passe actuel. Si vous saisissez un nouveau mot de passe, il sera immédiatement actif pour la connexion avec le Code Fondation et pour le compte administrateur.
+          </p>
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <div class="space-y-1">
+              <label class="font-bold text-slate-700 text-[10.5px]">Nouveau mot de passe (min. 8 car.)</label>
+              <div class="relative">
+                <input type="password" id="edit-found-password" minlength="8" placeholder="Laisser vide si inchangé" class="w-full border border-slate-300 rounded-lg p-2 pr-8 font-mono focus:ring-2 focus:ring-purple-600 focus:outline-none text-xs">
+                <button type="button" onclick="togglePasswordVisibilityField('edit-found-password', this)" class="absolute right-2 top-2 text-slate-400 hover:text-slate-600 text-xs cursor-pointer">👁️</button>
+              </div>
+            </div>
+            <div class="space-y-1">
+              <label class="font-bold text-slate-700 text-[10.5px]">Confirmer le mot de passe</label>
+              <div class="relative">
+                <input type="password" id="edit-found-password-confirm" minlength="8" placeholder="Confirmer le nouveau mot de passe" class="w-full border border-slate-300 rounded-lg p-2 pr-8 font-mono focus:ring-2 focus:ring-purple-600 focus:outline-none text-xs">
+                <button type="button" onclick="togglePasswordVisibilityField('edit-found-password-confirm', this)" class="absolute right-2 top-2 text-slate-400 hover:text-slate-600 text-xs cursor-pointer">👁️</button>
+              </div>
             </div>
           </div>
         </div>
@@ -9779,14 +9845,34 @@
     }
 
     function openFoundationInterface(targetFoundationId) {
-      if (!appState.isAuthenticated && sessionStorage.getItem('scolapro_authenticated') !== 'true') {
-        ensureDemoSession();
-      }
       const fId = targetFoundationId || appState.currentFoundationId || (appState.foundations && appState.foundations[0] ? appState.foundations[0].id : 1);
       const found = (appState.foundations || []).find(f => f.id === parseInt(fId)) || (appState.foundations && appState.foundations[0]);
-      
+
       const user = getActiveUser();
-      if (user && (user.role === 'concepteur' || user.id === 0)) {
+      const isConcepteur = user && (user.role === 'concepteur' || user.id === 0);
+      const isFondateur = user && (user.role === 'fondateur' || user.scope_type === 'FOUNDATION' || (user.foundationId && found && user.foundationId === found.id));
+
+      // Vérification du mot de passe obligatoire pour accéder à l'espace fondation
+      if (!appState.isAuthenticated && sessionStorage.getItem('scolapro_authenticated') !== 'true') {
+        showToast("🔒 Accès protégé : Mot de passe requis pour accéder à l'espace fondation.");
+        openSecureLoginModal('foundation', 'foundation');
+        if (found && document.getElementById('login-modal-email')) {
+          document.getElementById('login-modal-email').value = found.code || found.email || '';
+        }
+        return;
+      }
+
+      // Si connecté mais sans privilège fondation ni concepteur
+      if (!isConcepteur && !isFondateur) {
+        showToast("🔒 Espace réservé : Veuillez vous connecter avec le mot de passe de la fondation.");
+        openSecureLoginModal('foundation', 'foundation');
+        if (found && document.getElementById('login-modal-email')) {
+          document.getElementById('login-modal-email').value = found.code || found.email || '';
+        }
+        return;
+      }
+
+      if (user && isConcepteur) {
         appState.impersonating = true;
         appState.impersonationType = 'FOUNDATION';
         appState.isImpersonating = true;
@@ -9895,6 +9981,18 @@
 
       if (foundation) {
         if (inputEl) inputEl.value = '';
+        const user = getActiveUser();
+        const isConcepteur = user && (user.role === 'concepteur' || user.id === 0);
+        const isFondateur = user && (user.role === 'fondateur' && user.foundationId === foundation.id);
+        if ((!appState.isAuthenticated && sessionStorage.getItem('scolapro_authenticated') !== 'true') || (!isConcepteur && !isFondateur)) {
+          openSecureLoginModal('foundation', 'foundation');
+          const emailInput = document.getElementById('login-modal-email');
+          if (emailInput) emailInput.value = foundation.code || foundation.email || '';
+          const pwdInput = document.getElementById('login-modal-password');
+          if (pwdInput) { pwdInput.value = ''; pwdInput.focus(); }
+          showToast(`🔒 Mot de passe requis pour accéder à la fondation [${foundation.code}]`);
+          return;
+        }
         openFoundationInterface(foundation.id);
         showToast(`⚡ Accès souverain immédiat à la fondation [${foundation.code}] : ${foundation.name}`);
         return;
@@ -15131,7 +15229,8 @@
       if (presetRole === 'concepteur') {
         presetLoginCredentials('diarra.dolourou@scolapro.ci');
       } else if (presetRole === 'foundation') {
-        presetLoginCredentials('patrice.kouame@fondation-fea.ci');
+        const found = (appState.foundations && appState.foundations[0]);
+        presetLoginCredentials(found ? (found.code || found.email) : 'patrice.kouame@fondation-fea.ci');
       } else if (presetRole === 'school') {
         presetLoginCredentials('m.diarra@lyceesaintemarie.ci');
       } else if (emailInput && !emailInput.value) {
@@ -15202,7 +15301,10 @@
       const emailInput = document.getElementById('login-modal-email');
       const pwdInput = document.getElementById('login-modal-password');
       if (emailInput) emailInput.value = email;
-      if (pwdInput) pwdInput.focus();
+      if (pwdInput) {
+        pwdInput.value = '';
+        pwdInput.focus();
+      }
     }
 
     async function handleSecureLoginSubmit(event) {
@@ -15286,8 +15388,15 @@
         appState.landingActive = false;
         dismissLoadingScreen();
 
-        const target = window._pendingTargetModule || (data.user?.role === 'concepteur' ? 'superadmin' : 'dashboard');
-        navigateTo(target);
+        const target = window._pendingTargetModule || (data.user?.role === 'concepteur' ? 'superadmin' : (data.user?.role === 'fondateur' ? 'foundation' : 'dashboard'));
+        if (target === 'foundation' || data.user?.role === 'fondateur') {
+          openFoundationInterface(data.user?.foundation_id || data.user?.foundationId);
+        } else if (target === 'superadmin' && data.user?.role === 'concepteur') {
+          openConcepteurInterface();
+          navigateTo('superadmin');
+        } else {
+          navigateTo(target);
+        }
         showToast("🔓 Connexion réussie ! Bienvenue " + (data.user?.prenom || '') + " " + (data.user?.nom || ''));
 
       } catch (err) {
@@ -15305,7 +15414,11 @@
             appState.landingActive = false;
             dismissLoadingScreen();
             const target = window._pendingTargetModule || 'dashboard';
-            navigateTo(target);
+            if (target === 'foundation') {
+              openFoundationInterface();
+            } else {
+              navigateTo(target);
+            }
             showToast("🔓 Session démo sécurisée activée (Mode local).");
             return;
           }
@@ -15447,6 +15560,10 @@
       const pwdInput2 = document.getElementById('gen-school-password-confirm');
       if (pwdInput1) pwdInput1.value = '';
       if (pwdInput2) pwdInput2.value = '';
+      const foundPwdInput1 = document.getElementById('gen-found-password');
+      const foundPwdInput2 = document.getElementById('gen-found-password-confirm');
+      if (foundPwdInput1) foundPwdInput1.value = '';
+      if (foundPwdInput2) foundPwdInput2.value = '';
 
       const modal = document.getElementById('modal-school-generator');
       if (modal) modal.classList.remove('hidden');
@@ -16171,6 +16288,17 @@
       const email = document.getElementById('gen-found-email')?.value.trim() || `contact@${sigle.toLowerCase()}.org`;
       const desc = document.getElementById('gen-found-desc')?.value.trim() || 'Groupe éducatif multi-établissements';
 
+      const password = document.getElementById('gen-found-password')?.value || '';
+      const passwordConfirm = document.getElementById('gen-found-password-confirm')?.value || '';
+      if (!password || password.length < 8) {
+        showToast("Erreur : Le mot de passe administrateur de la fondation doit comporter au moins 8 caractères.");
+        return;
+      }
+      if (password !== passwordConfirm) {
+        showToast("Erreur : Les deux mots de passe saisis ne correspondent pas.");
+        return;
+      }
+
       const customLogo = document.getElementById('gen-found-custom-logo')?.value.trim();
       const logoIcon = customLogo || document.getElementById('gen-found-logo-preview-icon')?.textContent.trim() || '🏛️';
 
@@ -16192,7 +16320,8 @@
             phone,
             email,
             description: desc,
-            logo: logoIcon
+            logo: logoIcon,
+            password: password
           })
         });
         if (resp.ok) {
@@ -16316,6 +16445,11 @@
         selectEditFoundLogoPreset(currentLogo);
       }
 
+      const editFoundPwd1 = document.getElementById('edit-found-password');
+      const editFoundPwd2 = document.getElementById('edit-found-password-confirm');
+      if (editFoundPwd1) editFoundPwd1.value = '';
+      if (editFoundPwd2) editFoundPwd2.value = '';
+
       modal.classList.remove('hidden');
     }
 
@@ -16416,6 +16550,19 @@
       const customLogo = document.getElementById('edit-found-custom-logo')?.value.trim();
       const logoIcon = customLogo || document.getElementById('edit-found-logo-preview-icon')?.textContent.trim() || f.logo || '🏛️';
 
+      const editPwd = document.getElementById('edit-found-password')?.value || '';
+      const editPwdConfirm = document.getElementById('edit-found-password-confirm')?.value || '';
+      if (editPwd) {
+        if (editPwd.length < 8) {
+          showToast("Erreur : Le nouveau mot de passe doit comporter au moins 8 caractères.");
+          return;
+        }
+        if (editPwd !== editPwdConfirm) {
+          showToast("Erreur : Les deux nouveaux mots de passe ne correspondent pas.");
+          return;
+        }
+      }
+
       const payload = {
         name,
         sigle,
@@ -16426,6 +16573,9 @@
         description: desc,
         logo: logoIcon
       };
+      if (editPwd) {
+        payload.password = editPwd;
+      }
 
       try {
         const resp = await fetch(`/api/foundations/${id}`, {

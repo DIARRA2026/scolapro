@@ -477,6 +477,9 @@ function initSchema() {
   // Provisionnement des comptes administrateurs d'école manquants
   ensureSchoolAdminUsers();
 
+  // Provisionnement des comptes administrateurs de fondation manquants
+  ensureFoundationAdminUsers();
+
   // Amorçage du compte souverain
   bootstrapSovereignAccount();
 }
@@ -548,6 +551,54 @@ function ensureSchoolAdminUsers() {
           adminEmail,
           school.phone || '',
           school.name,
+          pHash
+        );
+      } catch (_) {}
+    }
+  }
+}
+
+/**
+ * Garantit que chaque fondation possède un compte administrateur fondateur actif.
+ */
+function ensureFoundationAdminUsers() {
+  const foundations = db.prepare('SELECT id, code, name, sigle, president, phone, email, password_hash FROM foundations').all();
+  const checkAdmin = db.prepare("SELECT * FROM users WHERE foundation_id = ? AND (role = 'fondateur' OR role = 'admin') AND is_active = 1 LIMIT 1");
+  const insertAdmin = db.prepare(`
+    INSERT INTO users (
+      id, school_id, foundation_id, nom, prenom, email, phone,
+      role, role_label, scope_type, scope_label, level, is_active,
+      password_hash, must_change_password
+    ) VALUES (?, NULL, ?, ?, 'PRÉSIDENCE', ?, ?, 'fondateur', 'Conseil de Fondation', 'FOUNDATION', ?, 'N2', 1, ?, 0)
+  `);
+
+  for (const found of foundations) {
+    const existing = checkAdmin.get(found.id);
+    if (!existing) {
+      const maxIdRow = db.prepare('SELECT MAX(id) as maxId FROM users').get();
+      const nextUserId = (maxIdRow && maxIdRow.maxId !== null ? maxIdRow.maxId : 10) + 1;
+      const adminEmail = found.email || `${found.code.toLowerCase()}@scolapro.ci`;
+      
+      let pHash = found.password_hash;
+      if (!pHash) {
+        const salt = crypto.randomBytes(16);
+        const key = crypto.scryptSync('ScolaPro2026!', salt, auth.SCRYPT_CONFIG.keylen, {
+          N: auth.SCRYPT_CONFIG.N, r: auth.SCRYPT_CONFIG.r, p: auth.SCRYPT_CONFIG.p, maxmem: auth.SCRYPT_CONFIG.maxmem
+        });
+        pHash = `scrypt$${auth.SCRYPT_CONFIG.N}$${auth.SCRYPT_CONFIG.r}$${auth.SCRYPT_CONFIG.p}$${salt.toString('base64')}$${key.toString('base64')}`;
+        try {
+          db.prepare('UPDATE foundations SET password_hash = ? WHERE id = ?').run(pHash, found.id);
+        } catch (_) {}
+      }
+
+      try {
+        insertAdmin.run(
+          nextUserId,
+          found.id,
+          found.sigle || found.name,
+          adminEmail,
+          found.phone || '',
+          found.name,
           pHash
         );
       } catch (_) {}
