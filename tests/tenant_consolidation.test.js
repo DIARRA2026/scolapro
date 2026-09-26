@@ -11,6 +11,8 @@
 
 const test = require('node:test');
 const assert = require('node:assert');
+const fs = require('node:fs');
+const path = require('node:path');
 const {
   db,
   startTestServer,
@@ -394,3 +396,49 @@ test('CONSOL-08 : Mise à jour du logo et informations d\'une fondation via PUT 
   assert.ok(foundInBoot, "La fondation mise à jour doit être présente dans bootstrap");
   assert.equal(foundInBoot.logo, customLogo, "Le logo de la fondation doit être fidèlement persisté dans bootstrap");
 });
+
+test('CONSOL-09 : Chargement du logo de fondation (direct upload, preview, format image et persistance)', async () => {
+  const session = await loginUser(baseUrl, TEST_USERS.concepteur, TEST_PASSWORD);
+
+  // 1. Créer une fondation directement avec un logo image DataURL
+  const fndCode = `fnd-logo-${Date.now()}`;
+  const initialLogo = 'data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIxNiIgaGVpZ2h0PSIxNiI+PHJlY3Qgd2lkdGg9IjE2IiBoZWlnaHQ9IjE2IiBmaWxsPSIjNDMzOGNhIi8+PC9zdmc+';
+  const createRes = await makeRequest(baseUrl, {
+    path: '/api/foundations',
+    method: 'POST',
+    headers: { cookie: session.cookie }
+  }, {
+    name: 'Groupe Scolaire International Test',
+    code: fndCode,
+    sigle: 'GSIT',
+    hq: 'Abidjan Cocody',
+    logo: initialLogo
+  });
+  assert.equal(createRes.statusCode, 201);
+  const foundId = createRes.json.id;
+  assert.equal(createRes.json.logo, initialLogo, 'Le logo initial doit être retourné dès la création');
+
+  // 2. Mettre à jour avec un nouveau logo via PUT /api/foundations/:id
+  const updatedLogo = 'data:image/webp;base64,UklGRhoAAABXRUJQVlA4TA4AAAAvAAAAEAcQERGIiP4HAA==';
+  const putRes = await makeRequest(baseUrl, {
+    path: `/api/foundations/${foundId}`,
+    method: 'PUT',
+    headers: { cookie: session.cookie }
+  }, {
+    logo: updatedLogo
+  });
+  assert.equal(putRes.statusCode, 200);
+  assert.equal(putRes.json.logo, updatedLogo, 'Le logo doit être mis à jour');
+
+  // 3. Vérifier les méthodes et déclencheurs front-end dans index.html
+  const htmlPath = path.join(__dirname, '..', 'index.html');
+  const htmlContent = fs.readFileSync(htmlPath, 'utf8');
+
+  assert.ok(htmlContent.includes('triggerFoundationHeroLogoUpload'), 'Doit inclure triggerFoundationHeroLogoUpload');
+  assert.ok(htmlContent.includes('uploadFoundationLogoDirect'), 'Doit inclure uploadFoundationLogoDirect');
+  assert.ok(htmlContent.includes('handleFoundationHeroLogoFile'), 'Doit inclure handleFoundationHeroLogoFile');
+  assert.ok(htmlContent.includes('handleSettingsFoundLogoFileUpload'), 'Doit inclure handleSettingsFoundLogoFileUpload');
+  assert.ok(htmlContent.includes('openNewFoundationModal'), 'Doit inclure openNewFoundationModal');
+  assert.ok(htmlContent.includes('found-hero-logo-file-input'), 'Doit inclure l\'input de fichier found-hero-logo-file-input');
+});
+
