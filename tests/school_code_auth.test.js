@@ -468,3 +468,69 @@ test('AUTH-CODE-14 : Mot de passe fondation défini lors de l\'inscription et co
   assert.strictEqual(badLoginRes.statusCode, 401);
 });
 
+test('AUTH-CODE-15 : Réinitialisation intégrale des formulaires de création (école, fondation, élève) pour garantir des formulaires vierges', () => {
+  const fs = require('node:fs');
+  const path = require('node:path');
+  const content = fs.readFileSync(path.join(__dirname, '..', 'index.html'), 'utf8');
+
+  // 1. Présence de resetSchoolGeneratorForm et réinitialisation de tous les champs
+  const resetSchoolMatch = content.match(/function resetSchoolGeneratorForm\([^)]*\)\s*\{([\s\S]*?)\n    \}/);
+  assert.ok(resetSchoolMatch, 'resetSchoolGeneratorForm doit être définie');
+  const resetSchoolBody = resetSchoolMatch[1];
+  assert.ok(resetSchoolBody.includes("'gen-school-name'"), 'Doit vider gen-school-name');
+  assert.ok(resetSchoolBody.includes("'gen-school-code'"), 'Doit vider gen-school-code');
+  assert.ok(resetSchoolBody.includes("'gen-school-address'"), 'Doit vider gen-school-address');
+  assert.ok(resetSchoolBody.includes("'gen-school-phone'"), 'Doit vider gen-school-phone');
+  assert.ok(resetSchoolBody.includes("'gen-school-email'"), 'Doit vider gen-school-email');
+  assert.ok(resetSchoolBody.includes("'gen-school-password'"), 'Doit vider gen-school-password');
+  assert.ok(resetSchoolBody.includes("'gen-school-password-confirm'"), 'Doit vider gen-school-password-confirm');
+  assert.ok(resetSchoolBody.includes("'gen-school-custom-logo'"), 'Doit vider gen-school-custom-logo');
+  assert.ok(resetSchoolBody.includes("'gen-school-logo-file'"), 'Doit vider gen-school-logo-file');
+  assert.ok(resetSchoolBody.includes('selectSchoolLogoPreset'), 'Doit réinitialiser le logo preset');
+
+  // 2. Présence de resetFoundationGeneratorForm
+  const resetFoundMatch = content.match(/function resetFoundationGeneratorForm\([^)]*\)\s*\{([\s\S]*?)\n    \}/);
+  assert.ok(resetFoundMatch, 'resetFoundationGeneratorForm doit être définie');
+  const resetFoundBody = resetFoundMatch[1];
+  assert.ok(resetFoundBody.includes("'gen-found-name'"), 'Doit vider gen-found-name');
+  assert.ok(resetFoundBody.includes("'gen-found-sigle'"), 'Doit vider gen-found-sigle');
+  assert.ok(resetFoundBody.includes("'gen-found-password'"), 'Doit vider gen-found-password');
+  assert.ok(resetFoundBody.includes("'gen-found-password-confirm'"), 'Doit vider gen-found-password-confirm');
+
+  // 3. openSchoolGeneratorModal et closeSchoolGeneratorModal déclenchent les réinitialisations
+  const openGenMatch = content.match(/function openSchoolGeneratorModal\([^)]*\)\s*\{([\s\S]*?)\n    \}/);
+  assert.ok(openGenMatch, 'openSchoolGeneratorModal doit être définie');
+  assert.ok(openGenMatch[1].includes('resetSchoolGeneratorForm()'), 'openSchoolGeneratorModal doit appeler resetSchoolGeneratorForm');
+  assert.ok(openGenMatch[1].includes('resetFoundationGeneratorForm()'), 'openSchoolGeneratorModal doit appeler resetFoundationGeneratorForm');
+
+  const closeGenMatch = content.match(/function closeSchoolGeneratorModal\([^)]*\)\s*\{([\s\S]*?)\n    \}/);
+  assert.ok(closeGenMatch, 'closeSchoolGeneratorModal doit être définie');
+  assert.ok(closeGenMatch[1].includes('resetSchoolGeneratorForm()'), 'closeSchoolGeneratorModal doit appeler resetSchoolGeneratorForm');
+  assert.ok(closeGenMatch[1].includes('resetFoundationGeneratorForm()'), 'closeSchoolGeneratorModal doit appeler resetFoundationGeneratorForm');
+
+  // 4. saveSchoolGeneratorForm et saveFoundationGeneratorForm appellent aussi les réinitialisations
+  const saveSchoolMatch = content.match(/async function saveSchoolGeneratorForm\([^)]*\)\s*\{([\s\S]*?)\n    \}/);
+  assert.ok(saveSchoolMatch, 'saveSchoolGeneratorForm doit être définie');
+  assert.ok(saveSchoolMatch[1].includes('resetSchoolGeneratorForm()'), 'saveSchoolGeneratorForm doit appeler resetSchoolGeneratorForm');
+
+  const saveFoundMatch = content.match(/async function saveFoundationGeneratorForm\([^)]*\)\s*\{([\s\S]*?)\n    \}/);
+  assert.ok(saveFoundMatch, 'saveFoundationGeneratorForm doit être définie');
+  assert.ok(saveFoundMatch[1].includes('resetFoundationGeneratorForm()'), 'saveFoundationGeneratorForm doit appeler resetFoundationGeneratorForm');
+
+  // 5. Inscription élève vierge garantie
+  const resetStudentMatch = content.match(/function resetAddStudentForm\([^)]*\)\s*\{([\s\S]*?)\n    \}/);
+  assert.ok(resetStudentMatch, 'resetAddStudentForm doit être définie');
+  const resetStudentBody = resetStudentMatch[1];
+  assert.ok(resetStudentBody.includes("'m-nom'"), 'Doit vider m-nom');
+  assert.ok(resetStudentBody.includes("'m-prenoms'"), 'Doit vider m-prenoms');
+  assert.ok(resetStudentBody.includes("'m-matricule'"), 'Doit vider m-matricule');
+
+  const openStudentMatch = content.match(/function openAddStudentModal\([^)]*\)\s*\{([\s\S]*?)\n    \}/);
+  assert.ok(openStudentMatch, 'openAddStudentModal doit être définie');
+  assert.ok(openStudentMatch[1].includes('resetAddStudentForm()'), 'openAddStudentModal doit appeler resetAddStudentForm');
+
+  const closeStudentMatch = content.match(/function closeAddStudentModal\([^)]*\)\s*\{([\s\S]*?)\n    \}/);
+  assert.ok(closeStudentMatch, 'closeAddStudentModal doit être définie');
+  assert.ok(closeStudentMatch[1].includes('resetAddStudentForm()'), 'closeAddStudentModal doit appeler resetAddStudentForm');
+});
+

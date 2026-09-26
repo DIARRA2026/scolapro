@@ -13418,17 +13418,39 @@
       }
     }
 
+    function resetAddStudentForm() {
+      const form = document.querySelector('#add-student-modal form');
+      if (form && typeof form.reset === 'function') {
+        form.reset();
+      }
+      const fields = ['m-nom', 'm-prenoms', 'm-matricule', 'm-tuteur', 'm-phone', 'm-email'];
+      fields.forEach(f => {
+        const el = document.getElementById(f);
+        if (el) el.value = '';
+      });
+      const mSexe = document.getElementById('m-sexe');
+      if (mSexe) mSexe.value = 'M';
+      const mStatut = document.getElementById('m-statut');
+      if (mStatut) mStatut.value = 'NON_AFFECTE';
+      const mRed = document.getElementById('m-red');
+      if (mRed) mRed.checked = false;
+      const mNiveau = document.getElementById('m-niveau');
+      if (mNiveau) mNiveau.value = '6EME';
+      updateClassSelectOptions('m-classe', '6EME');
+      updateTuitionFeePreview('6EME');
+    }
+
     function openAddStudentModal() {
       if (!hasPerm('students.create')) {
         showToast("Action refusée : permission students.create requise.");
         return;
       }
-      const lvl = document.getElementById('m-niveau')?.value || '4EME';
-      updateTuitionFeePreview(lvl);
+      resetAddStudentForm();
       document.getElementById('add-student-modal').classList.remove('hidden');
     }
 
     function closeAddStudentModal() {
+      resetAddStudentForm();
       document.getElementById('add-student-modal').classList.add('hidden');
     }
 
@@ -13535,6 +13557,7 @@
       }
 
       appState.students.unshift(newStudent);
+      resetAddStudentForm();
       closeAddStudentModal();
       renderStudentsTable();
       auditAction('STUDENT_ENROLL', 'Inscription', `Élève #${esc(newStudent.id)}`, '', `${esc(newStudent.nomPrenom)} (${matricule})`, 'SUCCÈS');
@@ -15539,7 +15562,138 @@
       }
     }
 
+    function resetSchoolGeneratorForm() {
+      const form = document.getElementById('form-generate-school');
+      if (form && typeof form.reset === 'function') {
+        form.reset();
+      }
+
+      const nameInput = document.getElementById('gen-school-name');
+      if (nameInput) nameInput.value = '';
+
+      const codeInput = document.getElementById('gen-school-code');
+      if (codeInput) codeInput.value = '';
+
+      const matCheck = document.getElementById('gen-cycle-mat');
+      if (matCheck) matCheck.checked = false;
+      const primCheck = document.getElementById('gen-cycle-prim');
+      if (primCheck) primCheck.checked = false;
+      const colCheck = document.getElementById('gen-cycle-col');
+      if (colCheck) colCheck.checked = true;
+      const lycCheck = document.getElementById('gen-cycle-lyc');
+      if (lycCheck) lycCheck.checked = true;
+
+      const cityInput = document.getElementById('gen-school-city');
+      if (cityInput) cityInput.value = 'Abidjan';
+
+      const addrInput = document.getElementById('gen-school-address');
+      if (addrInput) addrInput.value = '';
+
+      const phoneInput = document.getElementById('gen-school-phone');
+      if (phoneInput) phoneInput.value = '';
+
+      const emailInput = document.getElementById('gen-school-email');
+      if (emailInput) emailInput.value = '';
+
+      const logoFileInput = document.getElementById('gen-school-logo-file');
+      if (logoFileInput) logoFileInput.value = '';
+
+      const customLogoInput = document.getElementById('gen-school-custom-logo');
+      if (customLogoInput) customLogoInput.value = '';
+
+      if (typeof selectSchoolLogoPreset === 'function') {
+        selectSchoolLogoPreset('🏫');
+      } else {
+        const preview = document.getElementById('gen-logo-preview');
+        if (preview) {
+          preview.innerHTML = '<div class="w-full h-full bg-[#1e0508] rounded-[10px] flex items-center justify-center text-2xl" id="gen-logo-preview-icon">🏫</div>';
+        }
+      }
+
+      const cashInput = document.getElementById('gen-school-cash');
+      if (cashInput) cashInput.value = '250000';
+
+      const yearInput = document.getElementById('gen-school-year');
+      if (yearInput) yearInput.value = '2026-2027';
+
+      const autoClasses = document.getElementById('gen-school-auto-classes');
+      if (autoClasses) autoClasses.checked = true;
+
+      const pwd1 = document.getElementById('gen-school-password');
+      if (pwd1) {
+        pwd1.value = '';
+        pwd1.type = 'password';
+      }
+      const pwd2 = document.getElementById('gen-school-password-confirm');
+      if (pwd2) {
+        pwd2.value = '';
+        pwd2.type = 'password';
+      }
+      const pwdBadge = document.getElementById('gen-school-password-generated-badge');
+      if (pwdBadge) pwdBadge.classList.add('hidden');
+    }
+
+    function resetFoundationGeneratorForm() {
+      const form = document.getElementById('form-generate-foundation');
+      if (form && typeof form.reset === 'function') {
+        form.reset();
+      }
+
+      const nameInput = document.getElementById('gen-found-name');
+      if (nameInput) nameInput.value = '';
+
+      const sigleInput = document.getElementById('gen-found-sigle');
+      if (sigleInput) sigleInput.value = '';
+
+      const hqInput = document.getElementById('gen-found-hq');
+      if (hqInput) hqInput.value = '';
+
+      const presInput = document.getElementById('gen-found-president');
+      if (presInput) presInput.value = '';
+
+      const phoneInput = document.getElementById('gen-found-phone');
+      if (phoneInput) phoneInput.value = '';
+
+      const emailInput = document.getElementById('gen-found-email');
+      if (emailInput) emailInput.value = '';
+
+      const descInput = document.getElementById('gen-found-desc');
+      if (descInput) descInput.value = '';
+
+      const logoFileInput = document.getElementById('gen-found-logo-file');
+      if (logoFileInput) logoFileInput.value = '';
+
+      const customLogoInput = document.getElementById('gen-found-custom-logo');
+      if (customLogoInput) customLogoInput.value = '';
+
+      if (typeof selectFoundationLogoPreset === 'function') {
+        selectFoundationLogoPreset('🏛️');
+      } else {
+        const preview = document.getElementById('gen-found-logo-preview');
+        if (preview) {
+          preview.innerHTML = '<div class="w-full h-full bg-[#081736] rounded-[10px] flex items-center justify-center text-2xl text-purple-300" id="gen-found-logo-preview-icon">🏛️</div>';
+        }
+      }
+
+      const pwd1 = document.getElementById('gen-found-password');
+      if (pwd1) {
+        pwd1.value = '';
+        pwd1.type = 'password';
+      }
+      const pwd2 = document.getElementById('gen-found-password-confirm');
+      if (pwd2) {
+        pwd2.value = '';
+        pwd2.type = 'password';
+      }
+      const pwdBadge = document.getElementById('gen-found-password-generated-badge');
+      if (pwdBadge) pwdBadge.classList.add('hidden');
+    }
+
     function openSchoolGeneratorModal(defaultType = 'SCHOOL', parentFoundationId = null) {
+      // 1. Réinitialisation complète pour formulaire 100% vierge
+      resetSchoolGeneratorForm();
+      resetFoundationGeneratorForm();
+
       // Alimenter le select des fondations
       const select = document.getElementById('gen-school-foundation');
       if (select) {
@@ -15553,17 +15707,14 @@
           }
           select.appendChild(opt);
         });
+        if (parentFoundationId) {
+          select.value = String(parentFoundationId);
+        } else {
+          select.value = 'AUTONOME';
+        }
       }
 
       toggleGeneratorType(defaultType);
-      const pwdInput1 = document.getElementById('gen-school-password');
-      const pwdInput2 = document.getElementById('gen-school-password-confirm');
-      if (pwdInput1) pwdInput1.value = '';
-      if (pwdInput2) pwdInput2.value = '';
-      const foundPwdInput1 = document.getElementById('gen-found-password');
-      const foundPwdInput2 = document.getElementById('gen-found-password-confirm');
-      if (foundPwdInput1) foundPwdInput1.value = '';
-      if (foundPwdInput2) foundPwdInput2.value = '';
 
       const modal = document.getElementById('modal-school-generator');
       if (modal) modal.classList.remove('hidden');
@@ -15571,6 +15722,8 @@
     }
 
     function closeSchoolGeneratorModal() {
+      resetSchoolGeneratorForm();
+      resetFoundationGeneratorForm();
       const modal = document.getElementById('modal-school-generator');
       if (modal) modal.classList.add('hidden');
     }
@@ -16259,6 +16412,7 @@
       if (hSchoolsCount) hSchoolsCount.textContent = appState.schools.length;
 
       auditAction('TENANT_SCHOOL_CREATE', 'Multi-Tenant', name, '', `Instance école créée [${code}] - ID #${newId} - ${foundObj ? 'Affiliée ' + foundObj.sigle : 'Autonome'}`);
+      resetSchoolGeneratorForm();
       closeSchoolGeneratorModal();
       showToast(`Nouvel établissement "${name}" enregistré avec succès !`);
       switchTenant('SCHOOL', newId);
@@ -16393,6 +16547,7 @@
       }
 
       auditAction('TENANT_FOUNDATION_CREATE', 'Multi-Tenant', name, '', `Nouvelle fondation créée [${sigle}] - ID #${newId}`);
+      resetFoundationGeneratorForm();
       closeSchoolGeneratorModal();
       showToast(`Entité mère "${name}" (${sigle}) enregistrée avec succès !`);
       switchTenant('FOUNDATION', newId);
