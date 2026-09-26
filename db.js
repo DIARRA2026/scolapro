@@ -1213,8 +1213,8 @@ function getLiveSchoolMetrics(schoolIds = null) {
     const totalDue = Number(row.total_due || 0);
     const totalPaid = Number(row.total_paid || 0);
     const count = Number(row.count || 0);
-    const recoveryRate = totalDue > 0 ? Number(((totalPaid / totalDue) * 100).toFixed(1)) : (count > 0 ? 100.0 : 0.0);
-    const genAvg = (row.general_avg !== null && row.general_avg !== undefined) ? Number(Number(row.general_avg).toFixed(2)) : 12.5;
+    const recoveryRate = totalDue > 0 ? Number(((totalPaid / totalDue) * 100).toFixed(1)) : 0.0;
+    const genAvg = (row.general_avg !== null && row.general_avg !== undefined) ? Number(Number(row.general_avg).toFixed(2)) : 0.0;
 
     metricsMap.set(sId, {
       studentsCount: count,
@@ -1235,7 +1235,7 @@ function getLiveSchoolMetrics(schoolIds = null) {
       totalDue: 0,
       totalPaid: 0,
       recoveryRate: 0.0,
-      generalAverage: 12.5,
+      generalAverage: 0.0,
       classesCount: 0,
       cashDesksCount: 0,
       totalCash: 0
@@ -1251,7 +1251,7 @@ function getLiveSchoolMetrics(schoolIds = null) {
       totalDue: 0,
       totalPaid: 0,
       recoveryRate: 0.0,
-      generalAverage: 12.5,
+      generalAverage: 0.0,
       classesCount: 0,
       cashDesksCount: 0,
       totalCash: 0
@@ -1287,7 +1287,7 @@ function formatSchool(row, metrics = null) {
   const cashDesksCount = m.cashDesksCount !== undefined ? m.cashDesksCount : (row.cashDesksCount !== undefined ? row.cashDesksCount : (row.cash_desks_count || 0));
   const totalCash = m.totalCash !== undefined ? m.totalCash : (row.totalCash || 0);
   const recoveryRate = m.recoveryRate !== undefined ? m.recoveryRate : (row.recoveryRate !== undefined ? row.recoveryRate : (row.recovery_rate || 0.0));
-  const generalAverage = m.generalAverage !== undefined ? m.generalAverage : (row.generalAverage || 12.5);
+  const generalAverage = m.generalAverage !== undefined ? m.generalAverage : (row.generalAverage !== undefined && row.generalAverage !== null ? row.generalAverage : (row.general_average !== undefined && row.general_average !== null ? row.general_average : 0.0));
   const totalDue = m.totalDue !== undefined ? m.totalDue : 0;
   const totalPaid = m.totalPaid !== undefined ? m.totalPaid : 0;
 

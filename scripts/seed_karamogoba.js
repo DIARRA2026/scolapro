@@ -145,19 +145,7 @@ async function seed() {
       )
     `);
 
-    const paymentInsert = db.prepare(`
-      INSERT INTO payments (
-        id, school_id, student_id, amount, payment_method, ref,
-        cashier_id, cashier_name, cash_desk, created_at
-      ) VALUES (
-        ?, 1, ?, ?, 'ESPECES', ?,
-        4, 'M. KONE Ousmane', 'PRINCIPALE', datetime('now')
-      )
-    `);
-
     let studentIdCounter = 1;
-    let paymentIdCounter = 1;
-    let totalCashCollected = 0;
 
     for (let i = 1; i < lines.length; i++) {
       const parts = lines[i].split(';').map(p => p.trim());
@@ -177,31 +165,9 @@ async function seed() {
       const red = isRedoublant ? 'R' : '';
       const statut = 'AFF';
 
-      // Frais d'écolage annuel : 135 000 XOF
+      // Frais d'écolage annuel : 135 000 XOF (Aucun encaissement fictif initial)
       const feeDue = 135000;
-
-      // Répartition réaliste des paiements :
-      // - 40% soldés à 100% (135 000 XOF)
-      // - 40% premier acompte (75 000 XOF)
-      // - 15% acompte d'inscription (35 000 XOF)
-      // - 5% impayé (0 XOF)
-      let feePaid = 0;
-      const mod = studentIdCounter % 10;
-      if (mod <= 3) {
-        feePaid = 135000;
-      } else if (mod <= 7) {
-        feePaid = 75000;
-      } else if (mod <= 8) {
-        feePaid = 35000;
-      } else {
-        feePaid = 0;
-      }
-
-      let mention = 'Passable';
-      if (mga >= 16) mention = 'Très Bien';
-      else if (mga >= 14) mention = 'Bien';
-      else if (mga >= 12) mention = 'Assez Bien';
-      else if (mga < 10) mention = 'Insuffisant';
+      const feePaid = 0;
 
       const nomFamille = nom.split(' ')[0] || 'PARENT';
       const phoneDigits = String(Math.floor(10000000 + Math.random() * 89999999));
@@ -218,48 +184,33 @@ async function seed() {
         niveau,
         classe,
         feeDue,
-        feePaid,
-        mga,
-        0, // absent
-        studentIdCounter, // rank
-        mention,
-        mga,
+        0, // feePaid initial = 0
+        null, // note_dev initial = null
+        0, // absent = 0
+        null, // rank initial = null
+        null, // mention initial = null
+        null, // avg initial = null
         tuteur,
         phone,
         `eleve.${mat.toLowerCase()}@karamogoba.ci`
       );
 
-      // Si paiement effectué, émettre quittance officielle
-      if (feePaid > 0) {
-        const rcptNo = `QUITT-2026-${String(studentIdCounter).padStart(4, '0')}`;
-        paymentInsert.run(
-          paymentIdCounter,
-          studentIdCounter,
-          feePaid,
-          rcptNo
-        );
-        paymentIdCounter++;
-        totalCashCollected += feePaid;
-      }
-
       studentIdCounter++;
     }
 
     const insertedCount = studentIdCounter - 1;
-    console.log(`[Students] ${insertedCount} élèves réels importés depuis dfa_selection_110_eleves.csv.`);
-    console.log(`[Payments] ${paymentIdCounter - 1} quittances d'écolage générées. Total perçu : ${totalCashCollected.toLocaleString('fr-FR')} XOF.`);
+    console.log(`[Students] ${insertedCount} élèves réels importés depuis dfa_selection_110_eleves.csv (Notes et paiements vierges).`);
 
-    // Mettre à jour la caisse principale
-    db.prepare('UPDATE cash_desks SET balance = ?, physical = ? WHERE id = ?').run(totalCashCollected, totalCashCollected, 'PRINCIPALE');
+    // Mettre à jour la caisse principale à 0 XOF
+    db.prepare('UPDATE cash_desks SET balance = 0, physical = 0 WHERE id = ?').run('PRINCIPALE');
 
-    // Mettre à jour les compteurs de l'école
-    const recoveryRate = Math.round((totalCashCollected / (insertedCount * 135000)) * 1000) / 10;
-    db.prepare('UPDATE schools SET students_count = ?, classes_count = 8, recovery_rate = ? WHERE id = 1').run(insertedCount, recoveryRate);
+    // Mettre à jour les compteurs de l'école (taux de recouvrement à 0.0%)
+    db.prepare('UPDATE schools SET students_count = ?, classes_count = 8, recovery_rate = 0.0 WHERE id = 1').run(insertedCount);
 
     // Enregistrer l'audit
     db.prepare(`
       INSERT INTO audit_logs (school_id, foundation_id, user_id, action, module, target, old_val, new_val, status)
-      VALUES (1, NULL, 0, 'REAL_DATA_POPULATE', 'Système', 'Collège Karamogoba', '', 'Peuplement certifié : 110 élèves réels de Bouaké, 8 classes et quittances initialisées', 'SUCCÈS')
+      VALUES (1, NULL, 0, 'REAL_DATA_POPULATE', 'Système', 'Collège Karamogoba', '', 'Peuplement certifié : 110 élèves réels de Bouaké, 8 classes, caisse et notes vierges', 'SUCCÈS')
     `).run();
 
     db.exec('COMMIT;');
@@ -272,7 +223,7 @@ async function seed() {
     console.log('   - Ville         : Bouaké (DRENA BOUAKE 1)');
     console.log(`   - Effectif réel : ${insertedCount} élèves inscrits`);
     console.log('   - Classes       : 6EME 1, 6EME 2, 6EME 3, 6EME 4, 5EME, 4EME, 3EME');
-    console.log(`   - Encaissé      : ${totalCashCollected.toLocaleString('fr-FR')} XOF (${recoveryRate}% de recouvrement)`);
+    console.log('   - Encaissé      : 0 XOF (0.0% de recouvrement — Caisse & Trésorerie initiales vierges)');
     console.log('   - Compte Admin  : direction@karamogoba.ci / Password2026!');
     console.log('   - Code Accès    : 071246 / Karamogoba2026!');
     console.log('======================================================\n');

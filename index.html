@@ -3227,8 +3227,8 @@
               <span class="text-xs uppercase font-bold">Effectif Global</span>
               <span class="p-1 bg-indigo-50 text-indigo-600 rounded">👥</span>
             </div>
-            <p class="text-2xl font-black text-slate-800" id="dash-total-students">1071</p>
-            <p class="text-[11px] text-emerald-600 font-semibold mt-1">24 classes actives • Collège & Lycée</p>
+            <p class="text-2xl font-black text-slate-800" id="dash-total-students">0</p>
+            <p class="text-[11px] text-slate-500 font-semibold mt-1">0 classe active</p>
           </div>
 
           <div class="bg-white border border-slate-200 p-4 rounded-xl shadow-sm">
@@ -3236,8 +3236,8 @@
               <span class="text-xs uppercase font-bold">Taux d'Écolage Recouvré</span>
               <span class="p-1 bg-emerald-50 text-emerald-600 rounded">💰</span>
             </div>
-            <p class="text-2xl font-black text-emerald-600">78,4%</p>
-            <p class="text-[11px] text-slate-500 mt-1">42,1M / 53,8M XOF collectés</p>
+            <p class="text-2xl font-black text-emerald-600" id="dash-recovery-rate">0,0%</p>
+            <p class="text-[11px] text-slate-500 mt-1">0 XOF collectés</p>
           </div>
 
           <div class="bg-white border border-slate-200 p-4 rounded-xl shadow-sm">
@@ -3245,8 +3245,8 @@
               <span class="text-xs uppercase font-bold">Moyenne Générale T1</span>
               <span class="p-1 bg-blue-50 text-blue-600 rounded">📊</span>
             </div>
-            <p class="text-2xl font-black text-slate-800">12,65 <span class="text-xs font-normal text-slate-400">/20</span></p>
-            <p class="text-[11px] text-slate-500 mt-1">74% admis au conseil provisoire</p>
+            <p class="text-2xl font-black text-slate-800" id="dash-general-avg">0,00 <span class="text-xs font-normal text-slate-400">/20</span></p>
+            <p class="text-[11px] text-slate-500 mt-1">En attente des évaluations</p>
           </div>
 
           <div class="bg-white border border-slate-200 p-4 rounded-xl shadow-sm">
@@ -3254,8 +3254,8 @@
               <span class="text-xs uppercase font-bold">Taux de Présence</span>
               <span class="p-1 bg-amber-50 text-amber-600 rounded">⏰</span>
             </div>
-            <p class="text-2xl font-black text-slate-800">96,2%</p>
-            <p class="text-[11px] text-slate-500 mt-1">18 absences aujourd'hui (14 justifiées)</p>
+            <p class="text-2xl font-black text-slate-800">100%</p>
+            <p class="text-[11px] text-slate-500 mt-1">0 absence enregistrée</p>
           </div>
         </div>
 
@@ -3338,7 +3338,7 @@
           </div>
 
           <div class="flex justify-between items-center pt-2">
-            <div class="text-xs text-slate-500">Moyenne de classe calculée : <strong class="text-emerald-600 font-bold" id="class-calc-avg">14,20 / 20</strong></div>
+            <div class="text-xs text-slate-500">Moyenne de classe calculée : <strong class="text-slate-600 font-bold" id="class-calc-avg">— / 20</strong></div>
             <button onclick="saveAndRecalculateGrades()" class="btn-navy text-white px-4 py-1.5 rounded text-xs font-bold shadow">
               Enregistrer & Recalculer (Job PSR)
             </button>
@@ -3429,18 +3429,18 @@
             <div class="grid grid-cols-1 sm:grid-cols-3 gap-3 mb-4 text-xs">
               <div class="bg-slate-50 border border-slate-300 rounded p-3">
                 <span class="text-[10px] uppercase font-bold text-slate-500">Moyenne Générale</span>
-                <div class="text-2xl font-black text-slate-900 mt-0.5" id="b-general-avg">15,69 / 20</div>
+                <div class="text-2xl font-black text-slate-900 mt-0.5" id="b-general-avg">— / 20</div>
                 <div class="mt-1 pt-1 border-t border-slate-200 flex justify-between">
-                  <span>Rang : <strong id="b-rank" class="text-slate-900 font-bold">1ère</strong>/42</span>
-                  <span>Mention : <strong id="b-mention" class="text-emerald-700 font-bold">Bien</strong></span>
+                  <span>Rang : <strong id="b-rank" class="text-slate-900 font-bold">—</strong></span>
+                  <span>Mention : <strong id="b-mention" class="text-slate-600 font-bold">—</strong></span>
                 </div>
               </div>
 
               <div class="bg-slate-50 border border-slate-300 rounded p-3 text-[11px] text-slate-700">
-                <span class="text-[10px] uppercase font-bold text-slate-500">Classe 4EME 5</span>
-                <div class="flex justify-between mt-1"><span>Moyenne Forte :</span> <strong>15,69</strong></div>
-                <div class="flex justify-between"><span>Moyenne Classe :</span> <strong>12,40</strong></div>
-                <div class="flex justify-between"><span>Moyenne Faible :</span> <strong>07,80</strong></div>
+                <span class="text-[10px] uppercase font-bold text-slate-500">Statistiques Classe</span>
+                <div class="flex justify-between mt-1"><span>Moyenne Forte :</span> <strong>—</strong></div>
+                <div class="flex justify-between"><span>Moyenne Classe :</span> <strong>—</strong></div>
+                <div class="flex justify-between"><span>Moyenne Faible :</span> <strong>—</strong></div>
               </div>
 
               <div class="bg-slate-50 border border-slate-300 rounded p-3 text-[11px] text-slate-700">
@@ -3480,17 +3480,17 @@
         <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
           <div class="bg-white border border-slate-200 p-4 rounded-xl shadow-sm">
             <span class="text-xs uppercase font-bold text-slate-500">Total Dû (Frais d'Écolage)</span>
-            <p class="text-2xl font-black text-slate-800 mt-1" id="fin-total-due">53 850 000 <span class="text-xs font-normal">XOF</span></p>
+            <p class="text-2xl font-black text-slate-800 mt-1" id="fin-total-due">0 <span class="text-xs font-normal">XOF</span></p>
             <p class="text-[11px] text-slate-400">Tarification standard par niveau</p>
           </div>
           <div class="bg-white border border-slate-200 p-4 rounded-xl shadow-sm">
             <span class="text-xs uppercase font-bold text-slate-500">Total Encaissé (Validé)</span>
-            <p class="text-2xl font-black text-emerald-600 mt-1" id="fin-total-collected">42 150 000 <span class="text-xs font-normal">XOF</span></p>
-            <p class="text-[11px] text-emerald-600 font-semibold" id="fin-collection-rate">78,4% taux d'encaissement</p>
+            <p class="text-2xl font-black text-emerald-600 mt-1" id="fin-total-collected">0 <span class="text-xs font-normal">XOF</span></p>
+            <p class="text-[11px] text-emerald-600 font-semibold" id="fin-collection-rate">0.0% taux d'encaissement</p>
           </div>
           <div class="bg-white border border-slate-200 p-4 rounded-xl shadow-sm">
             <span class="text-xs uppercase font-bold text-slate-500">Reste à Recouvrer (Soldes)</span>
-            <p class="text-2xl font-black text-red-500 mt-1" id="fin-total-remaining">11 700 000 <span class="text-xs font-normal">XOF</span></p>
+            <p class="text-2xl font-black text-slate-800 mt-1" id="fin-total-remaining">0 <span class="text-xs font-normal">XOF</span></p>
             <p class="text-[11px] text-slate-400">Calcul dynamique vue v_student_balances</p>
           </div>
         </div>
@@ -4553,12 +4553,12 @@
           <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
             <div class="bg-white border border-slate-200 p-4 rounded-xl shadow-sm">
               <span class="text-xs uppercase font-bold text-slate-500">Solde Théorique Caisse Principale</span>
-              <p class="text-2xl font-black text-slate-800 mt-1" id="main-cash-theoretical">42 150 000 <span class="text-xs font-normal">XOF</span></p>
+              <p class="text-2xl font-black text-slate-800 mt-1" id="main-cash-theoretical">0 <span class="text-xs font-normal">XOF</span></p>
               <p class="text-[11px] text-slate-400">Total cumulé des encaissements validés</p>
             </div>
             <div class="bg-white border border-slate-200 p-4 rounded-xl shadow-sm">
               <span class="text-xs uppercase font-bold text-slate-500">Solde Physique Déclaré</span>
-              <p class="text-2xl font-black text-emerald-600 mt-1" id="main-cash-physical">42 150 000 <span class="text-xs font-normal">XOF</span></p>
+              <p class="text-2xl font-black text-emerald-600 mt-1" id="main-cash-physical">0 <span class="text-xs font-normal">XOF</span></p>
               <p class="text-[11px] text-emerald-600 font-semibold">Écart de caisse : 0 XOF (Conforme ✓)</p>
             </div>
             <div class="bg-white border border-slate-200 p-4 rounded-xl shadow-sm">
@@ -4584,9 +4584,9 @@
               <div>
                 <div class="flex items-center gap-2">
                   <h4 class="font-bold text-xs text-slate-800">Recouvrement & Relances Automatiques d'Écolage</h4>
-                  <span id="banner-cash-unpaid-count" class="px-2 py-0.2 bg-red-600 text-white rounded-full text-[10px] font-black animate-pulse">5 élèves non à jour</span>
+                  <span id="banner-cash-unpaid-count" class="px-2 py-0.2 bg-emerald-600 text-white rounded-full text-[10px] font-black">0 élève non à jour</span>
                 </div>
-                <p class="text-[11px] text-slate-500">Total exigible impayé : <strong id="banner-cash-unpaid-sum" class="text-red-700">290 000 XOF</strong> &bull; Prochaine exécution programmée : <span id="banner-cash-next-run" class="font-medium text-slate-700">15/09/2026 à 08:00</span></p>
+                <p class="text-[11px] text-slate-500">Total exigible impayé : <strong id="banner-cash-unpaid-sum" class="text-slate-700">0 XOF</strong> &bull; Prochaine exécution programmée : <span id="banner-cash-next-run" class="font-medium text-slate-700">Non programmée</span></p>
               </div>
             </div>
             <button onclick="setCashSubTab('relances')" class="px-3.5 py-1.5 bg-amber-500 hover:bg-amber-600 text-slate-950 rounded-lg text-xs font-bold shadow-xs flex items-center gap-1.5 transition">
@@ -4670,18 +4670,18 @@
           <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
             <div class="bg-white border border-slate-200 p-4 rounded-xl shadow-sm">
               <span class="text-xs uppercase font-bold text-slate-500">Solde Disponible en Caisse 2</span>
-              <p class="text-2xl font-black text-slate-800 mt-1" id="caisse2-balance">350 000 <span class="text-xs font-normal">XOF</span></p>
+              <p class="text-2xl font-black text-slate-800 mt-1" id="caisse2-balance">0 <span class="text-xs font-normal">XOF</span></p>
               <p class="text-[11px] text-slate-400">Espèces physiques en tiroir</p>
             </div>
             <div class="bg-white border border-slate-200 p-4 rounded-xl shadow-sm">
               <span class="text-xs uppercase font-bold text-slate-500">Encaissements du Jour</span>
-              <p class="text-2xl font-black text-emerald-600 mt-1">350 000 <span class="text-xs font-normal">XOF</span></p>
-              <p class="text-[11px] text-slate-400">4 quittances émises aujourd'hui</p>
+              <p class="text-2xl font-black text-emerald-600 mt-1" id="caisse2-day-income">0 <span class="text-xs font-normal">XOF</span></p>
+              <p class="text-[11px] text-slate-400">0 quittance émise aujourd'hui</p>
             </div>
             <div class="bg-white border border-slate-200 p-4 rounded-xl shadow-sm">
               <span class="text-xs uppercase font-bold text-slate-500">Dépôts vers Caisse Principale</span>
-              <p class="text-2xl font-black text-amber-600 mt-1" id="caisse2-pending-deposit">150 000 <span class="text-xs font-normal">XOF</span></p>
-              <p class="text-[11px] text-amber-700 font-semibold">1 dépôt EN ATTENTE de validation</p>
+              <p class="text-2xl font-black text-slate-800 mt-1" id="caisse2-pending-deposit">0 <span class="text-xs font-normal">XOF</span></p>
+              <p class="text-[11px] text-slate-400">0 dépôt en attente</p>
             </div>
           </div>
 
@@ -5398,22 +5398,22 @@
           <div class="grid grid-cols-1 sm:grid-cols-4 gap-4">
             <div class="bg-white border border-slate-200 p-4 rounded-xl shadow-sm">
               <span class="text-xs uppercase font-bold text-slate-500">Chiffre d'Affaires Prévu</span>
-              <p class="text-2xl font-black text-slate-800 mt-1">53 850 000 <span class="text-xs font-normal">XOF</span></p>
-              <p class="text-[11px] text-slate-400">1 071 élèves scolarisés</p>
+              <p class="text-2xl font-black text-slate-800 mt-1" id="stat-ca-prevu">0 <span class="text-xs font-normal">XOF</span></p>
+              <p class="text-[11px] text-slate-400" id="stat-eleves-count">0 élève scolarisé</p>
             </div>
             <div class="bg-white border border-slate-200 p-4 rounded-xl shadow-sm">
               <span class="text-xs uppercase font-bold text-slate-500">Montants Encaissés</span>
-              <p class="text-2xl font-black text-emerald-600 mt-1">42 150 000 <span class="text-xs font-normal">XOF</span></p>
-              <p class="text-[11px] text-emerald-600 font-bold">78,3% de réalisation</p>
+              <p class="text-2xl font-black text-emerald-600 mt-1" id="stat-montant-encaisse">0 <span class="text-xs font-normal">XOF</span></p>
+              <p class="text-[11px] text-emerald-600 font-bold" id="stat-realisation-pct">0,0% de réalisation</p>
             </div>
             <div class="bg-white border border-slate-200 p-4 rounded-xl shadow-sm">
               <span class="text-xs uppercase font-bold text-slate-500">Sommes à Recouvrer</span>
-              <p class="text-2xl font-black text-red-500 mt-1">11 700 000 <span class="text-xs font-normal">XOF</span></p>
-              <p class="text-[11px] text-red-500 font-semibold">21,7% restant dû</p>
+              <p class="text-2xl font-black text-slate-800 mt-1" id="stat-sommes-recouvrer">0 <span class="text-xs font-normal">XOF</span></p>
+              <p class="text-[11px] text-slate-500 font-semibold" id="stat-restant-pct">0,0% restant dû</p>
             </div>
             <div class="bg-white border border-slate-200 p-4 rounded-xl shadow-sm">
               <span class="text-xs uppercase font-bold text-slate-500">Total Quittances</span>
-              <p class="text-2xl font-black text-blue-600 mt-1">842</p>
+              <p class="text-2xl font-black text-blue-600 mt-1" id="stat-quittances-count">0</p>
               <p class="text-[11px] text-slate-400">Paiements émis sur la période</p>
             </div>
           </div>
@@ -6504,8 +6504,8 @@
         </div>
         <div>
           <label class="block text-slate-700 font-semibold mb-1">Montant à verser (XOF) *</label>
-          <input type="number" id="sec-dep-amount" min="1000" max="350000" value="100000" required class="w-full border border-slate-300 rounded px-2.5 py-1.5 font-mono font-black text-slate-900 text-base">
-          <span class="text-[10px] text-slate-500">Solde disponible max : 350 000 XOF</span>
+          <input type="number" id="sec-dep-amount" min="1000" placeholder="0" required class="w-full border border-slate-300 rounded px-2.5 py-1.5 font-mono font-black text-slate-900 text-base">
+          <span id="sec-dep-max-span" class="text-[10px] text-slate-500">Solde disponible max : 0 XOF</span>
         </div>
         <div>
           <label class="block text-slate-700 font-semibold mb-1">Bordereau / Référence interne</label>
@@ -7663,7 +7663,7 @@
           <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-2 border-t border-slate-200">
             <div class="space-y-1">
               <label class="font-bold text-slate-700">Fond de caisse initial (XOF)</label>
-              <input type="number" id="gen-school-cash" value="250000" min="0" step="10000" class="w-full border border-slate-300 rounded-lg p-2 font-mono font-bold focus:ring-2 focus:ring-red-600 focus:outline-none">
+              <input type="number" id="gen-school-cash" value="0" min="0" step="10000" class="w-full border border-slate-300 rounded-lg p-2 font-mono font-bold focus:ring-2 focus:ring-red-600 focus:outline-none">
             </div>
             <div class="space-y-1">
               <label class="font-bold text-slate-700">Année Scolaire Active</label>
@@ -8693,15 +8693,15 @@
         <div class="grid grid-cols-3 gap-2 bg-rose-50 border border-rose-200 p-3 rounded-xl">
           <div>
             <span class="text-[10px] text-rose-500 uppercase font-bold block">Référence</span>
-            <span id="rd-dep-ref" class="font-mono font-black text-rose-900 text-xs">DEP-001</span>
+            <span id="rd-dep-ref" class="font-mono font-black text-rose-900 text-xs">—</span>
           </div>
           <div>
             <span class="text-[10px] text-rose-500 uppercase font-bold block">Montant</span>
-            <span id="rd-dep-amount" class="font-mono font-black text-rose-900 text-xs">150 000 XOF</span>
+            <span id="rd-dep-amount" class="font-mono font-black text-rose-900 text-xs">0 XOF</span>
           </div>
           <div>
             <span class="text-[10px] text-rose-500 uppercase font-bold block">Émetteur</span>
-            <span id="rd-dep-sender" class="font-bold text-rose-900 text-xs">Caisse Secondaire 1</span>
+            <span id="rd-dep-sender" class="font-bold text-rose-900 text-xs">—</span>
           </div>
         </div>
         <div>
@@ -10326,8 +10326,29 @@
 
       const countStudents = schoolStudents.length > 0 ? schoolStudents.length : (school.studentsCount || 0);
       const countClasses = schoolClasses.length > 0 ? schoolClasses.length : (school.classesCount || 0);
-      const recRate = school.recoveryRate || 78.4;
-      const genAvg = school.generalAverage || 12.65;
+
+      // Calcul dynamique et réel du taux de recouvrement (sans fallback fictif)
+      let recRate = 0;
+      if (schoolStudents.length > 0) {
+        const totalDue = schoolStudents.reduce((sum, st) => sum + (st.feeDue || st.fee_due || 0), 0);
+        const totalPaid = schoolStudents.reduce((sum, st) => sum + (st.feePaid || st.fee_paid || 0), 0);
+        recRate = totalDue > 0 ? Number(((totalPaid / totalDue) * 100).toFixed(1)) : 0;
+      } else if (school.recoveryRate !== undefined && school.recoveryRate !== null) {
+        recRate = Number(school.recoveryRate) || 0;
+      }
+
+      // Calcul dynamique et réel de la moyenne générale (sans fallback fictif)
+      let genAvg = '0,00';
+      const gradedStudents = schoolStudents.filter(st => {
+        const a = (st.avg !== undefined && st.avg !== null && st.avg !== '') ? Number(st.avg) : null;
+        return a !== null && !isNaN(a) && a > 0;
+      });
+      if (gradedStudents.length > 0) {
+        const sumAvg = gradedStudents.reduce((sum, st) => sum + Number(st.avg), 0);
+        genAvg = (sumAvg / gradedStudents.length).toFixed(2).replace('.', ',');
+      } else if (school.generalAverage !== undefined && school.generalAverage !== null && Number(school.generalAverage) > 0) {
+        genAvg = Number(school.generalAverage).toFixed(2).replace('.', ',');
+      }
 
       // 1. Vue Superviseur Souverain (Concepteur) ou Supervision Tutelle (Fondateur)
       if (user.role === 'concepteur' || user.role === 'fondateur') {
@@ -10551,7 +10572,9 @@
       }
 
       if (user.role === 'caisse_secondaire') {
-        const c2 = (appState.cashDesks || []).find(c => c.id === 'CAISSE_2') || { balance: 350000 };
+        const c2 = (appState.cashDesks || []).find(c => c.id === 'CAISSE_2') || { balance: 0 };
+        const c2Pending = (appState.cashDeposits || []).filter(d => (d.source_id === 'CAISSE_2' || d.sourceId === 'CAISSE_2') && d.status === 'PENDING').reduce((sum, d) => sum + (d.amount || 0), 0);
+        const c2Receipts = (appState.payments || []).filter(p => p.cash_desk === 'CAISSE_2' || p.cashDesk === 'CAISSE_2').length;
         container.innerHTML = `
           <div class="bg-sky-50 border border-sky-200 p-4 rounded-xl mb-4">
             <span class="px-2 py-0.5 bg-sky-600 text-white rounded font-mono text-[10px] font-bold">PÉRIMÈTRE STRICT : CAISSE 2</span>
@@ -10566,12 +10589,12 @@
             </div>
             <div class="bg-white border border-slate-200 p-4 rounded-xl shadow-sm">
               <span class="text-xs uppercase font-bold text-slate-500">Dépôts vers Caisse Principale</span>
-              <p class="text-2xl font-black text-amber-600 mt-1">150 000 <span class="text-xs font-normal">XOF</span></p>
-              <p class="text-[11px] text-amber-700 font-bold">Statut : EN ATTENTE</p>
+              <p class="text-2xl font-black text-slate-800 mt-1">${c2Pending.toLocaleString('fr-FR')} <span class="text-xs font-normal">XOF</span></p>
+              <p class="text-[11px] text-slate-500 font-bold">Statut : ${c2Pending > 0 ? 'EN ATTENTE' : 'AUCUN DÉPÔT EN COURS'}</p>
             </div>
             <div class="bg-white border border-slate-200 p-4 rounded-xl shadow-sm">
               <span class="text-xs uppercase font-bold text-slate-500">Quittances Délivrées</span>
-              <p class="text-2xl font-black text-emerald-600 mt-1">4</p>
+              <p class="text-2xl font-black text-emerald-600 mt-1">${c2Receipts}</p>
               <p class="text-[11px] text-emerald-600 font-semibold">Toutes synchronisées</p>
             </div>
           </div>
@@ -11127,6 +11150,14 @@
     function renderMainCashDesk() {
       renderPendingDeposits();
 
+      // Mise à jour des soldes réel et théorique de la Caisse Principale
+      const schoolDesks = (appState.cashDesks || []).filter(c => (c.schoolId === appState.currentSchoolId || c.school_id === appState.currentSchoolId));
+      const mainDesk = schoolDesks.find(c => c.type === 'PRINCIPALE') || schoolDesks[0] || { balance: 0, physical: 0 };
+      const mainTheoretical = document.getElementById('main-cash-theoretical');
+      const mainPhysical = document.getElementById('main-cash-physical');
+      if (mainTheoretical) mainTheoretical.innerHTML = `${(mainDesk.balance || 0).toLocaleString('fr-FR')} <span class="text-xs font-normal">XOF</span>`;
+      if (mainPhysical) mainPhysical.innerHTML = `${(mainDesk.physical !== undefined ? mainDesk.physical : (mainDesk.balance || 0)).toLocaleString('fr-FR')} <span class="text-xs font-normal">XOF</span>`;
+
       // Mise à jour bandeau relance Caisse Principale
       let unpaidCount = 0;
       let unpaidSum = 0;
@@ -11317,11 +11348,19 @@
       const balEl = document.getElementById('caisse2-balance');
       if (balEl) balEl.innerHTML = `${bal.toLocaleString()} <span class="text-xs font-normal">XOF</span>`;
 
+      const c2Payments = (appState.payments || []).filter(p => p.cashDesk === 'CAISSE_2');
+      const dayIncomeEl = document.getElementById('caisse2-day-income');
+      const dayTotal = c2Payments.reduce((sum, p) => sum + (p.amount || 0), 0);
+      if (dayIncomeEl) dayIncomeEl.innerHTML = `${dayTotal.toLocaleString()} <span class="text-xs font-normal">XOF</span>`;
+
+      const pendingDepEl = document.getElementById('caisse2-pending-deposit');
+      const pendingDep = (appState.cashDeposits || []).filter(d => (d.source_id === 'CAISSE_2' || d.sourceId === 'CAISSE_2') && d.status === 'PENDING').reduce((sum, d) => sum + (d.amount || 0), 0);
+      if (pendingDepEl) pendingDepEl.innerHTML = `${pendingDep.toLocaleString()} <span class="text-xs font-normal">XOF</span>`;
+
       const tbody = document.getElementById('caisse2-ops-tbody');
       if (!tbody) return;
       tbody.innerHTML = '';
 
-      const c2Payments = (appState.payments || []).filter(p => p.cashDesk === 'CAISSE_2');
       if (c2Payments.length === 0) {
         tbody.innerHTML = `<tr><td colspan="7" class="p-6 text-center text-slate-400 italic">Aucune transaction enregistrée pour la Caisse Secondaire n°2. Solde actuel : 0 XOF.</td></tr>`;
         return;
@@ -11346,6 +11385,15 @@
     }
 
     function openSecondaryDepositModal() {
+      const c2 = (appState.cashDesks || []).find(c => c.id === 'CAISSE_2') || { balance: 0 };
+      const bal = c2.balance !== undefined ? c2.balance : (c2.solde || 0);
+      const amtInput = document.getElementById('sec-dep-amount');
+      const maxSpan = document.getElementById('sec-dep-max-span');
+      if (amtInput) {
+        amtInput.max = bal;
+        amtInput.value = '';
+      }
+      if (maxSpan) maxSpan.textContent = `Solde disponible max : ${bal.toLocaleString('fr-FR')} XOF`;
       document.getElementById('secondary-deposit-modal').classList.remove('hidden');
     }
 
@@ -12862,7 +12910,34 @@
       if (tabId === 'journal') renderConsultJournal();
       if (tabId === 'impayes') renderImpayesTable();
       if (tabId === 'student') populateConsultStudentPicker();
+      if (tabId === 'stats') renderConsultStats();
       if (tabId === 'inscrits') renderInscritsScolariteTable();
+    }
+
+    function renderConsultStats() {
+      const scopedStudents = (typeof filterByScope === 'function') ? filterByScope(appState.students || [], 'students_finance') : (appState.students || []);
+      const totalDue = scopedStudents.reduce((sum, s) => sum + (s.feeDue || s.fee_due || 0), 0);
+      const totalPaid = scopedStudents.reduce((sum, s) => sum + (s.feePaid || s.fee_paid || 0), 0);
+      const totalRemaining = Math.max(0, totalDue - totalPaid);
+      const rate = totalDue > 0 ? ((totalPaid / totalDue) * 100).toFixed(1) : '0.0';
+      const remRate = totalDue > 0 ? ((totalRemaining / totalDue) * 100).toFixed(1) : '0.0';
+      const paymentsCount = (appState.payments || []).length;
+
+      const caEl = document.getElementById('stat-ca-prevu');
+      const stEl = document.getElementById('stat-eleves-count');
+      const encEl = document.getElementById('stat-montant-encaisse');
+      const realEl = document.getElementById('stat-realisation-pct');
+      const recEl = document.getElementById('stat-sommes-recouvrer');
+      const restEl = document.getElementById('stat-restant-pct');
+      const quittEl = document.getElementById('stat-quittances-count');
+
+      if (caEl) caEl.innerHTML = `${totalDue.toLocaleString()} <span class="text-xs font-normal">XOF</span>`;
+      if (stEl) stEl.textContent = `${scopedStudents.length} élève(s) scolarisé(s)`;
+      if (encEl) encEl.innerHTML = `${totalPaid.toLocaleString()} <span class="text-xs font-normal">XOF</span>`;
+      if (realEl) realEl.textContent = `${rate.replace('.', ',')}% de réalisation`;
+      if (recEl) recEl.innerHTML = `${totalRemaining.toLocaleString()} <span class="text-xs font-normal">XOF</span>`;
+      if (restEl) restEl.textContent = `${remRate.replace('.', ',')}% restant dû`;
+      if (quittEl) quittEl.textContent = paymentsCount;
     }
 
     function renderConsultJournal() {
@@ -14682,9 +14757,9 @@
       document.getElementById('b-student-mat').innerText = student.matricule;
       document.getElementById('b-student-sexe').innerText = student.sexe;
       document.getElementById('b-student-classe').innerText = student.classe;
-      document.getElementById('b-general-avg').innerText = (student.avg || 12).toFixed(2).replace('.', ',') + " / 20";
-      document.getElementById('b-rank').innerText = student.rank === 1 ? '1ère' : `${esc(student.rank || 1)}e`;
-      document.getElementById('b-mention').innerText = student.mention || 'Passable';
+      document.getElementById('b-general-avg').innerText = (student.avg && Number(student.avg) > 0) ? Number(student.avg).toFixed(2).replace('.', ',') + " / 20" : "— / 20";
+      document.getElementById('b-rank').innerText = student.rank ? (student.rank === 1 ? '1ère' : `${esc(student.rank)}e`) : '—';
+      document.getElementById('b-mention').innerText = student.mention || '—';
 
       const subjects = [
         { name: 'Français', teacher: 'Mme Bamba', coef: 4, dev: '15 ; 14.5', compo: '16', moy: '15.38', pts: '61.52', rank: '1ère', classMoy: '12.40', app: 'Excellente maîtrise.' },
@@ -17229,7 +17304,7 @@
       });
       let avgRecovery = totalTuitionDue > 0 
         ? ((totalTuitionPaid / totalTuitionDue) * 100).toFixed(1) 
-        : (totalStudents > 0 ? '100.0' : '0.0');
+        : '0.0';
 
       // Mise à jour de la télémétrie Header Topbar
       const headerSchoolsCount = document.getElementById('header-found-schools-count');
@@ -17298,7 +17373,7 @@
                 sDue += Number(st.fee_total !== undefined ? st.fee_total : (st.feeTotal || 0));
                 sPaid += Number(st.fee_paid !== undefined ? st.fee_paid : (st.feePaid || 0));
               });
-              const recRate = sDue > 0 ? ((sPaid / sDue) * 100).toFixed(1) : (schoolStudents.length > 0 ? '100.0' : '0.0');
+              const recRate = sDue > 0 ? ((sPaid / sDue) * 100).toFixed(1) : '0.0';
               const stCount = schoolStudents.length;
               const clCount = schoolClasses.length;
 
@@ -17396,7 +17471,7 @@
               sDue += Number(st.fee_total !== undefined ? st.fee_total : (st.feeTotal || 0));
               sPaid += Number(st.fee_paid !== undefined ? st.fee_paid : (st.feePaid || 0));
             });
-            const recRate = sDue > 0 ? ((sPaid / sDue) * 100).toFixed(1) : (schoolStudents.length > 0 ? '100.0' : '0.0');
+            const recRate = sDue > 0 ? ((sPaid / sDue) * 100).toFixed(1) : '0.0';
             const stCount = schoolStudents.length;
             const clCount = schoolClasses.length;
 
