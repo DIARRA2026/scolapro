@@ -168,10 +168,35 @@
       animation: menuFadeDown 0.22s cubic-bezier(0.16, 1, 0.3, 1) forwards;
     }
 
+    @page {
+      size: A4 portrait;
+      margin: 6mm 8mm;
+    }
     @media print {
-      body * { visibility: hidden; }
-      #printable-report, #printable-report *, #printable-receipt, #printable-receipt * { visibility: visible; }
-      #printable-report, #printable-receipt { position: absolute; left: 0; top: 0; width: 100%; }
+      body * { visibility: hidden !important; }
+      #printable-report, #printable-report *, #printable-receipt, #printable-receipt * { visibility: visible !important; }
+      #printable-report, #printable-receipt {
+        position: absolute !important;
+        left: 0 !important;
+        top: 0 !important;
+        width: 100% !important;
+        max-width: 100% !important;
+        margin: 0 !important;
+        padding: 0 !important;
+        box-shadow: none !important;
+        border: none !important;
+        background: transparent !important;
+      }
+      .a5-receipt-voucher {
+        page-break-inside: avoid !important;
+        border: 1.5px solid #0f172a !important;
+      }
+      .receipt-cut-line {
+        page-break-inside: avoid !important;
+      }
+      .print\:hidden {
+        display: none !important;
+      }
     }
   </style>
 </head>
@@ -8553,141 +8578,299 @@
 
   <!-- ================================================================= -->
   <!-- MODAL : REÇU DE PAIEMENT & QUITTANCE OFFICIELLE (SYSCOHADA)       -->
+  <!-- FORMAT A4 CONTENANT 2 EXEMPLAIRES A5 IDENTIQUES AVEC DÉCOUPE     -->
   <!-- ================================================================= -->
-  <div id="modal-payment-receipt" class="hidden fixed inset-0 bg-black/60 backdrop-blur-xs z-50 flex items-center justify-center p-3 sm:p-4 overflow-y-auto">
-    <div class="bg-white rounded-2xl shadow-2xl max-w-xl w-full border border-slate-200 overflow-hidden my-6">
+  <div id="modal-payment-receipt" class="hidden fixed inset-0 bg-black/60 backdrop-blur-xs z-50 flex items-center justify-center p-2 sm:p-4 overflow-y-auto">
+    <div class="bg-white rounded-2xl shadow-2xl max-w-4xl w-full border border-slate-200 overflow-hidden my-4 max-h-[95vh] flex flex-col">
       
       <!-- Barre d'actions supérieure (non imprimable) -->
-      <div class="bg-slate-900 text-white px-5 py-3 flex justify-between items-center print:hidden">
+      <div class="bg-slate-900 text-white px-5 py-3 flex justify-between items-center print:hidden shrink-0">
         <div class="flex items-center gap-2">
-          <span class="text-amber-400 font-bold">📄</span>
-          <span class="font-bold text-xs uppercase tracking-wide">Quittance Officielle de Paiement</span>
+          <span class="text-amber-400 font-bold text-base">📄</span>
+          <div>
+            <span class="font-bold text-xs uppercase tracking-wide block">Quittance Officielle de Paiement (Format A4 Dual A5)</span>
+            <span class="text-[10px] text-slate-400">2 exemplaires A5 sur feuille A4 avec ligne centrale de découpe</span>
+          </div>
         </div>
         <div class="flex items-center gap-2">
-          <button type="button" onclick="window.print()" class="px-3 py-1 bg-amber-500 hover:bg-amber-400 text-slate-950 font-black rounded-lg text-xs flex items-center gap-1.5 shadow transition cursor-pointer">
+          <button type="button" onclick="window.print()" class="px-3.5 py-1.5 bg-amber-500 hover:bg-amber-400 text-slate-950 font-black rounded-lg text-xs flex items-center gap-1.5 shadow transition cursor-pointer">
             <span>🖨️</span>
-            <span>Imprimer</span>
+            <span>Imprimer la Feuille A4</span>
           </button>
           <button type="button" onclick="closeReceiptModal()" class="text-slate-400 hover:text-white text-xl font-bold px-1.5 cursor-pointer">&times;</button>
         </div>
       </div>
 
-      <!-- Contenu imprimable du reçu -->
-      <div id="printable-receipt" class="p-6 sm:p-8 space-y-6 bg-white text-slate-800">
-        <!-- En-tête officiel établissement -->
-        <div class="flex items-start justify-between border-b-2 border-slate-900 pb-4">
-          <div class="space-y-1">
-            <h2 id="rcpt-school-name" class="font-black text-base text-slate-900 uppercase tracking-tight">GROUPE SCOLAIRE D'EXCELLENCE SCOLAPRO</h2>
-            <p id="rcpt-school-info" class="text-[11px] text-slate-500 font-medium">Direction Régionale de l'Éducation Nationale • Code MENA • Tél: +225 27 20 00 11</p>
-            <p class="text-[10px] text-slate-400 font-mono">Système Intégré de Gestion Scolaire ScolaPro OS</p>
+      <!-- Contenu imprimable : Feuille A4 complète avec 2 A5 -->
+      <div class="overflow-y-auto p-4 sm:p-6 bg-slate-100 flex-1">
+        <div id="printable-receipt" class="max-w-[210mm] mx-auto bg-white p-4 sm:p-6 rounded-xl border border-slate-300 shadow-sm flex flex-col gap-3 text-slate-800 text-xs">
+          
+          <!-- ======================================================= -->
+          <!-- 1ER EXEMPLAIRE A5 : EXEMPLAIRE ÉLÈVE / PARENT           -->
+          <!-- ======================================================= -->
+          <div class="a5-receipt-voucher bg-white p-3.5 sm:p-4 rounded-lg border border-slate-300 flex flex-col justify-between" id="receipt-copy-student">
+            
+            <!-- En-tête -->
+            <div>
+              <div class="flex items-start justify-between border-b-2 border-slate-900 pb-2">
+                <div class="space-y-0.5">
+                  <div class="flex items-center gap-2">
+                    <span class="text-lg">🏛️</span>
+                    <h2 id="rcpt-school-name" class="font-black text-sm text-slate-900 uppercase tracking-tight">GROUPE SCOLAIRE D'EXCELLENCE SCOLAPRO</h2>
+                  </div>
+                  <p id="rcpt-school-info" class="text-[10px] text-slate-500 font-medium">Code Établissement : <span id="rcpt-school-code">M6</span> • DRENA / MENA • Tél: +225 27 20 00 11</p>
+                  <p class="text-[9px] text-slate-400 font-mono">Année Scolaire : <strong id="rcpt-year" class="text-slate-700">2026-2027</strong> • Système ScolaPro OS</p>
+                </div>
+                <div class="text-right flex flex-col items-end">
+                  <span class="inline-block px-2 py-0.5 rounded bg-blue-100 border border-blue-300 text-blue-900 font-black text-[10px] uppercase tracking-wider mb-1">
+                    EXEMPLAIRE ÉLÈVE
+                  </span>
+                  <span class="inline-block px-2.5 py-1 rounded bg-slate-100 border border-slate-300 text-slate-900 font-mono font-black text-xs" id="rcpt-number">
+                    M6-2026-2027-000001
+                  </span>
+                  <p class="text-[10px] text-slate-500 mt-0.5 font-medium" id="rcpt-date">27 septembre 2026</p>
+                </div>
+              </div>
+
+              <div class="text-center py-1 border-b border-slate-200">
+                <h1 class="text-xs sm:text-sm font-black uppercase text-slate-900 tracking-wider">
+                  QUITTANCE DE PAIEMENT DES FRAIS DE SCOLARITÉ
+                </h1>
+              </div>
+
+              <!-- Bloc Informations Élève -->
+              <div class="grid grid-cols-4 gap-2 bg-slate-50 p-2.5 rounded-lg border border-slate-200 text-[11px] my-2">
+                <div>
+                  <span class="text-slate-400 block text-[9px] uppercase font-bold">Nom & Prénoms</span>
+                  <strong id="rcpt-student-name" class="text-slate-900 font-black">KOUASSI Jean-Marc</strong>
+                </div>
+                <div>
+                  <span class="text-slate-400 block text-[9px] uppercase font-bold">Matricule</span>
+                  <strong id="rcpt-matricule" class="font-mono text-slate-900 font-bold">26819402X</strong>
+                </div>
+                <div>
+                  <span class="text-slate-400 block text-[9px] uppercase font-bold">Classe</span>
+                  <strong id="rcpt-classe" class="text-blue-700 font-bold">4ÈME 5</strong>
+                </div>
+                <div>
+                  <span class="text-slate-400 block text-[9px] uppercase font-bold">Statut</span>
+                  <strong id="rcpt-statut" class="text-slate-700 font-medium">Affecté (AFF)</strong>
+                </div>
+              </div>
+
+              <!-- Bloc Financier : Montant transaction & en toutes lettres -->
+              <div class="bg-amber-50/70 border border-amber-300/80 rounded-lg p-2.5 my-2">
+                <div class="flex items-center justify-between border-b border-amber-200/80 pb-1.5 mb-1.5">
+                  <div>
+                    <span class="text-[9px] uppercase font-bold text-amber-900/80 block">Montant Payé (Ce Versement)</span>
+                    <strong id="rcpt-tx-amount" class="text-base sm:text-lg font-black text-emerald-700 font-mono">150 000 FCFA</strong>
+                  </div>
+                  <div class="text-right">
+                    <span class="text-[9px] uppercase font-bold text-amber-900/80 block">Mode de Règlement</span>
+                    <span id="rcpt-method" class="inline-block px-2 py-0.5 rounded bg-white border border-amber-200 font-bold text-xs text-slate-800">ESPÈCES</span>
+                  </div>
+                </div>
+                <div class="text-[11px] text-slate-800">
+                  <span class="text-[9px] uppercase font-bold text-slate-500 block">Montant en toutes lettres :</span>
+                  <strong id="rcpt-words" class="italic text-slate-900 font-serif">Cent cinquante mille Francs CFA</strong>
+                </div>
+              </div>
+
+              <!-- Tableau Situation Comptable de l'Élève -->
+              <div class="border border-slate-300 rounded-lg overflow-hidden text-[10.5px] mb-2">
+                <table class="w-full text-left">
+                  <thead class="bg-slate-100 text-slate-700 uppercase font-black text-[9px] border-b border-slate-300">
+                    <tr>
+                      <th class="p-1.5">Frais Exigibles</th>
+                      <th class="p-1.5 text-right">Total Versé à Date</th>
+                      <th class="p-1.5 text-right">Solde Restant Dû</th>
+                      <th class="p-1.5 text-center">État du Compte</th>
+                    </tr>
+                  </thead>
+                  <tbody class="divide-y divide-slate-200 font-mono">
+                    <tr>
+                      <td class="p-1.5 font-bold text-slate-700" id="rcpt-fee-due">200 000 FCFA</td>
+                      <td class="p-1.5 text-right font-black text-emerald-600" id="rcpt-fee-paid">150 000 FCFA</td>
+                      <td class="p-1.5 text-right font-black text-rose-600" id="rcpt-fee-balance">50 000 FCFA</td>
+                      <td class="p-1.5 text-center">
+                        <span id="rcpt-status-badge" class="px-2 py-0.5 rounded-full text-[9px] font-black uppercase bg-amber-100 text-amber-900 border border-amber-300">
+                          ACOMPTE ENREGISTRÉ
+                        </span>
+                      </td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+
+            <!-- Signatures -->
+            <div>
+              <div class="grid grid-cols-2 gap-4 pt-1.5 border-t border-slate-200 text-[10px]">
+                <div>
+                  <span class="text-slate-500 block font-semibold">L'Agent Caissier / Opérateur :</span>
+                  <strong id="rcpt-cashier" class="text-slate-900 block font-bold">KOFFI Adjoua</strong>
+                  <div class="mt-1 h-7 border-b border-dashed border-slate-400 flex items-center justify-center text-[8px] text-slate-400 italic">
+                    [Signature & Cachet Caisse]
+                  </div>
+                </div>
+                <div class="text-right">
+                  <span class="text-slate-500 block font-semibold">L'Élève ou Parent / Tuteur :</span>
+                  <strong id="rcpt-tuteur" class="text-slate-900 block font-bold">KOUASSI Michel</strong>
+                  <div class="mt-1 h-7 border-b border-dashed border-slate-400 flex items-center justify-center text-[8px] text-slate-400 italic">
+                    [Signature Réceptionnaire]
+                  </div>
+                </div>
+              </div>
+              <div class="text-center pt-1 text-[8px] text-slate-400 font-mono">
+                Document officiel certifié conforme SYSCOHADA • ScolaPro OS
+              </div>
+            </div>
+
           </div>
-          <div class="text-right">
-            <span class="inline-block px-2.5 py-1 rounded bg-slate-100 border border-slate-200 text-slate-800 font-mono font-bold text-xs" id="rcpt-number">
-              QUITT-2026-0001
+
+          <!-- ======================================================= -->
+          <!-- LIGNE DE DÉCOUPE CENTRALE (CISEAUX & POINTILLÉS)        -->
+          <!-- ======================================================= -->
+          <div class="receipt-cut-line relative my-2 flex items-center justify-center border-t-2 border-dashed border-slate-400 text-slate-500 select-none">
+            <span class="bg-white px-3 text-[10px] font-mono font-bold flex items-center gap-2 text-slate-600 -mt-2.5">
+              <span>✂</span> <span>- - - - - - - - - - - - - - - - - Découper ici (Format A5) - - - - - - - - - - - - - - - - -</span> <span>✂</span>
             </span>
-            <p class="text-[10px] text-slate-400 mt-1" id="rcpt-date">24 septembre 2026</p>
           </div>
-        </div>
 
-        <!-- Titre du document -->
-        <div class="text-center py-1">
-          <h1 class="text-base sm:text-lg font-black uppercase text-slate-900 tracking-wider underline underline-offset-4 decoration-amber-500">
-            QUITTANCE DE PAIEMENT & FRAIS DE SCOLARITÉ
-          </h1>
-          <p class="text-[11px] text-slate-500 font-semibold mt-1">Année Scolaire 2025 - 2026</p>
-        </div>
+          <!-- ======================================================= -->
+          <!-- 2ND EXEMPLAIRE A5 : EXEMPLAIRE COMPTABILITÉ / ÉCOLE     -->
+          <!-- ======================================================= -->
+          <div class="a5-receipt-voucher bg-white p-3.5 sm:p-4 rounded-lg border border-slate-300 flex flex-col justify-between" id="receipt-copy-accounting">
+            
+            <!-- En-tête -->
+            <div>
+              <div class="flex items-start justify-between border-b-2 border-slate-900 pb-2">
+                <div class="space-y-0.5">
+                  <div class="flex items-center gap-2">
+                    <span class="text-lg">🏛️</span>
+                    <h2 id="rcpt-school-name-acc" class="font-black text-sm text-slate-900 uppercase tracking-tight">GROUPE SCOLAIRE D'EXCELLENCE SCOLAPRO</h2>
+                  </div>
+                  <p id="rcpt-school-info-acc" class="text-[10px] text-slate-500 font-medium">Code Établissement : <span id="rcpt-school-code-acc">M6</span> • DRENA / MENA • Tél: +225 27 20 00 11</p>
+                  <p class="text-[9px] text-slate-400 font-mono">Année Scolaire : <strong id="rcpt-year-acc" class="text-slate-700">2026-2027</strong> • Système ScolaPro OS</p>
+                </div>
+                <div class="text-right flex flex-col items-end">
+                  <span class="inline-block px-2 py-0.5 rounded bg-emerald-100 border border-emerald-300 text-emerald-900 font-black text-[10px] uppercase tracking-wider mb-1">
+                    EXEMPLAIRE COMPTABILITÉ
+                  </span>
+                  <span class="inline-block px-2.5 py-1 rounded bg-slate-100 border border-slate-300 text-slate-900 font-mono font-black text-xs" id="rcpt-number-acc">
+                    M6-2026-2027-000001
+                  </span>
+                  <p class="text-[10px] text-slate-500 mt-0.5 font-medium" id="rcpt-date-acc">27 septembre 2026</p>
+                </div>
+              </div>
 
-        <!-- Informations Élève -->
-        <div class="grid grid-cols-2 gap-3 bg-slate-50 p-4 rounded-xl border border-slate-200 text-xs">
-          <div>
-            <span class="text-slate-400 block text-[10px] uppercase font-bold">Nom & Prénoms de l'Élève</span>
-            <strong id="rcpt-student-name" class="text-slate-900 font-black text-sm">KOUASSI Jean-Marc</strong>
-          </div>
-          <div>
-            <span class="text-slate-400 block text-[10px] uppercase font-bold">Matricule MENA</span>
-            <strong id="rcpt-matricule" class="font-mono text-slate-900 font-black text-sm">26819402X</strong>
-          </div>
-          <div>
-            <span class="text-slate-400 block text-[10px] uppercase font-bold">Classe Fréquentée</span>
-            <strong id="rcpt-classe" class="text-blue-700 font-bold">4EME 5</strong>
-          </div>
-          <div>
-            <span class="text-slate-400 block text-[10px] uppercase font-bold">Statut d'Affectation</span>
-            <strong id="rcpt-statut" class="text-slate-700 font-medium">Affecté de l'État (AFF)</strong>
-          </div>
-          <div class="col-span-2 pt-1 border-t border-slate-200">
-            <span class="text-slate-400 block text-[10px] uppercase font-bold">Tuteur / Contact Référent</span>
-            <strong id="rcpt-tuteur" class="text-slate-700">KOUASSI Michel (+225 07 00 11 22)</strong>
-          </div>
-        </div>
+              <div class="text-center py-1 border-b border-slate-200">
+                <h1 class="text-xs sm:text-sm font-black uppercase text-slate-900 tracking-wider">
+                  QUITTANCE DE PAIEMENT DES FRAIS DE SCOLARITÉ
+                </h1>
+              </div>
 
-        <!-- Tableau financier récapitulatif -->
-        <div class="border border-slate-300 rounded-xl overflow-hidden text-xs">
-          <table class="w-full text-left">
-            <thead class="bg-slate-100 text-slate-700 uppercase font-black text-[10px] border-b border-slate-300">
-              <tr>
-                <th class="p-3">Désignation</th>
-                <th class="p-3 text-right">Montant Exigible</th>
-                <th class="p-3 text-right">Total Versé</th>
-                <th class="p-3 text-right">Reste à Solder</th>
-              </tr>
-            </thead>
-            <tbody class="divide-y divide-slate-200 font-mono">
-              <tr>
-                <td class="p-3 font-sans font-semibold text-slate-800">Écolage & Frais de Scolarité Globale</td>
-                <td class="p-3 text-right font-bold text-slate-700" id="rcpt-fee-due">120 000 XOF</td>
-                <td class="p-3 text-right font-black text-emerald-600" id="rcpt-fee-paid">120 000 XOF</td>
-                <td class="p-3 text-right font-extrabold text-slate-900" id="rcpt-fee-balance">0 XOF</td>
-              </tr>
-            </tbody>
-          </table>
-        </div>
+              <!-- Bloc Informations Élève -->
+              <div class="grid grid-cols-4 gap-2 bg-slate-50 p-2.5 rounded-lg border border-slate-200 text-[11px] my-2">
+                <div>
+                  <span class="text-slate-400 block text-[9px] uppercase font-bold">Nom & Prénoms</span>
+                  <strong id="rcpt-student-name-acc" class="text-slate-900 font-black">KOUASSI Jean-Marc</strong>
+                </div>
+                <div>
+                  <span class="text-slate-400 block text-[9px] uppercase font-bold">Matricule</span>
+                  <strong id="rcpt-matricule-acc" class="font-mono text-slate-900 font-bold">26819402X</strong>
+                </div>
+                <div>
+                  <span class="text-slate-400 block text-[9px] uppercase font-bold">Classe</span>
+                  <strong id="rcpt-classe-acc" class="text-blue-700 font-bold">4ÈME 5</strong>
+                </div>
+                <div>
+                  <span class="text-slate-400 block text-[9px] uppercase font-bold">Statut</span>
+                  <strong id="rcpt-statut-acc" class="text-slate-700 font-medium">Affecté (AFF)</strong>
+                </div>
+              </div>
 
-        <!-- Statut comptable & Attestation -->
-        <div class="flex flex-col sm:flex-row items-center justify-between gap-4 p-3.5 bg-amber-50/60 border border-amber-200 rounded-xl">
-          <div>
-            <span class="text-[10px] text-amber-900/80 font-bold uppercase block">Situation Comptable</span>
-            <div id="rcpt-status-badge" class="mt-1 inline-block px-3 py-1 rounded-full text-xs font-black uppercase bg-emerald-100 text-emerald-800 border border-emerald-300">
-              SOLDE INTÉGRALEMENT RÉGLÉ
+              <!-- Bloc Financier : Montant transaction & en toutes lettres -->
+              <div class="bg-amber-50/70 border border-amber-300/80 rounded-lg p-2.5 my-2">
+                <div class="flex items-center justify-between border-b border-amber-200/80 pb-1.5 mb-1.5">
+                  <div>
+                    <span class="text-[9px] uppercase font-bold text-amber-900/80 block">Montant Payé (Ce Versement)</span>
+                    <strong id="rcpt-tx-amount-acc" class="text-base sm:text-lg font-black text-emerald-700 font-mono">150 000 FCFA</strong>
+                  </div>
+                  <div class="text-right">
+                    <span class="text-[9px] uppercase font-bold text-amber-900/80 block">Mode de Règlement</span>
+                    <span id="rcpt-method-acc" class="inline-block px-2 py-0.5 rounded bg-white border border-amber-200 font-bold text-xs text-slate-800">ESPÈCES</span>
+                  </div>
+                </div>
+                <div class="text-[11px] text-slate-800">
+                  <span class="text-[9px] uppercase font-bold text-slate-500 block">Montant en toutes lettres :</span>
+                  <strong id="rcpt-words-acc" class="italic text-slate-900 font-serif">Cent cinquante mille Francs CFA</strong>
+                </div>
+              </div>
+
+              <!-- Tableau Situation Comptable de l'Élève -->
+              <div class="border border-slate-300 rounded-lg overflow-hidden text-[10.5px] mb-2">
+                <table class="w-full text-left">
+                  <thead class="bg-slate-100 text-slate-700 uppercase font-black text-[9px] border-b border-slate-300">
+                    <tr>
+                      <th class="p-1.5">Frais Exigibles</th>
+                      <th class="p-1.5 text-right">Total Versé à Date</th>
+                      <th class="p-1.5 text-right">Solde Restant Dû</th>
+                      <th class="p-1.5 text-center">État du Compte</th>
+                    </tr>
+                  </thead>
+                  <tbody class="divide-y divide-slate-200 font-mono">
+                    <tr>
+                      <td class="p-1.5 font-bold text-slate-700" id="rcpt-fee-due-acc">200 000 FCFA</td>
+                      <td class="p-1.5 text-right font-black text-emerald-600" id="rcpt-fee-paid-acc">150 000 FCFA</td>
+                      <td class="p-1.5 text-right font-black text-rose-600" id="rcpt-fee-balance-acc">50 000 FCFA</td>
+                      <td class="p-1.5 text-center">
+                        <span id="rcpt-status-badge-acc" class="px-2 py-0.5 rounded-full text-[9px] font-black uppercase bg-amber-100 text-amber-900 border border-amber-300">
+                          ACOMPTE ENREGISTRÉ
+                        </span>
+                      </td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
             </div>
-          </div>
-          <p class="text-[10px] text-slate-500 italic max-w-xs text-center sm:text-right">
-            La présente quittance certifie le règlement des montants ci-dessus indiqués sous réserve d'encaissement définitif.
-          </p>
-        </div>
 
-        <!-- Bloc signatures et cachets -->
-        <div class="grid grid-cols-2 gap-8 pt-4 border-t border-slate-200 text-xs">
-          <div>
-            <span class="text-slate-500 block text-[11px] font-semibold">Le Caissier / Agent Comptable</span>
-            <strong id="rcpt-cashier" class="text-slate-900 block mt-1 font-bold">KOFFI Adjoua (Caisse Principale)</strong>
-            <div class="mt-4 h-12 border-b border-dashed border-slate-400 flex items-center justify-center text-[10px] text-slate-400 italic">
-              [Signature & Cachet Caisse]
+            <!-- Signatures -->
+            <div>
+              <div class="grid grid-cols-2 gap-4 pt-1.5 border-t border-slate-200 text-[10px]">
+                <div>
+                  <span class="text-slate-500 block font-semibold">L'Agent Caissier / Opérateur :</span>
+                  <strong id="rcpt-cashier-acc" class="text-slate-900 block font-bold">KOFFI Adjoua</strong>
+                  <div class="mt-1 h-7 border-b border-dashed border-slate-400 flex items-center justify-center text-[8px] text-slate-400 italic">
+                    [Signature & Cachet Caisse]
+                  </div>
+                </div>
+                <div class="text-right">
+                  <span class="text-slate-500 block font-semibold">L'Élève ou Parent / Tuteur :</span>
+                  <strong id="rcpt-tuteur-acc" class="text-slate-900 block font-bold">KOUASSI Michel</strong>
+                  <div class="mt-1 h-7 border-b border-dashed border-slate-400 flex items-center justify-center text-[8px] text-slate-400 italic">
+                    [Signature Réceptionnaire]
+                  </div>
+                </div>
+              </div>
+              <div class="text-center pt-1 text-[8px] text-slate-400 font-mono">
+                Souche comptabilité archivée • ScolaPro OS
+              </div>
             </div>
-          </div>
-          <div class="text-right">
-            <span class="text-slate-500 block text-[11px] font-semibold">Pour la Direction de l'Établissement</span>
-            <strong class="text-slate-900 block mt-1 font-bold">Le Chef d'Établissement</strong>
-            <div class="mt-4 h-12 border-b border-dashed border-slate-400 flex items-center justify-center text-[10px] text-slate-400 italic">
-              [Sceau officiel de l'école]
-            </div>
-          </div>
-        </div>
 
-        <!-- Pied de page officiel -->
-        <div class="text-center pt-2 text-[9px] text-slate-400 font-mono border-t border-slate-100">
-          Document sécurisé généré par ScolaPro OS • Certifié conforme aux normes SYSCOHADA de gestion des flux scolaires
+          </div>
+
         </div>
       </div>
 
       <!-- Bouton fermer inférieur (non imprimable) -->
-      <div class="bg-slate-50 px-5 py-3 border-t border-slate-200 flex justify-end gap-2 print:hidden">
+      <div class="bg-slate-50 px-5 py-3 border-t border-slate-200 flex justify-end gap-2 print:hidden shrink-0">
         <button type="button" onclick="closeReceiptModal()" class="px-4 py-2 border border-slate-300 rounded-xl text-slate-700 hover:bg-slate-100 text-xs font-bold transition cursor-pointer">
           Fermer
         </button>
         <button type="button" onclick="window.print()" class="px-5 py-2 bg-slate-900 hover:bg-slate-800 text-amber-400 font-black rounded-xl text-xs flex items-center gap-2 shadow transition cursor-pointer">
           <span>🖨️</span>
-          <span>Imprimer la Quittance</span>
+          <span>Imprimer la Feuille A4 (2 Quittances A5)</span>
         </button>
       </div>
 
@@ -15761,6 +15944,143 @@
       if (rateEl) rateEl.textContent = `${rate.replace('.', ',')}% taux d'encaissement`;
     }
 
+    function numberToFrenchWords(n) {
+      if (n === 0) return 'zéro';
+      if (n < 0) return 'moins ' + numberToFrenchWords(-n);
+
+      const units = ['', 'un', 'deux', 'trois', 'quatre', 'cinq', 'six', 'sept', 'huit', 'neuf'];
+      const teens = ['dix', 'onze', 'douze', 'treize', 'quatorze', 'quinze', 'seize', 'dix-sept', 'dix-huit', 'dix-neuf'];
+      const tens = ['', 'dix', 'vingt', 'trente', 'quarante', 'cinquante', 'soixante', 'soixante-dix', 'quatre-vingt', 'quatre-vingt-dix'];
+
+      function convertBelow1000(val, isEnd) {
+        let res = '';
+        const h = Math.floor(val / 100);
+        const rem = val % 100;
+
+        if (h > 0) {
+          if (h === 1) {
+            res += 'cent';
+          } else {
+            res += units[h] + (rem === 0 && isEnd ? ' cents' : ' cent');
+          }
+          if (rem > 0) res += ' ';
+        }
+
+        if (rem > 0) {
+          if (rem < 10) {
+            res += units[rem];
+          } else if (rem < 20) {
+            res += teens[rem - 10];
+          } else {
+            const t = Math.floor(rem / 10);
+            const u = rem % 10;
+
+            if (t === 7) {
+              if (u === 1) res += 'soixante et onze';
+              else res += 'soixante-' + teens[u];
+            } else if (t === 9) {
+              res += 'quatre-vingt-' + teens[u];
+            } else if (t === 8) {
+              if (u === 0) res += isEnd ? 'quatre-vingts' : 'quatre-vingt';
+              else res += 'quatre-vingt-' + units[u];
+            } else {
+              if (u === 1) res += tens[t] + ' et un';
+              else if (u > 1) res += tens[t] + '-' + units[u];
+              else res += tens[t];
+            }
+          }
+        }
+        return res;
+      }
+
+      const chunks = [];
+      const scales = [
+        { value: 1000000000, singular: 'milliard', plural: 'milliards' },
+        { value: 1000000, singular: 'million', plural: 'millions' },
+        { value: 1000, singular: 'mille', plural: 'mille' },
+        { value: 1, singular: '', plural: '' }
+      ];
+
+      let remaining = n;
+      for (let i = 0; i < scales.length; i++) {
+        const scale = scales[i];
+        if (remaining >= scale.value) {
+          const count = Math.floor(remaining / scale.value);
+          remaining = remaining % scale.value;
+          const isEnd = remaining === 0;
+
+          if (scale.value === 1000) {
+            chunks.push(count === 1 ? 'mille' : convertBelow1000(count, false) + ' mille');
+          } else if (scale.value >= 1000000) {
+            const label = count > 1 ? scale.plural : scale.singular;
+            chunks.push(convertBelow1000(count, isEnd) + ' ' + label);
+          } else {
+            chunks.push(convertBelow1000(count, true));
+          }
+        }
+      }
+
+      return chunks.join(' ').trim();
+    }
+
+    function numberToFrenchWordsFCFA(amount) {
+      const num = Math.round(Number(amount));
+      if (isNaN(num) || num <= 0) return 'Zéro Franc CFA';
+      const words = numberToFrenchWords(num);
+      const capitalized = words.charAt(0).toUpperCase() + words.slice(1);
+      const endsWithMillionOrMilliard = /(million|millions|milliard|milliards)$/i.test(words);
+      const prep = endsWithMillionOrMilliard ? 'de ' : '';
+      const currency = num === 1 ? 'Franc CFA' : 'Francs CFA';
+      return `${capitalized} ${prep}${currency}`;
+    }
+
+    function populateReceiptVouchers(data) {
+      const copySuffixes = ['', '-acc'];
+      copySuffixes.forEach(sfx => {
+        const setVal = (id, val) => {
+          const el = document.getElementById(id + sfx);
+          if (el) el.textContent = val !== undefined && val !== null ? val : '';
+        };
+
+        setVal('rcpt-school-name', data.schoolName || "GROUPE SCOLAIRE D'EXCELLENCE SCOLAPRO");
+        setVal('rcpt-school-code', data.schoolCode || "M6");
+        setVal('rcpt-school-info', `${data.schoolCode || 'M6'} • DRENA / MENA • Tél: ${data.schoolPhone || '+225 27 20 00 11'}`);
+        setVal('rcpt-year', data.schoolYear || '2026-2027');
+        setVal('rcpt-number', data.receiptNumber || data.ref || 'M6-2026-2027-000001');
+        setVal('rcpt-date', data.dateFormatted || new Date().toLocaleDateString('fr-FR', { day: '2-digit', month: 'long', year: 'numeric' }));
+        setVal('rcpt-student-name', data.studentName || '—');
+        setVal('rcpt-matricule', data.studentMatricule || '—');
+        setVal('rcpt-classe', data.studentClass || '—');
+        setVal('rcpt-statut', data.studentStatut === 'AFF' ? "Affecté de l'État (AFF)" : "Non affecté (Privé direct)");
+        setVal('rcpt-tuteur', data.tuteur || "Parent / Tuteur légal");
+        setVal('rcpt-tx-amount', data.amountFormatted || `${(data.amount || 0).toLocaleString('fr-FR')} FCFA`);
+        setVal('rcpt-words', data.amountInWords || numberToFrenchWordsFCFA(data.amount || 0));
+        setVal('rcpt-method', data.paymentMethod || 'ESPÈCES');
+        setVal('rcpt-fee-due', `${(data.totalDue || 0).toLocaleString('fr-FR')} FCFA`);
+        setVal('rcpt-fee-paid', `${(data.totalPaidAfter || data.totalPaid || 0).toLocaleString('fr-FR')} FCFA`);
+        setVal('rcpt-fee-balance', `${(data.remainingBalance || 0).toLocaleString('fr-FR')} FCFA`);
+        setVal('rcpt-cashier', data.cashierName || 'Agent Caissier');
+
+        const badge = document.getElementById('rcpt-status-badge' + sfx);
+        if (badge) {
+          if ((data.remainingBalance || 0) <= 0) {
+            badge.textContent = "SOLDE INTÉGRALEMENT RÉGLÉ";
+            badge.className = "px-2 py-0.5 rounded-full text-[9px] font-black uppercase bg-emerald-100 text-emerald-800 border border-emerald-300";
+          } else {
+            badge.textContent = `ACOMPTE ENREGISTRÉ (RESTE : ${(data.remainingBalance || 0).toLocaleString('fr-FR')} FCFA)`;
+            badge.className = "px-2 py-0.5 rounded-full text-[9px] font-black uppercase bg-amber-100 text-amber-900 border border-amber-300";
+          }
+        }
+      });
+    }
+
+    function openPaymentReceiptModal(data) {
+      if (!data) return;
+      populateReceiptVouchers(data);
+      const modal = document.getElementById('modal-payment-receipt');
+      if (modal) modal.classList.remove('hidden');
+    }
+
     async function quickCollect(id, amount) {
       if (!hasPerm('payments.create')) {
         showToast("Action refusée : permission payments.create requise.");
@@ -15768,8 +16088,9 @@
       }
       const student = appState.students.find(s => s.id === id);
       if (student) {
+        let receiptData = null;
         try {
-          await fetch('/api/payments', {
+          const resp = await fetch('/api/payments', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
@@ -15780,6 +16101,10 @@
             }),
             credentials: 'same-origin'
           });
+          if (resp.ok) {
+            const resJson = await resp.json();
+            receiptData = resJson.receipt;
+          }
         } catch (err) {
           console.warn('API payment failed:', err);
         }
@@ -15787,7 +16112,12 @@
         student.feePaid += amount;
         auditAction('PAYMENT_COLLECT', 'Comptabilité', `Élève #${id}`, `${student.feePaid - amount}`, `${esc(student.feePaid)}`, 'SUCCÈS');
         renderFinanceTable();
-        showToast(`Versement de ${amount.toLocaleString()} XOF encaissé pour ${esc(student.nomPrenom)} ! Reçu généré.`);
+        showToast(`Versement de ${amount.toLocaleString()} XOF encaissé pour ${esc(student.nomPrenom)} ! Quittance A4 Dual A5 générée.`);
+        if (receiptData) {
+          openPaymentReceiptModal(receiptData);
+        } else {
+          printReceipt(id);
+        }
       }
     }
 
@@ -15835,8 +16165,9 @@
       const student = appState.students.find(s => s.id === id);
 
       if (student && amount > 0) {
+        let receiptData = null;
         try {
-          await fetch('/api/payments', {
+          const resp = await fetch('/api/payments', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
@@ -15847,6 +16178,10 @@
             }),
             credentials: 'same-origin'
           });
+          if (resp.ok) {
+            const resJson = await resp.json();
+            receiptData = resJson.receipt;
+          }
         } catch (err) {
           console.warn('API payment confirm failed:', err);
         }
@@ -15871,10 +16206,19 @@
         renderMainCashDesk();
         auditAction('PAYMENT_CONFIRM', 'Comptabilité', `Élève #${id}`, '', `${amount.toLocaleString()} XOF via ${method} (Ref: ${ref})`, 'SUCCÈS');
         showToast(`Paiement de ${amount.toLocaleString()} XOF (${method} - Ref: ${ref}) validé pour ${esc(student.nomPrenom)} !`);
+        if (receiptData) {
+          openPaymentReceiptModal(receiptData);
+        } else {
+          printReceipt(id);
+        }
       }
     }
 
     function printReceipt(studentId) {
+      if (studentId && typeof studentId === 'object') {
+        openPaymentReceiptModal(studentId);
+        return;
+      }
       const st = (appState.students || []).find(s => s.id === studentId);
       if (!st) {
         showToast("Fiche élève introuvable pour l'impression de la quittance.");
@@ -15883,62 +16227,49 @@
       const user = getActiveUser() || { prenom: 'Caissier', nom: 'Principal' };
       const currentSchool = (appState.schools && appState.schools.find(s => s.id === (st.schoolId || appState.currentSchoolId))) || { 
         name: "GROUPE SCOLAIRE D'EXCELLENCE SCOLAPRO", 
-        code: "GS-EXC-01", 
+        code: "M6", 
         phone: "+225 27 20 00 11", 
         address: "Abidjan Plateau" 
       };
 
-      const modal = document.getElementById('modal-payment-receipt');
-      if (!modal) return;
-
       const balance = Math.max(0, (st.feeDue || 0) - (st.feePaid || 0));
-      const receiptNo = `QUITT-2026-${st.id.toString().padStart(4, '0')}-${((st.feePaid || 0) % 9999).toString().padStart(4, '0')}`;
+      const code = (currentSchool.code || `S${st.schoolId || 1}`).toUpperCase();
+      const year = currentSchool.academicYear || '2026-2027';
+      const seq = ((st.feePaid || 0) % 999999).toString().padStart(6, '0');
+      const receiptNo = `${code}-${year}-${seq}`;
       const nowStr = new Date().toLocaleDateString('fr-FR', { day: '2-digit', month: 'long', year: 'numeric' });
 
-      const elSchoolName = document.getElementById('rcpt-school-name');
-      const elSchoolInfo = document.getElementById('rcpt-school-info');
-      const elNumber = document.getElementById('rcpt-number');
-      const elDate = document.getElementById('rcpt-date');
-      const elStudentName = document.getElementById('rcpt-student-name');
-      const elMatricule = document.getElementById('rcpt-matricule');
-      const elClasse = document.getElementById('rcpt-classe');
-      const elStatut = document.getElementById('rcpt-statut');
-      const elTuteur = document.getElementById('rcpt-tuteur');
-      const elFeeDue = document.getElementById('rcpt-fee-due');
-      const elFeePaid = document.getElementById('rcpt-fee-paid');
-      const elFeeBalance = document.getElementById('rcpt-fee-balance');
-      const elBadge = document.getElementById('rcpt-status-badge');
-      const elCashier = document.getElementById('rcpt-cashier');
-
-      if (elSchoolName) elSchoolName.textContent = currentSchool.name || "ÉTABLISSEMENT SCOLAIRE";
-      if (elSchoolInfo) elSchoolInfo.textContent = `${currentSchool.code || ''} • Tél: ${currentSchool.phone || '+225 27 20 00 11'} • Réf: DRENA / MENA`;
-      if (elNumber) elNumber.textContent = receiptNo;
-      if (elDate) elDate.textContent = nowStr;
-
-      if (elStudentName) elStudentName.textContent = st.nomPrenom;
-      if (elMatricule) elMatricule.textContent = st.matricule;
-      if (elClasse) elClasse.textContent = st.classe || '—';
-      if (elStatut) elStatut.textContent = st.statut === 'AFF' ? "Affecté de l'État (AFF)" : "Non affecté (Privé direct)";
-      if (elTuteur) elTuteur.textContent = st.tuteur || "Parent / Tuteur légal";
-
-      if (elFeeDue) elFeeDue.textContent = `${(st.feeDue || 0).toLocaleString()} XOF`;
-      if (elFeePaid) elFeePaid.textContent = `${(st.feePaid || 0).toLocaleString()} XOF`;
-      if (elFeeBalance) elFeeBalance.textContent = `${balance.toLocaleString()} XOF`;
-
-      if (elBadge) {
-        if (balance === 0) {
-          elBadge.textContent = "SOLDE INTÉGRALEMENT RÉGLÉ";
-          elBadge.className = "mt-1 inline-block px-3 py-1 rounded-full text-xs font-black uppercase bg-emerald-100 text-emerald-800 border border-emerald-300";
-        } else {
-          elBadge.textContent = `ACOMPTE ENREGISTRÉ (RESTE : ${balance.toLocaleString()} XOF)`;
-          elBadge.className = "mt-1 inline-block px-3 py-1 rounded-full text-xs font-black uppercase bg-amber-100 text-amber-900 border border-amber-300";
-        }
+      let lastPay = null;
+      if (appState.payments && Array.isArray(appState.payments)) {
+        lastPay = appState.payments.find(p => p.studentId === st.id);
       }
+      const amount = lastPay ? lastPay.amount : (st.feePaid || 0);
+      const method = lastPay ? lastPay.paymentMethod : 'ESPÈCES';
 
-      if (elCashier) elCashier.textContent = `${user.prenom || ''} ${user.nom || 'Agent Caisse'}`.trim();
+      const receiptData = {
+        schoolName: currentSchool.name || "GROUPE SCOLAIRE D'EXCELLENCE SCOLAPRO",
+        schoolCode: code,
+        schoolPhone: currentSchool.phone || '+225 27 20 00 11',
+        schoolYear: year,
+        receiptNumber: receiptNo,
+        dateFormatted: nowStr,
+        studentName: st.nomPrenom,
+        studentMatricule: st.matricule,
+        studentClass: st.classe || '—',
+        studentStatut: st.statut,
+        tuteur: st.tuteur || "Parent / Tuteur légal",
+        amount: amount,
+        amountFormatted: `${amount.toLocaleString('fr-FR')} FCFA`,
+        amountInWords: numberToFrenchWordsFCFA(amount),
+        paymentMethod: method,
+        totalDue: st.feeDue || 0,
+        totalPaidAfter: st.feePaid || 0,
+        remainingBalance: balance,
+        cashierName: `${user.prenom || ''} ${user.nom || 'Agent Caisse'}`.trim()
+      };
 
-      auditAction('RECEIPT_VIEW', 'Comptabilité', `Élève #${st.id}`, '', `Quittance ${receiptNo} générée`, 'SUCCÈS');
-      modal.classList.remove('hidden');
+      auditAction('RECEIPT_VIEW', 'Comptabilité', `Élève #${st.id}`, '', `Quittance ${receiptNo} affichée`, 'SUCCÈS');
+      openPaymentReceiptModal(receiptData);
     }
 
     function closeReceiptModal() {

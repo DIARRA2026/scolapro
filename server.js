@@ -774,6 +774,33 @@ const server = http.createServer(async (req, res) => {
       }
     }
 
+    // Quittances de paiement (Receipts - Format officiel A5/A4)
+    if (reqPath === '/api/receipts') {
+      if (method === 'GET') {
+        return sendJson(res, 200, db.getReceipts(user, queryParams));
+      }
+    }
+
+    const receiptMatch = reqPath.match(/^\/api\/receipts\/([a-zA-Z0-9_-]+)$/);
+    if (receiptMatch) {
+      if (method === 'GET') {
+        const rId = receiptMatch[1];
+        const receipt = db.getReceiptById(rId, user);
+        if (!receipt) return sendJson(res, 404, { error: 'Quittance introuvable.' });
+        return sendJson(res, 200, receipt);
+      }
+    }
+
+    const paymentReceiptMatch = reqPath.match(/^\/api\/payments\/(\d+)\/receipt$/);
+    if (paymentReceiptMatch) {
+      if (method === 'GET') {
+        const pId = parseInt(paymentReceiptMatch[1], 10);
+        const receipt = db.getReceiptByPaymentId(pId, user);
+        if (!receipt) return sendJson(res, 404, { error: 'Quittance introuvable pour ce paiement.' });
+        return sendJson(res, 200, receipt);
+      }
+    }
+
     // Utilisateurs
     if (reqPath === '/api/users') {
       if (method === 'GET') {

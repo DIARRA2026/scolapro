@@ -558,6 +558,96 @@ CREATE TABLE payment_allocations (    -- imputation d'un paiement sur les tranch
 );
 
 -- =====================================================================
+-- 6.bis QUITTANCES OFFICIELLES & NUMÉROTATION ATOMIQUE SÉQUENTIELLE
+-- =====================================================================
+
+-- Table des compteurs séquentiels par établissement et par année scolaire
+CREATE TABLE receipt_sequences (
+    school_id      bigint NOT NULL REFERENCES schools(id) ON DELETE CASCADE,
+    school_year    varchar(20) NOT NULL,        -- Ex: '2026-2027'
+    current_val    integer NOT NULL DEFAULT 0,  -- Compteur séquentiel remis à zéro chaque année
+    updated_at     timestamptz NOT NULL DEFAULT now(),
+    PRIMARY KEY (school_id, school_year)
+);
+
+-- Table permanente des quittances de paiement (immuable, traçabilité comptable)
+CREATE TABLE receipts (
+    id                 bigint GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+    school_id          bigint NOT NULL REFERENCES schools(id) ON DELETE CASCADE,
+    payment_id         bigint NOT NULL REFERENCES payments(id) ON DELETE CASCADE,
+    student_id         bigint NOT NULL REFERENCES students(id) ON DELETE CASCADE,
+    school_code        varchar(30) NOT NULL,    -- Ex: 'M6'
+    school_year        varchar(20) NOT NULL,    -- Ex: '2026-2027'
+    sequence_number    integer NOT NULL,        -- Ex: 123
+    receipt_number     varchar(60) NOT NULL,    -- Ex: 'M6-2026-2027-000123'
+    amount             bigint NOT NULL,         -- En FCFA
+    amount_in_words    text NOT NULL,           -- Montant en toutes lettres
+    payment_method     varchar(50) NOT NULL DEFAULT 'ESPECES',
+    cashier_id         bigint REFERENCES users(id) ON DELETE SET NULL,
+    cashier_name       varchar(150) NOT NULL,
+    student_name       varchar(150) NOT NULL,
+    student_matricule  varchar(50) NOT NULL,
+    student_class      varchar(50) NOT NULL,
+    total_due          bigint NOT NULL,         -- Frais de scolarité totaux dus
+    total_paid_before  bigint NOT NULL,         -- Déjà payé avant cette transaction
+    total_paid_after   bigint NOT NULL,         -- Cumul payé après cette transaction
+    remaining_balance  bigint NOT NULL,         -- Solde restant (total_due - total_paid_after)
+    paid_at            timestamptz NOT NULL DEFAULT now(),
+    created_at         timestamptz NOT NULL DEFAULT now(),
+    CONSTRAINT receipts_school_receipt_no_uq UNIQUE (school_id, receipt_number),
+    CONSTRAINT receipts_school_year_seq_uq UNIQUE (school_id, school_year, sequence_number),
+    CONSTRAINT receipts_amount_chk CHECK (amount > 0)
+);
+
+CREATE INDEX idx_receipts_school_year ON receipts (school_id, school_year);
+CREATE INDEX idx_receipts_payment ON receipts (payment_id);
+CREATE INDEX idx_receipts_student ON receipts (student_id);
+
+-- Fonction Supabase PL/pgSQL : Génération atomique du numéro de quittance
+CREATE OR REPLACE FUNCTION generate_next_receipt_number(
+    p_school_id BIGINT,
+    p_school_year VARCHAR(20)
+)
+RETURNS TABLE (
+    receipt_number VARCHAR(60),
+    seq_number INTEGER,
+    school_code VARCHAR(30)
+)
+LANGUAGE plpgsql
+SECURITY DEFINER
+AS $$
+DECLARE
+    v_school_code VARCHAR(30);
+    v_next_val INTEGER;
+    v_formatted_num VARCHAR(60);
+BEGIN
+    -- 1. Récupération du code officiel de l'école
+    SELECT COALESCE(NULLIF(UPPER(TRIM(code)), ''), 'SCH' || p_school_id::TEXT)
+    INTO v_school_code
+    FROM schools
+    WHERE id = p_school_id;
+
+    IF v_school_code IS NULL THEN
+        v_school_code := 'SCH' || p_school_id::TEXT;
+    END IF;
+
+    -- 2. Incrémentation atomique avec verrouillage de ligne exclusif (ACID)
+    INSERT INTO receipt_sequences (school_id, school_year, current_val, updated_at)
+    VALUES (p_school_id, p_school_year, 1, now())
+    ON CONFLICT (school_id, school_year)
+    DO UPDATE SET 
+        current_val = receipt_sequences.current_val + 1,
+        updated_at = now()
+    RETURNING receipt_sequences.current_val INTO v_next_val;
+
+    -- 3. Formatage strict : CODE-ANNEE-NUMERO_6_CHIFFRES
+    v_formatted_num := v_school_code || '-' || p_school_year || '-' || LPAD(v_next_val::TEXT, 6, '0');
+
+    RETURN QUERY SELECT v_formatted_num, v_next_val, v_school_code;
+END;
+$$;
+
+-- =====================================================================
 -- 7. COMMUNICATION ET TRAÇABILITÉ
 -- =====================================================================
 

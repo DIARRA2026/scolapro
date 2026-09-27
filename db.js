@@ -141,6 +141,166 @@ function generateReference(prefix = 'REF') {
 }
 
 /**
+ * Convertit un entier en toutes lettres selon la grammaire française officielle.
+ * Gère les accords de pluriel de "vingt", "cent", l'invariabilité de "mille" et l'accord des "millions/milliards".
+ * @param {number} n
+ * @returns {string}
+ */
+function numberToFrenchWords(n) {
+  if (n === 0) return 'zéro';
+  if (n < 0) return 'moins ' + numberToFrenchWords(-n);
+
+  const units = ['', 'un', 'deux', 'trois', 'quatre', 'cinq', 'six', 'sept', 'huit', 'neuf'];
+  const teens = ['dix', 'onze', 'douze', 'treize', 'quatorze', 'quinze', 'seize', 'dix-sept', 'dix-huit', 'dix-neuf'];
+  const tens = ['', 'dix', 'vingt', 'trente', 'quarante', 'cinquante', 'soixante', 'soixante-dix', 'quatre-vingt', 'quatre-vingt-dix'];
+
+  function convertBelow1000(val, isEnd) {
+    let res = '';
+    const h = Math.floor(val / 100);
+    const rem = val % 100;
+
+    if (h > 0) {
+      if (h === 1) {
+        res += 'cent';
+      } else {
+        res += units[h] + (rem === 0 && isEnd ? ' cents' : ' cent');
+      }
+      if (rem > 0) res += ' ';
+    }
+
+    if (rem > 0) {
+      if (rem < 10) {
+        res += units[rem];
+      } else if (rem < 20) {
+        res += teens[rem - 10];
+      } else {
+        const t = Math.floor(rem / 10);
+        const u = rem % 10;
+
+        if (t === 7) {
+          if (u === 1) res += 'soixante et onze';
+          else res += 'soixante-' + teens[u];
+        } else if (t === 9) {
+          res += 'quatre-vingt-' + teens[u];
+        } else if (t === 8) {
+          if (u === 0) {
+            res += isEnd ? 'quatre-vingts' : 'quatre-vingt';
+          } else {
+            res += 'quatre-vingt-' + units[u];
+          }
+        } else {
+          if (u === 1) {
+            res += tens[t] + ' et un';
+          } else if (u > 1) {
+            res += tens[t] + '-' + units[u];
+          } else {
+            res += tens[t];
+          }
+        }
+      }
+    }
+    return res;
+  }
+
+  const chunks = [];
+  const scales = [
+    { value: 1000000000, singular: 'milliard', plural: 'milliards' },
+    { value: 1000000, singular: 'million', plural: 'millions' },
+    { value: 1000, singular: 'mille', plural: 'mille' },
+    { value: 1, singular: '', plural: '' }
+  ];
+
+  let remaining = n;
+  for (let i = 0; i < scales.length; i++) {
+    const scale = scales[i];
+    if (remaining >= scale.value) {
+      const count = Math.floor(remaining / scale.value);
+      remaining = remaining % scale.value;
+      const isEnd = remaining === 0;
+
+      if (scale.value === 1000) {
+        chunks.push(count === 1 ? 'mille' : convertBelow1000(count, false) + ' mille');
+      } else if (scale.value >= 1000000) {
+        const label = count > 1 ? scale.plural : scale.singular;
+        chunks.push(convertBelow1000(count, isEnd) + ' ' + label);
+      } else {
+        chunks.push(convertBelow1000(count, true));
+      }
+    }
+  }
+
+  return chunks.join(' ').trim();
+}
+
+/**
+ * Convertit un montant en FCFA en toutes lettres avec devise appropriée.
+ * Exemple: 150000 -> "Cent cinquante mille Francs CFA"
+ * @param {number|string} amount
+ * @returns {string}
+ */
+function numberToFrenchWordsFCFA(amount) {
+  const num = Math.round(Number(amount));
+  if (isNaN(num) || num <= 0) return 'Zéro Franc CFA';
+  const words = numberToFrenchWords(num);
+  const capitalized = words.charAt(0).toUpperCase() + words.slice(1);
+  const endsWithMillionOrMilliard = /(million|millions|milliard|milliards)$/i.test(words);
+  const prep = endsWithMillionOrMilliard ? 'de ' : '';
+  const currency = num === 1 ? 'Franc CFA' : 'Francs CFA';
+  return `${capitalized} ${prep}${currency}`;
+}
+
+/**
+ * Résout l'année scolaire académique standard (ex: '2026-2027').
+ * Bascule en août de chaque année.
+ * @param {Date|string} [date]
+ * @returns {string}
+ */
+function getCurrentAcademicYear(date = new Date()) {
+  const d = date instanceof Date ? date : new Date(date);
+  const year = d.getFullYear();
+  const month = d.getMonth() + 1;
+  if (month >= 8) {
+    return `${year}-${year + 1}`;
+  } else {
+    return `${year - 1}-${year}`;
+  }
+}
+
+/**
+ * Génère de manière atomique le numéro séquentiel unique de quittance.
+ * Format : CODE_ETABLISSEMENT-ANNEE_SCOLAIRE-NUMERO_SEQUENTIEL (6 chiffres, ex: M6-2026-2027-000123).
+ * Remise à zéro annuelle par établissement.
+ * @param {number} schoolId
+ * @param {string} schoolYear
+ * @param {string} schoolCode
+ * @returns {{ sequenceNumber: number, receiptNumber: string }}
+ */
+function getNextReceiptNumber(schoolId, schoolYear, schoolCode) {
+  const cleanYear = schoolYear || getCurrentAcademicYear();
+  let cleanCode = (schoolCode || `SCH${schoolId}`).toString().trim().toUpperCase().replace(/[^A-Z0-9_-]/g, '');
+  if (!cleanCode) cleanCode = `S${schoolId}`;
+
+  db.prepare(`
+    INSERT INTO receipt_sequences (school_id, school_year, current_val, updated_at)
+    VALUES (?, ?, 1, datetime('now'))
+    ON CONFLICT(school_id, school_year) DO UPDATE SET
+      current_val = receipt_sequences.current_val + 1,
+      updated_at = datetime('now')
+  `).run(schoolId, cleanYear);
+
+  const seqRow = db.prepare(`
+    SELECT current_val FROM receipt_sequences
+    WHERE school_id = ? AND school_year = ?
+  `).get(schoolId, cleanYear);
+
+  const seqNum = seqRow ? seqRow.current_val : 1;
+  const paddedSeq = String(seqNum).padStart(6, '0');
+  const receiptNumber = `${cleanCode}-${cleanYear}-${paddedSeq}`;
+
+  return { sequenceNumber: seqNum, receiptNumber };
+}
+
+/**
  * Retourne la liste des IDs d'écoles accessibles en lecture pour un utilisateur.
  * Retourne 'ALL' pour le Concepteur, ou une liste d'entiers. Aucun repli par défaut.
  * @param {object} user
@@ -309,6 +469,44 @@ function initSchema() {
       cash_desk TEXT,
       created_at TEXT NOT NULL DEFAULT (datetime('now'))
     );
+
+    -- 8.bis COMPTEURS SÉQUENTIELS & QUITTANCES DE PAIEMENT
+    CREATE TABLE IF NOT EXISTS receipt_sequences (
+      school_id INTEGER NOT NULL REFERENCES schools(id) ON DELETE CASCADE,
+      school_year TEXT NOT NULL,
+      current_val INTEGER NOT NULL DEFAULT 0,
+      updated_at TEXT NOT NULL DEFAULT (datetime('now')),
+      PRIMARY KEY (school_id, school_year)
+    );
+
+    CREATE TABLE IF NOT EXISTS receipts (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      school_id INTEGER NOT NULL REFERENCES schools(id) ON DELETE CASCADE,
+      payment_id INTEGER NOT NULL REFERENCES payments(id) ON DELETE CASCADE,
+      student_id INTEGER NOT NULL REFERENCES students(id) ON DELETE CASCADE,
+      school_code TEXT NOT NULL,
+      school_year TEXT NOT NULL,
+      sequence_number INTEGER NOT NULL,
+      receipt_number TEXT NOT NULL UNIQUE,
+      amount INTEGER NOT NULL,
+      amount_in_words TEXT NOT NULL,
+      payment_method TEXT NOT NULL DEFAULT 'ESPECES',
+      cashier_id INTEGER,
+      cashier_name TEXT NOT NULL,
+      student_name TEXT NOT NULL,
+      student_matricule TEXT NOT NULL,
+      student_class TEXT NOT NULL,
+      total_due INTEGER NOT NULL,
+      total_paid_before INTEGER NOT NULL,
+      total_paid_after INTEGER NOT NULL,
+      remaining_balance INTEGER NOT NULL,
+      paid_at TEXT NOT NULL DEFAULT (datetime('now')),
+      created_at TEXT NOT NULL DEFAULT (datetime('now')),
+      CONSTRAINT uq_receipt_seq UNIQUE (school_id, school_year, sequence_number)
+    );
+    CREATE INDEX IF NOT EXISTS idx_receipts_school_year ON receipts (school_id, school_year);
+    CREATE INDEX IF NOT EXISTS idx_receipts_payment ON receipts (payment_id);
+    CREATE INDEX IF NOT EXISTS idx_receipts_student ON receipts (student_id);
 
     -- 9. SESSIONS UTILISATEUR SERVEUR
     CREATE TABLE IF NOT EXISTS sessions (
@@ -1144,6 +1342,39 @@ function formatPayment(row) {
     cashierId: row.cashier_id,
     cashierName: row.cashier_name,
     cashDesk: row.cash_desk,
+    createdAt: row.created_at
+  };
+}
+
+function formatReceipt(row) {
+  if (!row) return null;
+  const amount = Number(row.amount || 0);
+  const remaining = Number(row.remaining_balance !== undefined ? row.remaining_balance : 0);
+  return {
+    id: row.id,
+    schoolId: row.school_id,
+    paymentId: row.payment_id,
+    studentId: row.student_id,
+    schoolCode: row.school_code,
+    schoolYear: row.school_year,
+    sequenceNumber: row.sequence_number,
+    receiptNumber: row.receipt_number,
+    ref: row.receipt_number,
+    amount,
+    amountFormatted: `${amount.toLocaleString('fr-FR').replace(/\s/g, ' ')} FCFA`,
+    amountInWords: row.amount_in_words,
+    paymentMethod: row.payment_method,
+    cashierId: row.cashier_id,
+    cashierName: row.cashier_name,
+    studentName: row.student_name,
+    studentMatricule: row.student_matricule,
+    studentClass: row.student_class,
+    totalDue: Number(row.total_due || 0),
+    totalPaidBefore: Number(row.total_paid_before || 0),
+    totalPaidAfter: Number(row.total_paid_after || 0),
+    remainingBalance: remaining,
+    remainingBalanceFormatted: `${remaining.toLocaleString('fr-FR').replace(/\s/g, ' ')} FCFA`,
+    paidAt: row.paid_at || row.created_at,
     createdAt: row.created_at
   };
 }
@@ -2671,8 +2902,8 @@ function recordPayment(user, data) {
     `).run(amount, deskId, st.schoolId);
     expectChanges(updateDesk, 1, "Échec de crédit de la caisse d'encaissement.");
 
-    // 3. Enregistrer la quittance de paiement
-    db.prepare(`
+    // 3. Enregistrer la transaction de paiement
+    const payInsert = db.prepare(`
       INSERT INTO payments (school_id, student_id, amount, payment_method, ref, cashier_id, cashier_name, cash_desk)
       VALUES (?, ?, ?, ?, ?, ?, ?, ?)
     `).run(
@@ -2685,31 +2916,196 @@ function recordPayment(user, data) {
       `${user.prenom} ${user.nom}`,
       deskId
     );
+    const paymentId = Number(payInsert.lastInsertRowid);
+
+    // 4. Numérotation séquentielle officielle et quittance atomique
+    const schoolRow = db.prepare('SELECT code, name, academic_year FROM schools WHERE id = ?').get(st.schoolId);
+    const schoolCode = (schoolRow && schoolRow.code) ? schoolRow.code.trim().toUpperCase() : `S${st.schoolId}`;
+    const schoolName = (schoolRow && schoolRow.name) ? schoolRow.name : 'Établissement Scolaire';
+    const schoolYear = (schoolRow && schoolRow.academic_year) ? schoolRow.academic_year : getCurrentAcademicYear();
+
+    const { sequenceNumber, receiptNumber } = getNextReceiptNumber(st.schoolId, schoolYear, schoolCode);
+
+    const totalDue = Number(st.feeTotal || 0);
+    const totalPaidBefore = Number(st.feePaid || 0);
+    const totalPaidAfter = totalPaidBefore + amount;
+    const remainingBalance = Math.max(0, totalDue - totalPaidAfter);
+    const amountInWords = numberToFrenchWordsFCFA(amount);
+
+    const receiptInsert = db.prepare(`
+      INSERT INTO receipts (
+        school_id, payment_id, student_id, school_code, school_year,
+        sequence_number, receipt_number, amount, amount_in_words,
+        payment_method, cashier_id, cashier_name, student_name,
+        student_matricule, student_class, total_due, total_paid_before,
+        total_paid_after, remaining_balance
+      ) VALUES (
+        ?, ?, ?, ?, ?,
+        ?, ?, ?, ?,
+        ?, ?, ?, ?,
+        ?, ?, ?, ?,
+        ?, ?
+      )
+    `).run(
+      st.schoolId,
+      paymentId,
+      studentId,
+      schoolCode,
+      schoolYear,
+      sequenceNumber,
+      receiptNumber,
+      amount,
+      amountInWords,
+      method,
+      user.id,
+      `${user.prenom} ${user.nom}`,
+      st.nomPrenom,
+      st.matricule,
+      st.classe || 'N/A',
+      totalDue,
+      totalPaidBefore,
+      totalPaidAfter,
+      remainingBalance
+    );
+    const receiptId = Number(receiptInsert.lastInsertRowid);
 
     addAuditLog(user, {
       action: 'PAYMENT_CONFIRM',
       module: 'Comptabilité',
       target: `Élève #${st.id} (${st.nomPrenom})`,
       oldVal: `${st.feePaid} XOF`,
-      newVal: `${st.feePaid + amount} XOF via ${method} (Réf: ${ref})`,
+      newVal: `${totalPaidAfter} XOF via ${method} (Quittance: ${receiptNumber}, Réf: ${ref})`,
       schoolId: st.schoolId
     });
+
+    const receiptData = {
+      id: receiptId,
+      ref, // Rétrocompatibilité : préfixe QUIT- attendu par tests existants
+      receiptNumber, // Numéro officiel séquentiel unique : CODE-ANNEE-NUMERO_6_CHIFFRES
+      sequenceNumber,
+      schoolId: st.schoolId,
+      schoolCode,
+      schoolName,
+      schoolYear,
+      amount,
+      amountFormatted: `${amount.toLocaleString('fr-FR').replace(/\s/g, ' ')} FCFA`,
+      amountInWords,
+      paymentMethod: method,
+      cashier: `${user.prenom} ${user.nom}`,
+      cashierId: user.id,
+      cashDesk: deskId,
+      studentId: st.id,
+      studentName: st.nomPrenom,
+      studentMatricule: st.matricule,
+      studentClass: st.classe || 'N/A',
+      totalDue,
+      totalPaidBefore,
+      totalPaidAfter,
+      remainingBalance,
+      remainingBalanceFormatted: `${remainingBalance.toLocaleString('fr-FR').replace(/\s/g, ' ')} FCFA`,
+      newBalance: totalPaidAfter,
+      paidAt: new Date().toISOString()
+    };
 
     return {
       student: getStudentById(studentId),
       cashDesks: getCashDesks(user),
       payment: db.prepare('SELECT * FROM payments WHERE ref = ?').get(ref),
-      receipt: {
-        ref,
-        amount,
-        paymentMethod: method,
-        cashier: `${user.prenom} ${user.nom}`,
-        studentId: st.id,
-        studentName: st.nomPrenom,
-        newBalance: st.feePaid + amount
-      }
+      receipt: receiptData
     };
   });
+}
+
+/**
+ * Recherche une quittance par son identifiant numérique ou son numéro officiel.
+ * @param {number|string} receiptId
+ * @param {object} user
+ * @returns {object|null}
+ */
+function getReceiptById(receiptId, user) {
+  let row = null;
+  const num = parseInt(receiptId, 10);
+  if (!isNaN(num) && num > 0) {
+    row = db.prepare('SELECT * FROM receipts WHERE id = ?').get(num);
+  }
+  if (!row) {
+    row = db.prepare('SELECT * FROM receipts WHERE receipt_number = ?').get(String(receiptId).trim());
+  }
+  if (!row) return null;
+
+  assertSchoolAccess(user, row.school_id, lookupSchool);
+  return formatReceipt(row);
+}
+
+/**
+ * Recherche la quittance associée à une transaction de paiement.
+ * @param {number|string} paymentId
+ * @param {object} user
+ * @returns {object|null}
+ */
+function getReceiptByPaymentId(paymentId, user) {
+  const pId = parseInt(paymentId, 10);
+  if (isNaN(pId) || pId <= 0) return null;
+  const row = db.prepare('SELECT * FROM receipts WHERE payment_id = ?').get(pId);
+  if (!row) return null;
+
+  assertSchoolAccess(user, row.school_id, lookupSchool);
+  return formatReceipt(row);
+}
+
+/**
+ * Récupère les quittances selon les droits d'accès de l'utilisateur avec pagination optionnelle.
+ * @param {object} user
+ * @param {object} [options]
+ * @returns {object[]}
+ */
+function getReceipts(user, options = {}) {
+  const allowed = readableSchoolIds(user);
+  if (allowed !== 'ALL' && allowed.length === 0) return [];
+
+  let query = 'SELECT * FROM receipts';
+  const params = [];
+  const conditions = [];
+
+  if (options.school_id || options.schoolId) {
+    const sId = parseInt(options.school_id || options.schoolId, 10);
+    assertSchoolAccess(user, sId, lookupSchool);
+    conditions.push('school_id = ?');
+    params.push(sId);
+  } else if (allowed !== 'ALL') {
+    conditions.push(`school_id IN (${allowed.map(() => '?').join(',')})`);
+    params.push(...allowed);
+  }
+
+  if (options.student_id || options.studentId) {
+    const stId = parseInt(options.student_id || options.studentId, 10);
+    conditions.push('student_id = ?');
+    params.push(stId);
+  }
+
+  if (options.school_year || options.schoolYear) {
+    conditions.push('school_year = ?');
+    params.push(String(options.school_year || options.schoolYear));
+  }
+
+  if (conditions.length > 0) {
+    query += ' WHERE ' + conditions.join(' AND ');
+  }
+
+  query += ' ORDER BY id DESC';
+
+  if (options.limit) {
+    const lim = Math.max(1, Math.min(500, parseInt(options.limit, 10) || 50));
+    query += ' LIMIT ?';
+    params.push(lim);
+    if (options.offset) {
+      const off = Math.max(0, parseInt(options.offset, 10) || 0);
+      query += ' OFFSET ?';
+      params.push(off);
+    }
+  }
+
+  return db.prepare(query).all(...params).map(formatReceipt);
 }
 
 // ---------------------------------------------------------------------
@@ -4024,5 +4420,12 @@ module.exports = {
   getImportBatches,
   getImportBatchById,
   reconcileAccountingBalances,
-  getSchoolDashboardStats
+  getSchoolDashboardStats,
+  getCurrentAcademicYear,
+  numberToFrenchWordsFCFA,
+  getNextReceiptNumber,
+  formatReceipt,
+  getReceiptById,
+  getReceiptByPaymentId,
+  getReceipts
 };
