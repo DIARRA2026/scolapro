@@ -632,9 +632,18 @@ const server = http.createServer(async (req, res) => {
 
     // Import par lot transactionnel d'élèves (Anti-doublons & multi-tenant)
     if (reqPath === '/api/students/import' && method === 'POST') {
-      const body = await readJsonBody(req);
-      const result = db.batchImportStudents(user, body);
-      return sendJson(res, 200, result);
+      try {
+        const body = await readJsonBody(req);
+        const result = db.batchImportStudents(user, body);
+        return sendJson(res, 200, result);
+      } catch (err) {
+        console.warn('Erreur /api/students/import:', err.message);
+        return sendJson(res, err instanceof AccessError ? err.status : 400, {
+          success: false,
+          error: err.message || "Erreur lors de l'importation.",
+          details: err.message
+        });
+      }
     }
 
     // Élèves

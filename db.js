@@ -1642,8 +1642,15 @@ function deleteStudent(user, id) {
  */
 function batchImportStudents(user, data) {
   assertPermission(user, 'students.create');
-  const targetSchoolId = resolveWriteSchoolId(user, data.schoolId || data.school_id, lookupSchool);
-  const rows = Array.isArray(data.students) ? data.students : [];
+  
+  let requestedSchoolId = data && (data.schoolId !== undefined && data.schoolId !== null && data.schoolId !== '' ? data.schoolId : data.school_id);
+  if (!requestedSchoolId && user && user.schoolId) requestedSchoolId = user.schoolId;
+  if (!requestedSchoolId && user && (user.role === 'concepteur' || user.role === 'fondateur')) {
+    const firstSchool = db.prepare('SELECT id FROM schools LIMIT 1').get();
+    requestedSchoolId = firstSchool ? firstSchool.id : 1;
+  }
+  const targetSchoolId = resolveWriteSchoolId(user, requestedSchoolId, lookupSchool);
+  const rows = Array.isArray(data && data.students) ? data.students : [];
 
   if (rows.length === 0) {
     throw new Error("Aucun élève fourni pour l'importation.");
@@ -1704,142 +1711,167 @@ function batchImportStudents(user, data) {
     WHERE id = ? AND school_id = ?
   `);
 
-  // Exécution 100% transactionnelle (Atomique : succès total ou rollback intégral)
+  // Exécution 100% transactionnelle (Atomique et résiliente)
   withTransaction(() => {
     for (let i = 0; i < rows.length; i++) {
       const item = rows[i];
       const rowNum = i + 1;
 
-      const rawNomPrenom = (item.nomPrenom || `${item.nom || ''} ${item.prenom || ''}`).trim();
-      if (!rawNomPrenom) {
-        summary.errors++;
-        details.push({
-          row: rowNum,
-          matricule: item.matricule || '—',
-          nomPrenom: '—',
-          status: 'error',
-          message: 'Nom et prénom obligatoires et manquants'
-        });
-        continue;
-      }
-      const nomPrenom = rawNomPrenom.toUpperCase();
-      const rawMatricule = item.matricule ? String(item.matricule).trim().toUpperCase() : '';
-      const dob = (item.dob || item.dateNaissance || '').trim();
-      const sexe = (item.sexe ? String(item.sexe).trim().toUpperCase() : 'M').startsWith('F') ? 'F' : 'M';
-      
-      const rawStatut = item.statut ? String(item.statut).trim().toUpperCase() : 'AFF';
-      const isNonAff = rawStatut.includes('NON') || rawStatut.includes('NAFF') || rawStatut === 'N';
-      const statut = isNonAff ? 'NON AFF' : 'AFF';
-      
-      const niveau = (item.niveau ? String(item.niveau).trim().toUpperCase() : '6EME') || '6EME';
-      const classe = (item.classe ? String(item.classe).trim().toUpperCase() : `${niveau} 1`) || `${niveau} 1`;
-      const feeDue = item.feeDue !== undefined ? parseAmount(item.feeDue, 5000000) : 120000;
-      const tuteur = (item.tuteur || '').trim();
-      const phone = (item.phone || '').trim();
-      const email = (item.email || '').trim();
+      try {
+        const rawNomPrenom = (item.nomPrenom || `${item.nom || ''} ${item.prenom || ''}`).trim();
+        if (!rawNomPrenom) {
+          summary.errors++;
+          details.push({
+            row: rowNum,
+            matricule: item.matricule || '—',
+            nomPrenom: '—',
+            classe: item.classe || '—',
+            status: 'error',
+            action: 'Nom et prénom obligatoires et manquants',
+            error: 'Nom et prénom manquants'
+          });
+          continue;
+        }
+        const nomPrenom = rawNomPrenom.toUpperCase();
+        const rawMatricule = item.matricule ? String(item.matricule).trim().toUpperCase() : '';
+        const dob = (item.dob || item.dateNaissance || '').trim();
+        const sexe = (item.sexe ? String(item.sexe).trim().toUpperCase() : 'M').startsWith('F') ? 'F' : 'M';
+        
+        const rawStatut = item.statut ? String(item.statut).trim().toUpperCase() : 'AFF';
+        const isNonAff = rawStatut.includes('NON') || rawStatut.includes('NAFF') || rawStatut === 'N';
+        const statut = isNonAff ? 'NON AFF' : 'AFF';
+        
+        const niveau = (item.niveau ? String(item.niveau).trim().toUpperCase() : '6EME') || '6EME';
+        const classe = (item.classe ? String(item.classe).trim().toUpperCase() : `${niveau} 1`) || `${niveau} 1`;
+        
+        // Parsing sécurisé sans crash des frais de scolarité
+        let feeDue = 120000;
+        if (item.feeDue !== undefined && item.feeDue !== null && item.feeDue !== '') {
+          const cleanFee = String(item.feeDue).replace(/\s+/g, '').replace(/XOF/gi, '').replace(/[^\d]/g, '');
+          const num = parseInt(cleanFee, 10);
+          if (!isNaN(num) && num >= 0 && num <= 50000000) {
+            feeDue = num;
+          }
+        }
 
-      // 1. Détection d'existence dans le tenant courant
-      let existing = null;
-      if (rawMatricule) {
-        existing = findByMatricule.get(targetSchoolId, rawMatricule);
-      }
-      if (!existing && dob) {
-        existing = findByNameAndDob.get(targetSchoolId, nomPrenom, dob, dob, dob);
-      }
-      if (!existing && !rawMatricule) {
-        existing = findByNameOnly.get(targetSchoolId, nomPrenom);
-      }
+        const tuteur = (item.tuteur || '').trim();
+        const phone = (item.phone || '').trim();
+        const email = (item.email || '').trim();
 
-      // 2. Gestion de l'élève existant : ne pas dupliquer, mettre à jour si changé ou ignorer
-      if (existing) {
-        const changes = [];
-        if (nomPrenom !== existing.nom_prenom) changes.push(`Nom : ${existing.nom_prenom} → ${nomPrenom}`);
-        if (sexe !== existing.sexe) changes.push(`Sexe : ${existing.sexe} → ${sexe}`);
-        if (statut !== existing.statut) changes.push(`Statut : ${existing.statut} → ${statut}`);
-        if (niveau !== existing.niveau) changes.push(`Niveau : ${existing.niveau} → ${niveau}`);
-        if (classe !== existing.classe) changes.push(`Classe : ${existing.classe} → ${classe}`);
-        if (feeDue !== existing.fee_due) changes.push(`Frais dus : ${existing.fee_due} → ${feeDue}`);
-        if (dob && dob !== existing.dob) changes.push(`Date naiss. : ${existing.dob || 'non renseignée'} → ${dob}`);
+        // 1. Détection d'existence dans le tenant courant
+        let existing = null;
+        if (rawMatricule) {
+          existing = findByMatricule.get(targetSchoolId, rawMatricule);
+        }
+        if (!existing && dob) {
+          existing = findByNameAndDob.get(targetSchoolId, nomPrenom, dob, dob, dob);
+        }
+        if (!existing && !rawMatricule) {
+          existing = findByNameOnly.get(targetSchoolId, nomPrenom);
+        }
 
-        if (changes.length > 0) {
-          updateStmt.run(
+        // 2. Gestion de l'élève existant : ne pas dupliquer, mettre à jour si changé ou ignorer
+        if (existing) {
+          const changes = [];
+          if (nomPrenom !== existing.nom_prenom) changes.push(`Nom : ${existing.nom_prenom} → ${nomPrenom}`);
+          if (sexe !== existing.sexe) changes.push(`Sexe : ${existing.sexe} → ${sexe}`);
+          if (statut !== existing.statut) changes.push(`Statut : ${existing.statut} → ${statut}`);
+          if (niveau !== existing.niveau) changes.push(`Niveau : ${existing.niveau} → ${niveau}`);
+          if (classe !== existing.classe) changes.push(`Classe : ${existing.classe} → ${classe}`);
+          if (feeDue !== existing.fee_due) changes.push(`Frais dus : ${existing.fee_due} → ${feeDue}`);
+          if (dob && dob !== existing.dob) changes.push(`Date naiss. : ${existing.dob || 'non renseignée'} → ${dob}`);
+
+          if (changes.length > 0) {
+            updateStmt.run(
+              nomPrenom,
+              sexe,
+              existing.red || '',
+              statut,
+              niveau,
+              classe,
+              feeDue,
+              dob, dob, dob,
+              tuteur, tuteur, tuteur,
+              phone, phone, phone,
+              email, email, email,
+              existing.id,
+              targetSchoolId
+            );
+            summary.updated++;
+            details.push({
+              row: rowNum,
+              matricule: existing.matricule,
+              nomPrenom: nomPrenom,
+              classe: classe,
+              status: 'updated',
+              action: `Mis à jour (${changes.join(', ')})`,
+              changes
+            });
+          } else {
+            summary.ignored++;
+            details.push({
+              row: rowNum,
+              matricule: existing.matricule,
+              nomPrenom: existing.nom_prenom,
+              classe: existing.classe,
+              status: 'ignored',
+              action: 'Élève déjà existant (données identiques, doublon ignoré)'
+            });
+          }
+        } else {
+          // 3. Insertion d'un nouvel élève
+          let finalMatricule = rawMatricule;
+          if (!finalMatricule) {
+            finalMatricule = `CI-2026-${Date.now().toString().slice(-6)}${i}`;
+          }
+          // Vérifier si le matricule est déjà pris dans ce tenant par une ligne précédente
+          const checkConflict = findByMatricule.get(targetSchoolId, finalMatricule);
+          if (checkConflict) {
+            finalMatricule = `${finalMatricule}-${Math.floor(100 + Math.random() * 900)}`;
+          }
+
+          insertStmt.run(
+            targetSchoolId,
+            finalMatricule,
             nomPrenom,
             sexe,
-            existing.red || '',
+            item.red || '',
             statut,
             niveau,
             classe,
             feeDue,
-            dob, dob, dob,
-            tuteur, tuteur, tuteur,
-            phone, phone, phone,
-            email, email, email,
-            existing.id,
-            targetSchoolId
+            parseFloat(item.noteDev || '10.0') || 10.0,
+            item.isAbsent ? 1 : 0,
+            parseInt(item.rank || '1', 10) || 1,
+            item.mention || 'Passable',
+            parseFloat(item.avg || '10.0') || 10.0,
+            tuteur,
+            phone,
+            email,
+            dob || null,
+            item.cashDesk || 'PRINCIPALE'
           );
-          summary.updated++;
+
+          summary.imported++;
           details.push({
             row: rowNum,
-            matricule: existing.matricule,
+            matricule: finalMatricule,
             nomPrenom: nomPrenom,
             classe: classe,
-            status: 'updated',
-            message: `Mis à jour (${changes.join(', ')})`,
-            changes
-          });
-        } else {
-          summary.ignored++;
-          details.push({
-            row: rowNum,
-            matricule: existing.matricule,
-            nomPrenom: existing.nom_prenom,
-            classe: existing.classe,
-            status: 'ignored',
-            message: 'Élève déjà existant (données identiques, doublon ignoré)'
+            status: 'imported',
+            action: 'Nouvel élève inscrit'
           });
         }
-      } else {
-        // 3. Insertion d'un nouvel élève
-        let finalMatricule = rawMatricule;
-        if (!finalMatricule) {
-          finalMatricule = `CI-2026-${Date.now().toString().slice(-6)}${i}`;
-        }
-        // Vérifier si le matricule est déjà pris dans ce tenant par une ligne précédente
-        const checkConflict = findByMatricule.get(targetSchoolId, finalMatricule);
-        if (checkConflict) {
-          finalMatricule = `${finalMatricule}-${Math.floor(100 + Math.random() * 900)}`;
-        }
-
-        insertStmt.run(
-          targetSchoolId,
-          finalMatricule,
-          nomPrenom,
-          sexe,
-          item.red || '',
-          statut,
-          niveau,
-          classe,
-          feeDue,
-          parseFloat(item.noteDev || '10.0'),
-          item.isAbsent ? 1 : 0,
-          parseInt(item.rank || '1', 10),
-          item.mention || 'Passable',
-          parseFloat(item.avg || '10.0'),
-          tuteur,
-          phone,
-          email,
-          dob || null,
-          item.cashDesk || 'PRINCIPALE'
-        );
-
-        summary.imported++;
+      } catch (rowErr) {
+        summary.errors++;
         details.push({
           row: rowNum,
-          matricule: finalMatricule,
-          nomPrenom: nomPrenom,
-          classe: classe,
-          status: 'imported',
-          message: 'Nouvel élève inscrit'
+          matricule: item.matricule || '—',
+          nomPrenom: item.nomPrenom || '—',
+          classe: item.classe || '—',
+          status: 'error',
+          action: 'Ligne en erreur ignorée',
+          error: rowErr.message || 'Données non valides'
         });
       }
     }

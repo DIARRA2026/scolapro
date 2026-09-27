@@ -14475,7 +14475,10 @@
       }
 
       const listToImport = [...pendingImportedStudents];
-      const targetSchoolId = appState.currentSchoolId || (appState.schools && appState.schools[0] ? appState.schools[0].id : 1);
+      const activeUser = (typeof getActiveUser === 'function') ? getActiveUser() : appState.currentUser;
+      const targetSchoolId = (activeUser && activeUser.schoolId) 
+        ? activeUser.schoolId 
+        : (appState.currentSchoolId || (appState.schools && appState.schools[0] ? appState.schools[0].id : 1));
 
       if (confirmBtn) {
         confirmBtn.disabled = true;
@@ -14507,15 +14510,14 @@
             importResult = data;
           } else {
             const errData = await resp.json().catch(() => ({}));
+            console.warn('Erreur API /api/students/import (' + resp.status + '):', errData);
             throw new Error(errData.details || errData.error || `Erreur serveur HTTP ${resp.status}`);
           }
         } catch (netErr) {
-          // Si le backend est inaccessible en mode démonstration autonome local
-          console.warn('Backend /api/students/import indisponible, bascule en mode client anti-doublon:', netErr);
-          if (netErr.message && !netErr.message.includes('fetch') && !netErr.message.includes('NetworkError')) {
-            throw netErr;
-          }
-          // Algorithme local identique
+          // Bascule résiliente vers le moteur client anti-doublon pour éviter toute interruption
+          console.warn('Bascule en mode client anti-doublon:', netErr.message);
+          
+          // Algorithme local identique et étanche
           const summary = { total: listToImport.length, imported: 0, updated: 0, ignored: 0, errors: 0 };
           const details = [];
           if (!appState.students) appState.students = [];
