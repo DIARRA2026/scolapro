@@ -1339,6 +1339,9 @@ function formatPayment(row) {
     amount: row.amount,
     paymentMethod: row.payment_method,
     ref: row.ref,
+    // Numéro officiel de quittance (lu depuis la table receipts via LEFT JOIN)
+    receiptNumber: row.receipt_number || row.ref || null,
+    receiptId: row.receipt_id || null,
     cashierId: row.cashier_id,
     cashierName: row.cashier_name,
     cashDesk: row.cash_desk,
@@ -1727,6 +1730,7 @@ function getStudentById(id) {
 
 /**
  * Lecture contrôlée d'un élève avec vérification d'accès multi-tenant.
+ * Retourne l'élève enrichi de ses infos d'école et de son historique de quittances.
  */
 function getStudentByIdScoped(user, id) {
   const sId = parseInt(id, 10);
@@ -1736,8 +1740,45 @@ function getStudentByIdScoped(user, id) {
 
   assertSchoolAccess(user, st.schoolId, lookupSchool);
   assertPermission(user, 'students.view');
-  return st;
+
+  // Enrichissement : informations de l'établissement
+  const schoolRow = db.prepare('SELECT id, name, code, academic_year, address, phone FROM schools WHERE id = ?').get(st.schoolId);
+  const schoolName = schoolRow ? schoolRow.name : null;
+  const schoolCode = schoolRow ? schoolRow.code : null;
+  const academicYear = schoolRow ? schoolRow.academic_year : null;
+
+  // Enrichissement : historique des paiements avec numéro de quittance officiel
+  const payments = db.prepare(`
+    SELECT p.id, p.amount, p.payment_method, p.ref, p.cash_desk, p.cashier_name, p.created_at,
+           r.id AS receipt_id, r.receipt_number, r.remaining_balance, r.total_paid_after, r.total_due
+    FROM payments p
+    LEFT JOIN receipts r ON r.payment_id = p.id
+    WHERE p.student_id = ?
+    ORDER BY p.id DESC
+  `).all(sId).map(row => ({
+    id: row.id,
+    amount: row.amount,
+    paymentMethod: row.payment_method,
+    ref: row.ref,
+    receiptNumber: row.receipt_number || row.ref || null,
+    receiptId: row.receipt_id || null,
+    cashDesk: row.cash_desk,
+    cashierName: row.cashier_name,
+    createdAt: row.created_at,
+    remainingBalance: row.remaining_balance,
+    totalPaidAfter: row.total_paid_after,
+    totalDue: row.total_due
+  }));
+
+  return {
+    ...st,
+    schoolName,
+    schoolCode,
+    academicYear,
+    payments
+  };
 }
+
 
 function createStudent(user, data) {
   assertPermission(user, 'students.create');
@@ -2818,9 +2859,11 @@ function getPayments(user, schoolId = null) {
   if (allowed !== 'ALL' && allowed.length === 0) return [];
 
   let query = `
-    SELECT p.*, s.nom_prenom, s.matricule, s.classe 
-    FROM payments p 
+    SELECT p.*, s.nom_prenom, s.matricule, s.classe,
+           r.id AS receipt_id, r.receipt_number
+    FROM payments p
     LEFT JOIN students s ON p.student_id = s.id
+    LEFT JOIN receipts r ON r.payment_id = p.id
   `;
   const params = [];
 
@@ -2837,6 +2880,7 @@ function getPayments(user, schoolId = null) {
   query += ' ORDER BY p.id DESC';
   return db.prepare(query).all(...params).map(formatPayment);
 }
+
 
 /**
  * Enregistre un encaissement d'écolage avec quittance officielle numérotée.

@@ -9135,7 +9135,107 @@
     </div>
   </div>
 
-    
+
+  <!-- ================================================================= -->
+  <!-- MODAL : FICHE DÉTAILLÉE ÉLÈVE                                     -->
+  <!-- ================================================================= -->
+  <div id="modal-student-detail" class="hidden fixed inset-0 bg-black/60 backdrop-blur-xs z-50 flex items-center justify-center p-3 sm:p-4 overflow-y-auto">
+    <div class="bg-white rounded-2xl shadow-2xl max-w-2xl w-full border border-slate-200 overflow-hidden my-6">
+
+      <!-- En-tête avec statut AFF/NAFF -->
+      <div id="sdm-header" class="bg-gradient-to-r from-slate-950 via-slate-900 to-indigo-950 text-white p-5 flex items-center justify-between border-b border-indigo-500/20">
+        <div class="flex items-center gap-3">
+          <div id="sdm-initials" class="w-12 h-12 rounded-xl bg-gradient-to-br from-amber-400 to-amber-600 text-slate-950 font-black text-lg flex items-center justify-center shadow">
+            --
+          </div>
+          <div>
+            <div class="flex items-center gap-2">
+              <h3 id="sdm-name" class="font-black text-base text-white">Chargement…</h3>
+              <span id="sdm-statut-badge" class="px-2 py-0.5 rounded text-[10px] font-bold bg-emerald-500 text-white">AFF</span>
+            </div>
+            <p id="sdm-matricule" class="text-slate-400 text-xs font-mono mt-0.5"></p>
+          </div>
+        </div>
+        <button onclick="closeStudentDetailModal()" class="text-slate-400 hover:text-white text-2xl font-bold transition cursor-pointer">×</button>
+      </div>
+
+      <!-- Corps -->
+      <div class="p-5 space-y-5 max-h-[75vh] overflow-y-auto">
+
+        <!-- Identité & Contact -->
+        <div>
+          <h4 class="text-[10px] font-black uppercase tracking-widest text-slate-500 mb-2">Identité & Contact</h4>
+          <div class="grid grid-cols-2 gap-3 text-xs">
+            <div><span class="text-slate-400 block">Date de naissance</span><span id="sdm-dob" class="font-semibold text-slate-800">—</span></div>
+            <div><span class="text-slate-400 block">Sexe</span><span id="sdm-sexe" class="font-semibold text-slate-800">—</span></div>
+            <div><span class="text-slate-400 block">Tuteur / Parent</span><span id="sdm-tuteur" class="font-semibold text-slate-800">—</span></div>
+            <div><span class="text-slate-400 block">Contact</span><span id="sdm-phone" class="font-semibold text-slate-800">—</span></div>
+            <div><span class="text-slate-400 block">Email</span><span id="sdm-email" class="font-semibold text-slate-800">—</span></div>
+          </div>
+        </div>
+
+        <hr class="border-slate-100">
+
+        <!-- Scolarité -->
+        <div>
+          <h4 class="text-[10px] font-black uppercase tracking-widest text-slate-500 mb-2">Scolarité & Pédagogie</h4>
+          <div class="grid grid-cols-2 gap-3 text-xs">
+            <div><span class="text-slate-400 block">Établissement</span><span id="sdm-school" class="font-semibold text-slate-800">—</span></div>
+            <div><span class="text-slate-400 block">Année scolaire</span><span id="sdm-year" class="font-semibold text-slate-800">—</span></div>
+            <div><span class="text-slate-400 block">Niveau</span><span id="sdm-niveau" class="font-semibold text-slate-800">—</span></div>
+            <div><span class="text-slate-400 block">Classe</span><span id="sdm-classe" class="font-semibold text-slate-800">—</span></div>
+            <div><span class="text-slate-400 block">Redoublant</span><span id="sdm-red" class="font-semibold text-slate-800">—</span></div>
+            <div><span class="text-slate-400 block">Caisse affectée</span><span id="sdm-cashdesk" class="font-semibold text-slate-800">—</span></div>
+          </div>
+        </div>
+
+        <hr class="border-slate-100">
+
+        <!-- Situation financière -->
+        <div>
+          <h4 class="text-[10px] font-black uppercase tracking-widest text-slate-500 mb-2">Situation Financière</h4>
+          <div class="grid grid-cols-3 gap-3">
+            <div class="bg-slate-50 rounded-xl p-3 text-center border border-slate-200">
+              <span class="text-[10px] text-slate-500 block font-bold uppercase">Total exigible</span>
+              <span id="sdm-fee-due" class="text-lg font-black text-slate-800 block mt-1">— XOF</span>
+            </div>
+            <div class="bg-emerald-50 rounded-xl p-3 text-center border border-emerald-200">
+              <span class="text-[10px] text-emerald-600 block font-bold uppercase">Déjà payé</span>
+              <span id="sdm-fee-paid" class="text-lg font-black text-emerald-700 block mt-1">— XOF</span>
+            </div>
+            <div id="sdm-balance-box" class="bg-red-50 rounded-xl p-3 text-center border border-red-200">
+              <span class="text-[10px] text-red-500 block font-bold uppercase">Reste dû</span>
+              <span id="sdm-fee-balance" class="text-lg font-black text-red-600 block mt-1">— XOF</span>
+            </div>
+          </div>
+          <div class="mt-2 text-center">
+            <button id="sdm-pay-btn" onclick="payForCurrentStudent()" class="hidden px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-black shadow transition">
+              💰 Enregistrer un paiement
+            </button>
+          </div>
+        </div>
+
+        <hr class="border-slate-100">
+
+        <!-- Historique des quittances -->
+        <div>
+          <h4 class="text-[10px] font-black uppercase tracking-widest text-slate-500 mb-2">Historique des Quittances</h4>
+          <div id="sdm-receipts-list" class="space-y-2">
+            <p class="text-xs text-slate-400 italic text-center py-3">Aucune quittance enregistrée.</p>
+          </div>
+        </div>
+
+      </div>
+
+      <!-- Pied de modal -->
+      <div class="bg-slate-50 px-5 py-3 border-t border-slate-200 flex justify-end gap-2 print:hidden">
+        <button type="button" onclick="closeStudentDetailModal()" class="px-4 py-2 border border-slate-300 rounded-xl text-slate-700 hover:bg-slate-100 text-xs font-bold transition cursor-pointer">
+          Fermer
+        </button>
+      </div>
+    </div>
+  </div>
+
   <!-- ================================================================= -->
   <!-- MODAL : PROFIL OPÉRATEUR & SESSION ACTIVE SÉCURISÉE              -->
   <!-- ================================================================= -->
@@ -11782,10 +11882,10 @@
           const tr = document.createElement('tr');
           tr.className = "hover:bg-slate-50 transition border-b border-slate-100";
           tr.innerHTML = `
-            <td class="py-2 px-3 font-mono font-bold text-slate-700">${esc(p.ref)}</td>
+            <td class="py-2 px-3 font-mono font-bold text-slate-700">${esc(p.receiptNumber || p.ref)}</td>
             <td class="py-2 px-3"><span class="px-1.5 py-0.2 rounded text-[10px] font-bold ${p.cashDesk === 'PRINCIPALE' ? 'bg-emerald-100 text-emerald-800' : 'bg-sky-100 text-sky-800'}">${p.cashDesk === 'PRINCIPALE' ? 'Caisse Centrale' : p.cashDesk}</span></td>
-            <td class="py-2 px-3 font-bold text-slate-800">${p.studentName || 'Élève #' + p.studentId}</td>
-            <td class="py-2 px-3 text-slate-600">${esc(p.studentClasse || '—')}</td>
+            <td class="py-2 px-3 font-bold text-slate-800"><button onclick="openStudentDetailModal(${escJs(p.studentId)})" class="hover:text-indigo-700 hover:underline text-left transition">${esc(p.studentName || 'Élève #' + p.studentId)}</button></td>
+            <td class="py-2 px-3 text-slate-600">${esc(p.studentClasse || p.classe || '—')}</td>
             <td class="py-2 px-3 text-slate-600">${esc(p.cashierName || 'Caissier')}</td>
             <td class="py-2 px-3 text-right font-mono font-bold text-emerald-700">${(p.amount || 0).toLocaleString()} XOF</td>
             <td class="py-2 px-3 text-center font-semibold text-[10px]">${esc(p.paymentMethod || 'ESPECES')}</td>
@@ -11970,9 +12070,9 @@
         const tr = document.createElement('tr');
         tr.className = "hover:bg-slate-50 border-b border-slate-100";
         tr.innerHTML = `
-          <td class="py-2 px-3 font-mono font-bold text-sky-900">${esc(p.ref)}</td>
-          <td class="py-2 px-3 font-bold text-slate-800">${p.studentName || 'Élève #' + p.studentId}</td>
-          <td class="py-2 px-3 text-slate-600">${esc(p.studentClasse || '—')}</td>
+          <td class="py-2 px-3 font-mono font-bold text-sky-900">${esc(p.receiptNumber || p.ref)}</td>
+          <td class="py-2 px-3 font-bold text-slate-800"><button onclick="openStudentDetailModal(${escJs(p.studentId)})" class="hover:text-indigo-700 hover:underline text-left transition">${esc(p.studentName || 'Élève #' + p.studentId)}</button></td>
+          <td class="py-2 px-3 text-slate-600">${esc(p.studentClasse || p.classe || '—')}</td>
           <td class="py-2 px-3 text-right font-mono font-black text-emerald-700">${(p.amount || 0).toLocaleString()} XOF</td>
           <td class="py-2 px-3 text-center text-[10px] font-bold">${esc(p.paymentMethod || 'ESPECES')}</td>
           <td class="py-2 px-3 text-center text-slate-400 font-mono text-[10px]">${p.createdAt ? p.createdAt.split(' ')[0] : 'Aujourd\'hui'}</td>
@@ -13638,9 +13738,9 @@
         tr.className = "hover:bg-slate-50 border-b border-slate-100";
         tr.innerHTML = `
           <td class="p-2.5 font-mono text-slate-500">${p.createdAt || new Date().toLocaleDateString('fr-FR')}</td>
-          <td class="p-2.5 font-mono font-bold text-slate-800">${p.ref || `RC-2026-${String(idx + 1).padStart(4, '0')}`}</td>
+          <td class="p-2.5 font-mono font-bold text-slate-800">${esc(p.receiptNumber || p.ref || `RC-2026-${String(idx + 1).padStart(4, '0')}`)}</td>
           <td class="p-2.5">${p.cashDesk === 'PRINCIPALE' ? 'Caisse Principale' : (p.cashDesk || 'Caisse Principale')}</td>
-          <td class="p-2.5 font-bold text-slate-800">${p.studentName || 'Élève #' + p.studentId}</td>
+          <td class="p-2.5 font-bold text-slate-800"><button onclick="openStudentDetailModal(${escJs(p.studentId)})" class="hover:text-indigo-700 hover:underline text-left transition">${esc(p.studentName || 'Élève #' + p.studentId)}</button></td>
           <td class="p-2.5 text-slate-600">${esc(p.cashierName || 'Caissier')}</td>
           <td class="p-2.5 text-right font-mono font-bold text-emerald-600">${(p.amount || 0).toLocaleString()} XOF</td>
           <td class="p-2.5 text-center"><span class="px-2 py-0.5 bg-slate-100 rounded text-[10px] font-bold">${esc(p.paymentMethod || 'ESPECES')}</span></td>
@@ -14022,7 +14122,7 @@
 
         tr.innerHTML = `
           <td class="py-2.5 px-3 text-center text-slate-500 font-medium">${startIndex + idx + 1}</td>
-          <td class="py-2.5 px-4 font-semibold text-slate-800">${esc(st.nomPrenom)}</td>
+          <td class="py-2.5 px-4 font-semibold text-slate-800"><button onclick="openStudentDetailModal(${escJs(st.id)})" class="hover:text-indigo-700 hover:underline text-left transition">${esc(st.nomPrenom)}</button></td>
           <td class="py-2.5 px-4 font-mono text-slate-500 font-medium">${esc(st.matricule)}</td>
           <td class="py-2.5 px-3 text-center">${sexeBadge}</td>
           <td class="py-2.5 px-3 text-center font-bold text-slate-600">${esc(st.red || '')}</td>
@@ -15905,7 +16005,7 @@
         tr.className = "hover:bg-slate-50";
         tr.innerHTML = `
           <td class="py-2.5 px-3 font-mono text-slate-500">${esc(st.matricule)}</td>
-          <td class="py-2.5 px-4 font-semibold text-slate-800">${esc(st.nomPrenom)}</td>
+          <td class="py-2.5 px-4 font-semibold text-slate-800"><button onclick="openStudentDetailModal(${escJs(st.id)})" class="hover:text-indigo-700 hover:underline text-left transition">${esc(st.nomPrenom)}</button></td>
           <td class="py-2.5 px-3 text-center font-medium text-slate-600">${esc(st.classe)}</td>
           <td class="py-2.5 px-3 text-right font-mono font-semibold">${st.feeDue.toLocaleString()}</td>
           <td class="py-2.5 px-3 text-right font-mono font-bold text-emerald-600">${st.feePaid.toLocaleString()}</td>
@@ -24036,6 +24136,209 @@ document.addEventListener('keydown', function(e) {
     closeStudentAISynthesis();
   }
 });
+
+    // ─────────────────────────────────────────────────────────────────────────
+    // FICHE DÉTAILLÉE ÉLÈVE — Modal #modal-student-detail
+    // ─────────────────────────────────────────────────────────────────────────
+
+    /** ID de l'élève courant dans la modale (pour le bouton "Enregistrer un paiement") */
+    let _sdmCurrentStudentId = null;
+
+    /**
+     * Ouvre la modale de détail élève et charge les données via l'API /api/students/:id.
+     * Applique le RBAC côté serveur — refus 403 si périmètre incompatible.
+     * @param {number|string} studentId
+     */
+    async function openStudentDetailModal(studentId) {
+      if (!studentId) return;
+      _sdmCurrentStudentId = null;
+
+      const modal = document.getElementById('modal-student-detail');
+      if (!modal) return;
+
+      // Réinitialiser l'affichage
+      const setTxt = (id, val) => { const el = document.getElementById(id); if (el) el.textContent = val; };
+      setTxt('sdm-name', 'Chargement…');
+      setTxt('sdm-matricule', '');
+      setTxt('sdm-dob', '—');
+      setTxt('sdm-sexe', '—');
+      setTxt('sdm-tuteur', '—');
+      setTxt('sdm-phone', '—');
+      setTxt('sdm-email', '—');
+      setTxt('sdm-school', '—');
+      setTxt('sdm-year', '—');
+      setTxt('sdm-niveau', '—');
+      setTxt('sdm-classe', '—');
+      setTxt('sdm-red', '—');
+      setTxt('sdm-cashdesk', '—');
+      setTxt('sdm-fee-due', '— XOF');
+      setTxt('sdm-fee-paid', '— XOF');
+      setTxt('sdm-fee-balance', '— XOF');
+      const initEl = document.getElementById('sdm-initials');
+      if (initEl) initEl.textContent = '--';
+      const receiptsEl = document.getElementById('sdm-receipts-list');
+      if (receiptsEl) receiptsEl.innerHTML = '<p class="text-xs text-slate-400 italic text-center py-3">Chargement des quittances…</p>';
+      const payBtn = document.getElementById('sdm-pay-btn');
+      if (payBtn) payBtn.classList.add('hidden');
+
+      modal.classList.remove('hidden');
+
+      try {
+        const resp = await fetch(`/api/students/${encodeURIComponent(studentId)}`, { credentials: 'same-origin' });
+        if (resp.status === 403) {
+          if (receiptsEl) receiptsEl.innerHTML = '<p class="text-xs text-red-500 font-bold text-center py-3">⛔ Accès refusé : périmètre insuffisant.</p>';
+          setTxt('sdm-name', 'Accès refusé');
+          return;
+        }
+        if (!resp.ok) {
+          if (receiptsEl) receiptsEl.innerHTML = '<p class="text-xs text-red-400 italic text-center py-3">Erreur lors du chargement.</p>';
+          setTxt('sdm-name', 'Élève introuvable');
+          return;
+        }
+        const st = await resp.json();
+
+        _sdmCurrentStudentId = st.id;
+
+        // En-tête
+        const nameParts = (st.nomPrenom || '').trim().split(' ');
+        const initials = nameParts.length >= 2
+          ? (nameParts[0][0] + nameParts[1][0]).toUpperCase()
+          : (st.nomPrenom || '--').substring(0, 2).toUpperCase();
+        if (initEl) initEl.textContent = initials;
+
+        setTxt('sdm-name', st.nomPrenom || '—');
+        setTxt('sdm-matricule', st.matricule || '—');
+
+        // Badge AFF / NAFF
+        const badge = document.getElementById('sdm-statut-badge');
+        if (badge) {
+          const isAff = (st.statut || '').toUpperCase() === 'AFF';
+          badge.textContent = isAff ? 'Affecté (AFF)' : 'Non affecté (NAFF)';
+          badge.className = `px-2 py-0.5 rounded text-[10px] font-bold ${isAff ? 'bg-emerald-500 text-white' : 'bg-amber-400 text-amber-950'}`;
+        }
+
+        // Identité
+        const formatDob = (dob) => {
+          if (!dob) return '—';
+          try {
+            const d = new Date(dob);
+            if (isNaN(d.getTime())) return dob;
+            return d.toLocaleDateString('fr-FR', { day: '2-digit', month: 'long', year: 'numeric' });
+          } catch (_) { return dob; }
+        };
+        setTxt('sdm-dob', formatDob(st.dob || st.dateNaissance));
+        setTxt('sdm-sexe', st.sexe === 'F' ? 'Féminin' : st.sexe === 'M' ? 'Masculin' : '—');
+        setTxt('sdm-tuteur', st.tuteur || '—');
+        setTxt('sdm-phone', st.phone || '—');
+        setTxt('sdm-email', st.email || '—');
+
+        // Scolarité
+        setTxt('sdm-school', st.schoolName || `Établissement #${st.schoolId}`);
+        setTxt('sdm-year', st.academicYear || '—');
+        setTxt('sdm-niveau', st.niveau || '—');
+        setTxt('sdm-classe', st.classe || '—');
+        setTxt('sdm-red', st.red ? 'Oui (' + st.red + ')' : 'Non');
+        setTxt('sdm-cashdesk', st.cashDesk === 'PRINCIPALE' ? 'Caisse Principale' : (st.cashDesk || '—'));
+
+        // Situation financière
+        const feeDue = Number(st.feeDue || st.fee_due || 0);
+        const feePaid = Number(st.feePaid || st.fee_paid || 0);
+        const feeBalance = Math.max(0, feeDue - feePaid);
+        setTxt('sdm-fee-due', `${feeDue.toLocaleString('fr-FR')} XOF`);
+        setTxt('sdm-fee-paid', `${feePaid.toLocaleString('fr-FR')} XOF`);
+        setTxt('sdm-fee-balance', `${feeBalance.toLocaleString('fr-FR')} XOF`);
+
+        const balBox = document.getElementById('sdm-balance-box');
+        if (balBox) {
+          if (feeBalance === 0) {
+            balBox.className = 'bg-emerald-50 rounded-xl p-3 text-center border border-emerald-200';
+            const balLabel = balBox.querySelector('span:first-child');
+            const balVal = document.getElementById('sdm-fee-balance');
+            if (balLabel) balLabel.className = 'text-[10px] text-emerald-600 block font-bold uppercase';
+            if (balVal) balVal.className = 'text-lg font-black text-emerald-700 block mt-1';
+          } else {
+            balBox.className = 'bg-red-50 rounded-xl p-3 text-center border border-red-200';
+          }
+        }
+
+        // Bouton paiement si solde restant
+        if (payBtn) {
+          if (feeBalance > 0 && hasPerm('payments.create')) {
+            payBtn.classList.remove('hidden');
+          } else {
+            payBtn.classList.add('hidden');
+          }
+        }
+
+        // Historique des quittances
+        const payments = Array.isArray(st.payments) ? st.payments : [];
+        if (receiptsEl) {
+          if (payments.length === 0) {
+            receiptsEl.innerHTML = '<p class="text-xs text-slate-400 italic text-center py-3">Aucune quittance enregistrée pour cet élève.</p>';
+          } else {
+            receiptsEl.innerHTML = payments.map(p => `
+              <div class="flex items-center justify-between bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 text-xs">
+                <div>
+                  <span class="font-mono font-black text-indigo-700">${esc(p.receiptNumber || p.ref || '—')}</span>
+                  <span class="text-slate-400 ml-2">${p.createdAt ? p.createdAt.split(' ')[0] : '—'}</span>
+                </div>
+                <div class="flex items-center gap-3">
+                  <span class="font-bold text-emerald-700">${Number(p.amount || 0).toLocaleString('fr-FR')} XOF</span>
+                  ${p.receiptId ? `<button onclick="closeStudentDetailModal(); printReceiptById(${escJs(p.receiptId)})" class="text-indigo-600 hover:underline font-bold text-[10px]">📄 Réimprimer</button>` : ''}
+                </div>
+              </div>
+            `).join('');
+          }
+        }
+
+      } catch (err) {
+        console.error('openStudentDetailModal:', err);
+        if (receiptsEl) receiptsEl.innerHTML = '<p class="text-xs text-red-400 italic text-center py-3">Erreur réseau.</p>';
+      }
+    }
+
+    /** Ferme la modale de détail élève. */
+    function closeStudentDetailModal() {
+      const modal = document.getElementById('modal-student-detail');
+      if (modal) modal.classList.add('hidden');
+      _sdmCurrentStudentId = null;
+    }
+
+    /**
+     * Ouvre la modale de paiement pré-remplie avec l'élève affiché dans la modale de détail.
+     * Ferme la modale de détail, puis ouvre la modale de paiement standard.
+     */
+    function payForCurrentStudent() {
+      if (!_sdmCurrentStudentId) return;
+      const stId = _sdmCurrentStudentId;
+      closeStudentDetailModal();
+      // Ouvre la modale de paiement standard avec cet élève pré-sélectionné
+      if (typeof openPaymentModal === 'function') {
+        openPaymentModal(stId);
+      }
+    }
+
+    /**
+     * Réimprime une quittance par son ID de receipt.
+     * @param {number} receiptId
+     */
+    async function printReceiptById(receiptId) {
+      if (!receiptId) return;
+      try {
+        const resp = await fetch(`/api/receipts/${encodeURIComponent(receiptId)}`, { credentials: 'same-origin' });
+        if (!resp.ok) { showToast('Quittance introuvable.'); return; }
+        const receipt = await resp.json();
+        // Déléguer à la fonction d'impression existante si disponible
+        if (typeof printReceiptData === 'function') {
+          printReceiptData(receipt);
+        } else if (typeof printReceipt === 'function') {
+          printReceipt(receipt.studentId);
+        }
+      } catch (err) {
+        console.error('printReceiptById:', err);
+        showToast('Erreur lors de la réimpression.');
+      }
+    }
 
 </script>
 </body>
