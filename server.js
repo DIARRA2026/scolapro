@@ -623,6 +623,20 @@ const server = http.createServer(async (req, res) => {
       return sendJson(res, 200, { success: true, forecast });
     }
 
+    // Statistiques en temps réel du Tableau de bord & Synthèse Comptable
+    if ((reqPath === '/api/dashboard/stats' || reqPath === '/api/finance/summary') && method === 'GET') {
+      const sId = queryParams.school_id || queryParams.schoolId || user.schoolId || (user.role === 'concepteur' ? 1 : null);
+      if (!sId) return sendError(res, new Error("Identifiant d'établissement requis."), 400);
+      return sendJson(res, 200, db.getSchoolDashboardStats(user, sId));
+    }
+
+    // Import par lot transactionnel d'élèves (Anti-doublons & multi-tenant)
+    if (reqPath === '/api/students/import' && method === 'POST') {
+      const body = await readJsonBody(req);
+      const result = db.batchImportStudents(user, body);
+      return sendJson(res, 200, result);
+    }
+
     // Élèves
     if (reqPath === '/api/students') {
       if (method === 'GET') {

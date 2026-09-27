@@ -698,5 +698,247 @@ test('AUTH-CODE-18 : Confirmation de l\'importation des élèves fiabilisée (AP
   assert.strictEqual(dbStudent.school_id, 1);
 });
 
+test('AUTH-CODE-19 : Importation transactionnelle multi-tenant anti-doublon, rapport d\'import et cohérence dashboard/comptabilité', async () => {
+  const adminLogin = await loginUser(baseUrl, TEST_USERS.concepteur, TEST_PASSWORD);
+  assert.strictEqual(adminLogin.statusCode, 200);
+
+  // 1. Créer une nouvelle école dédiée pour le test d'importation étanche
+  const testSchoolCode = 'SCH-IMP-' + Math.floor(Math.random() * 90000 + 10000);
+  const schoolRes = await makeRequest(baseUrl, {
+    path: '/api/schools',
+    method: 'POST',
+    headers: { cookie: adminLogin.cookie }
+  }, {
+    name: 'Groupe Scolaire Anti Doublon ' + testSchoolCode,
+    code: testSchoolCode,
+    directorPassword: 'AdminSchoolTest2026!'
+  });
+  assert.strictEqual(schoolRes.statusCode, 201);
+  const testSchoolId = schoolRes.json.school ? schoolRes.json.school.id : schoolRes.json.id;
+  assert.ok(testSchoolId, 'L\'école de test doit être créée avec un ID');
+
+  // 2. Préparer un lot de 4 élèves avec matricule et dates de naissance
+  const batchStudents = [
+    {
+      matricule: 'MAT-TEST-001',
+      nomPrenom: 'TRAORE MAMADOU',
+      sexe: 'M',
+      statut: 'AFF',
+      niveau: '6EME',
+      classe: '6EME A',
+      dob: '2012-05-15',
+      feeDue: 150000
+    },
+    {
+      matricule: 'MAT-TEST-002',
+      nomPrenom: 'KOUAME AMOIN GRACE',
+      sexe: 'F',
+      statut: 'NAFF',
+      niveau: '6EME',
+      classe: '6EME B',
+      dob: '2012-08-22',
+      feeDue: 180000
+    },
+    {
+      matricule: 'MAT-TEST-003',
+      nomPrenom: 'DIALLO IBRAHIMA',
+      sexe: 'M',
+      statut: 'AFF',
+      niveau: '5EME',
+      classe: '5EME 1',
+      dob: '2011-02-10',
+      feeDue: 160000
+    },
+    {
+      // Sans matricule initial, identification par nom_prenom + dob
+      matricule: '',
+      nomPrenom: 'BAH FATIMATA',
+      sexe: 'F',
+      statut: 'AFF',
+      niveau: '4EME',
+      classe: '4EME 2',
+      dob: '2010-11-30',
+      feeDue: 175000
+    }
+  ];
+
+  // PREMIER IMPORT : Les 4 élèves doivent être créés avec succès
+  const firstImportRes = await makeRequest(baseUrl, {
+    path: '/api/students/import',
+    method: 'POST',
+    headers: { cookie: adminLogin.cookie }
+  }, {
+    schoolId: testSchoolId,
+    students: batchStudents
+  });
+
+  assert.strictEqual(firstImportRes.statusCode, 200, 'Le premier import doit réussir');
+  assert.strictEqual(firstImportRes.json.success, true);
+  assert.strictEqual(firstImportRes.json.summary.imported, 4, '4 nouveaux élèves doivent être importés');
+  assert.strictEqual(firstImportRes.json.summary.updated, 0);
+  assert.strictEqual(firstImportRes.json.summary.ignored, 0);
+  assert.strictEqual(firstImportRes.json.summary.errors, 0);
+  assert.strictEqual(firstImportRes.json.details.length, 4, 'Le rapport doit détailler chaque élève');
+
+  // Vérifier en base : exactement 4 élèves dans cette école
+  const countAfterFirst = db.db.prepare('SELECT COUNT(*) as count FROM students WHERE school_id = ?').get(testSchoolId).count;
+  assert.strictEqual(countAfterFirst, 4, 'La base doit contenir exactement 4 élèves');
+
+  // DEUXIÈME IMPORT : Ré-importation du MÊME fichier exact
+  // DOIT GÉNÉRER STRICTEMENT 0 DOUBLON : 4 ignorés
+  const secondImportRes = await makeRequest(baseUrl, {
+    path: '/api/students/import',
+    method: 'POST',
+    headers: { cookie: adminLogin.cookie }
+  }, {
+    schoolId: testSchoolId,
+    students: batchStudents
+  });
+
+  assert.strictEqual(secondImportRes.statusCode, 200, 'Le second import doit réussir sans erreur');
+  assert.strictEqual(secondImportRes.json.summary.imported, 0, 'Zéro doublon créé lors du second import');
+  assert.strictEqual(secondImportRes.json.summary.updated, 0, 'Aucune mise à jour car données identiques');
+  assert.strictEqual(secondImportRes.json.summary.ignored, 4, 'Les 4 élèves existants doivent être ignorés');
+  assert.strictEqual(secondImportRes.json.summary.errors, 0);
+
+  // Vérifier en base : toujours STRICTEMENT 4 élèves
+  const countAfterSecond = db.db.prepare('SELECT COUNT(*) as count FROM students WHERE school_id = ?').get(testSchoolId).count;
+  assert.strictEqual(countAfterSecond, 4, 'La base doit TOUJOURS contenir 4 élèves sans aucun doublon');
+
+  // TROISIÈME IMPORT : 1 élève modifié (changement de classe), 1 nouvel élève, et les autres identiques
+  const modifiedBatch = [
+    { ...batchStudents[0], classe: '6EME EXCELLENCE' }, // Modifié
+    batchStudents[1], // Identique (ignoré)
+    batchStudents[2], // Identique (ignoré)
+    batchStudents[3], // Identique (ignoré)
+    {
+      matricule: 'MAT-TEST-005',
+      nomPrenom: 'SORO GNENEMA',
+      sexe: 'M',
+      statut: 'AFF',
+      niveau: '3EME',
+      classe: '3EME 1',
+      dob: '2009-04-12',
+      feeDue: 200000
+    } // Nouveau
+  ];
+
+  const thirdImportRes = await makeRequest(baseUrl, {
+    path: '/api/students/import',
+    method: 'POST',
+    headers: { cookie: adminLogin.cookie }
+  }, {
+    schoolId: testSchoolId,
+    students: modifiedBatch
+  });
+
+  assert.strictEqual(thirdImportRes.statusCode, 200);
+  assert.strictEqual(thirdImportRes.json.summary.imported, 1, '1 nouvel élève importé');
+  assert.strictEqual(thirdImportRes.json.summary.updated, 1, '1 élève mis à jour');
+  assert.strictEqual(thirdImportRes.json.summary.ignored, 3, '3 élèves inchangés ignorés');
+
+  // Vérifier en base : exactement 5 élèves maintenant
+  const countAfterThird = db.db.prepare('SELECT COUNT(*) as count FROM students WHERE school_id = ?').get(testSchoolId).count;
+  assert.strictEqual(countAfterThird, 5, 'La base doit contenir exactement 5 élèves');
+
+  // Vérifier que la classe a bien été mise à jour en base
+  const updatedStudent = db.db.prepare('SELECT classe FROM students WHERE school_id = ? AND matricule = ?').get(testSchoolId, 'MAT-TEST-001');
+  assert.strictEqual(updatedStudent.classe, '6EME EXCELLENCE');
+
+  // 4. Test de la contrainte d'unicité en base de données (sécurité concurrente)
+  assert.throws(() => {
+    db.db.prepare(`
+      INSERT INTO students (school_id, matricule, nom_prenom, niveau, classe, fee_due, fee_paid)
+      VALUES (?, ?, ?, ?, ?, ?, ?)
+    `).run(testSchoolId, 'MAT-TEST-001', 'DOUBLON FRAUDULEUX', '6EME', '6EME A', 100000, 0);
+  }, /UNIQUE constraint failed/, 'La base de données doit bloquer un doublon concurrent de matricule via l\'index UNIQUE');
+
+  assert.throws(() => {
+    db.db.prepare(`
+      INSERT INTO students (school_id, matricule, nom_prenom, dob, niveau, classe, fee_due, fee_paid)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+    `).run(testSchoolId, 'AUTRE-MAT-999', 'TRAORE MAMADOU', '2012-05-15', '6EME', '6EME A', 100000, 0);
+  }, /UNIQUE constraint failed/, 'La base de données doit bloquer un doublon concurrent d\'identité (nom, prénom, dob) via l\'index UNIQUE');
+
+  // 5. Enregistrer des paiements réels pour tester la comptabilité et le tableau de bord
+  const student1 = db.db.prepare('SELECT id FROM students WHERE school_id = ? AND matricule = ?').get(testSchoolId, 'MAT-TEST-001');
+  const pay1Res = await makeRequest(baseUrl, {
+    path: '/api/payments',
+    method: 'POST',
+    headers: { cookie: adminLogin.cookie }
+  }, {
+    studentId: student1.id,
+    amount: 50000,
+    paymentMethod: 'ESPECES',
+    academicYear: '2026-2027',
+    notes: 'Acompte 1',
+    schoolId: testSchoolId
+  });
+  assert.strictEqual(pay1Res.statusCode, 201);
+
+  const student2 = db.db.prepare('SELECT id FROM students WHERE school_id = ? AND matricule = ?').get(testSchoolId, 'MAT-TEST-002');
+  const pay2Res = await makeRequest(baseUrl, {
+    path: '/api/payments',
+    method: 'POST',
+    headers: { cookie: adminLogin.cookie }
+  }, {
+    studentId: student2.id,
+    amount: 100000,
+    paymentMethod: 'WAVE',
+    academicYear: '2026-2027',
+    notes: 'Acompte 2',
+    schoolId: testSchoolId
+  });
+  assert.strictEqual(pay2Res.statusCode, 201);
+
+  // 6. Réconciliation et vérification exacte
+  const recStats = db.reconcileAccountingBalances(testSchoolId);
+  assert.strictEqual(recStats.reconciledStudents, 5);
+
+  const dbSumDue = db.db.prepare('SELECT COALESCE(SUM(fee_due), 0) as total FROM students WHERE school_id = ?').get(testSchoolId).total;
+  const dbSumPaid = db.db.prepare('SELECT COALESCE(SUM(amount), 0) as total FROM payments WHERE school_id = ?').get(testSchoolId).total;
+  const expectedRemaining = dbSumDue - dbSumPaid;
+
+  assert.strictEqual(dbSumPaid, 150000, 'Total encaissé doit être exactement 150000 XOF');
+
+  // Vérifier /api/dashboard/stats
+  const dashRes = await makeRequest(baseUrl, {
+    path: `/api/dashboard/stats?schoolId=${testSchoolId}`,
+    method: 'GET',
+    headers: { cookie: adminLogin.cookie }
+  });
+  assert.strictEqual(dashRes.statusCode, 200);
+  assert.strictEqual(dashRes.json.totalStudents, 5, 'Total élèves du dashboard doit être 5');
+  assert.strictEqual(dashRes.json.totalDue, dbSumDue, 'Total prévu doit correspondre exactement');
+  assert.strictEqual(dashRes.json.totalPaid, 150000, 'Total encaissé doit correspondre exactement');
+  assert.strictEqual(dashRes.json.balanceRemaining, expectedRemaining, 'Reste à recouvrer exact');
+
+  // Vérifier /api/finance/summary
+  const finRes = await makeRequest(baseUrl, {
+    path: `/api/finance/summary?schoolId=${testSchoolId}`,
+    method: 'GET',
+    headers: { cookie: adminLogin.cookie }
+  });
+  assert.strictEqual(finRes.statusCode, 200);
+  assert.strictEqual(finRes.json.totalDue, dbSumDue);
+  assert.strictEqual(finRes.json.totalPaid, 150000);
+  assert.strictEqual(finRes.json.balanceRemaining, expectedRemaining);
+
+  // 7. Vérifier la présence du modal de rapport et ses fonctions JS dans index.html
+  const fs = require('node:fs');
+  const path = require('node:path');
+  const indexHtml = fs.readFileSync(path.join(__dirname, '..', 'index.html'), 'utf8');
+
+  assert.ok(indexHtml.includes('id="import-report-modal"'), 'index.html doit contenir le modal import-report-modal');
+  assert.ok(indexHtml.includes('openImportReportModal'), 'openImportReportModal doit être définie dans index.html');
+  assert.ok(indexHtml.includes('closeImportReportModal'), 'closeImportReportModal doit être définie dans index.html');
+  assert.ok(indexHtml.includes('filterImportReportRows'), 'filterImportReportRows doit être définie dans index.html');
+  assert.ok(indexHtml.includes('exportImportReportCSV'), 'exportImportReportCSV doit être définie dans index.html');
+  assert.ok(indexHtml.includes('rep-imported'), 'Le compteur rep-imported doit exister');
+  assert.ok(indexHtml.includes('rep-updated'), 'Le compteur rep-updated doit exister');
+  assert.ok(indexHtml.includes('rep-ignored'), 'Le compteur rep-ignored doit exister');
+  assert.ok(indexHtml.includes('rep-errors'), 'Le compteur rep-errors doit exister');
+});
+
 
 

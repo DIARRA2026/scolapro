@@ -451,6 +451,19 @@ function initSchema() {
     CREATE UNIQUE INDEX IF NOT EXISTS idx_cash_deposits_school_ref ON cash_deposits(school_id, ref);
   `);
 
+  // Colonne dob sur students et contraintes d'unicité multi-tenant
+  const studentCols = db.prepare('PRAGMA table_info(students)').all().map(c => c.name);
+  if (!studentCols.includes('dob')) {
+    db.exec('ALTER TABLE students ADD COLUMN dob TEXT DEFAULT NULL');
+  }
+
+  db.exec(`
+    CREATE UNIQUE INDEX IF NOT EXISTS idx_students_school_matricule ON students(school_id, matricule);
+    CREATE UNIQUE INDEX IF NOT EXISTS idx_students_school_identity ON students(school_id, lower(trim(nom_prenom)), dob) WHERE dob IS NOT NULL AND dob != '';
+  `);
+
+  reconcileAccountingBalances();
+
   // Configurations par défaut
   const countSettings = db.prepare('SELECT COUNT(*) as count FROM system_settings').get();
   if (countSettings.count === 0) {
@@ -1041,6 +1054,8 @@ function formatStudent(row) {
     statutLabel: row.statut === 'AFF' ? 'Affecté État' : 'Non Affecté',
     niveau: row.niveau,
     classe: row.classe,
+    dob: row.dob || '',
+    dateNaissance: row.dob || '',
     feeTotal: row.fee_due,
     feePaid: row.fee_paid,
     solde: row.fee_due - row.fee_paid,
@@ -1487,12 +1502,14 @@ function createStudent(user, data) {
   }
   const nomPrenom = (data.nomPrenom || `${data.nom || ''} ${data.prenom || ''}`).trim();
 
+  const dob = data.dob || data.dateNaissance || null;
+
   const stmt = db.prepare(`
     INSERT INTO students (
       school_id, matricule, nom_prenom, sexe, red, statut, niveau, classe,
       fee_due, fee_paid, note_dev, is_absent, rank, mention, avg,
-      tuteur, phone, email, cash_desk
-    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+      tuteur, phone, email, dob, cash_desk
+    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
   `);
 
   const result = stmt.run(
@@ -1514,6 +1531,7 @@ function createStudent(user, data) {
     data.tuteur || '',
     data.phone || '',
     data.email || '',
+    dob,
     data.cashDesk || 'PRINCIPALE'
   );
 
@@ -1542,6 +1560,7 @@ function updateStudent(user, id, data) {
   // Seules les opérations d'encaissement avec quittance peuvent modifier le solde de caisse.
   const nomPrenom = data.nomPrenom || `${data.nom || ''} ${data.prenom || ''}`.trim() || current.nom_prenom;
   const feeDue = data.feeDue !== undefined ? parseAmount(data.feeDue, 5000000) : current.fee_due;
+  const dob = data.dob || data.dateNaissance || null;
 
   db.prepare(`
     UPDATE students SET
@@ -1552,18 +1571,20 @@ function updateStudent(user, id, data) {
       niveau = ?,
       classe = ?,
       fee_due = ?,
+      dob = CASE WHEN ? IS NOT NULL AND ? != '' THEN ? ELSE dob END,
       tuteur = ?,
       phone = ?,
       email = ?
     WHERE id = ?
   `).run(
     nomPrenom,
-    data.sexe !== undefined ? data.sexe : current.sexe,
+    data.sexe || current.sexe,
     data.red !== undefined ? data.red : current.red,
-    data.statut !== undefined ? data.statut : current.statut,
-    data.niveau !== undefined ? data.niveau : current.niveau,
-    data.classe !== undefined ? data.classe : current.classe,
+    data.statut || current.statut,
+    data.niveau || current.niveau,
+    data.classe || current.classe,
     feeDue,
+    dob, dob, dob,
     data.tuteur !== undefined ? data.tuteur : current.tuteur,
     data.phone !== undefined ? data.phone : current.phone,
     data.email !== undefined ? data.email : current.email,
@@ -1611,6 +1632,348 @@ function deleteStudent(user, id) {
   });
 
   return { success: true, deletedId: sId };
+}
+
+/**
+ * Import par lot transactionnel d'élèves (Multi-tenant, Anti-doublons, Mise à jour intelligente)
+ * @param {object} user 
+ * @param {object} data { schoolId, students: Array }
+ * @returns {object} { success: true, summary, details, students, stats }
+ */
+function batchImportStudents(user, data) {
+  assertPermission(user, 'students.create');
+  const targetSchoolId = resolveWriteSchoolId(user, data.schoolId || data.school_id, lookupSchool);
+  const rows = Array.isArray(data.students) ? data.students : [];
+
+  if (rows.length === 0) {
+    throw new Error("Aucun élève fourni pour l'importation.");
+  }
+
+  const summary = {
+    total: rows.length,
+    imported: 0,
+    updated: 0,
+    ignored: 0,
+    errors: 0
+  };
+
+  const details = [];
+
+  // Requêtes préparées filtrées strictement par tenant
+  const findByMatricule = db.prepare(`
+    SELECT * FROM students 
+    WHERE school_id = ? AND UPPER(TRIM(matricule)) = ?
+  `);
+
+  const findByNameAndDob = db.prepare(`
+    SELECT * FROM students 
+    WHERE school_id = ? 
+      AND UPPER(TRIM(nom_prenom)) = ?
+      AND (
+        (dob IS NOT NULL AND dob != '' AND dob = ?)
+        OR ((dob IS NULL OR dob = '') AND (? IS NULL OR ? = ''))
+      )
+  `);
+
+  const findByNameOnly = db.prepare(`
+    SELECT * FROM students 
+    WHERE school_id = ? AND UPPER(TRIM(nom_prenom)) = ?
+  `);
+
+  const insertStmt = db.prepare(`
+    INSERT INTO students (
+      school_id, matricule, nom_prenom, sexe, red, statut, niveau, classe,
+      fee_due, fee_paid, note_dev, is_absent, rank, mention, avg,
+      tuteur, phone, email, dob, cash_desk
+    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 0, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+  `);
+
+  const updateStmt = db.prepare(`
+    UPDATE students SET
+      nom_prenom = ?,
+      sexe = ?,
+      red = ?,
+      statut = ?,
+      niveau = ?,
+      classe = ?,
+      fee_due = ?,
+      dob = CASE WHEN ? IS NOT NULL AND ? != '' THEN ? ELSE dob END,
+      tuteur = CASE WHEN ? IS NOT NULL AND ? != '' THEN ? ELSE tuteur END,
+      phone = CASE WHEN ? IS NOT NULL AND ? != '' THEN ? ELSE phone END,
+      email = CASE WHEN ? IS NOT NULL AND ? != '' THEN ? ELSE email END
+    WHERE id = ? AND school_id = ?
+  `);
+
+  // Exécution 100% transactionnelle (Atomique : succès total ou rollback intégral)
+  withTransaction(() => {
+    for (let i = 0; i < rows.length; i++) {
+      const item = rows[i];
+      const rowNum = i + 1;
+
+      const rawNomPrenom = (item.nomPrenom || `${item.nom || ''} ${item.prenom || ''}`).trim();
+      if (!rawNomPrenom) {
+        summary.errors++;
+        details.push({
+          row: rowNum,
+          matricule: item.matricule || '—',
+          nomPrenom: '—',
+          status: 'error',
+          message: 'Nom et prénom obligatoires et manquants'
+        });
+        continue;
+      }
+      const nomPrenom = rawNomPrenom.toUpperCase();
+      const rawMatricule = item.matricule ? String(item.matricule).trim().toUpperCase() : '';
+      const dob = (item.dob || item.dateNaissance || '').trim();
+      const sexe = (item.sexe ? String(item.sexe).trim().toUpperCase() : 'M').startsWith('F') ? 'F' : 'M';
+      
+      const rawStatut = item.statut ? String(item.statut).trim().toUpperCase() : 'AFF';
+      const isNonAff = rawStatut.includes('NON') || rawStatut.includes('NAFF') || rawStatut === 'N';
+      const statut = isNonAff ? 'NON AFF' : 'AFF';
+      
+      const niveau = (item.niveau ? String(item.niveau).trim().toUpperCase() : '6EME') || '6EME';
+      const classe = (item.classe ? String(item.classe).trim().toUpperCase() : `${niveau} 1`) || `${niveau} 1`;
+      const feeDue = item.feeDue !== undefined ? parseAmount(item.feeDue, 5000000) : 120000;
+      const tuteur = (item.tuteur || '').trim();
+      const phone = (item.phone || '').trim();
+      const email = (item.email || '').trim();
+
+      // 1. Détection d'existence dans le tenant courant
+      let existing = null;
+      if (rawMatricule) {
+        existing = findByMatricule.get(targetSchoolId, rawMatricule);
+      }
+      if (!existing && dob) {
+        existing = findByNameAndDob.get(targetSchoolId, nomPrenom, dob, dob, dob);
+      }
+      if (!existing && !rawMatricule) {
+        existing = findByNameOnly.get(targetSchoolId, nomPrenom);
+      }
+
+      // 2. Gestion de l'élève existant : ne pas dupliquer, mettre à jour si changé ou ignorer
+      if (existing) {
+        const changes = [];
+        if (nomPrenom !== existing.nom_prenom) changes.push(`Nom : ${existing.nom_prenom} → ${nomPrenom}`);
+        if (sexe !== existing.sexe) changes.push(`Sexe : ${existing.sexe} → ${sexe}`);
+        if (statut !== existing.statut) changes.push(`Statut : ${existing.statut} → ${statut}`);
+        if (niveau !== existing.niveau) changes.push(`Niveau : ${existing.niveau} → ${niveau}`);
+        if (classe !== existing.classe) changes.push(`Classe : ${existing.classe} → ${classe}`);
+        if (feeDue !== existing.fee_due) changes.push(`Frais dus : ${existing.fee_due} → ${feeDue}`);
+        if (dob && dob !== existing.dob) changes.push(`Date naiss. : ${existing.dob || 'non renseignée'} → ${dob}`);
+
+        if (changes.length > 0) {
+          updateStmt.run(
+            nomPrenom,
+            sexe,
+            existing.red || '',
+            statut,
+            niveau,
+            classe,
+            feeDue,
+            dob, dob, dob,
+            tuteur, tuteur, tuteur,
+            phone, phone, phone,
+            email, email, email,
+            existing.id,
+            targetSchoolId
+          );
+          summary.updated++;
+          details.push({
+            row: rowNum,
+            matricule: existing.matricule,
+            nomPrenom: nomPrenom,
+            classe: classe,
+            status: 'updated',
+            message: `Mis à jour (${changes.join(', ')})`,
+            changes
+          });
+        } else {
+          summary.ignored++;
+          details.push({
+            row: rowNum,
+            matricule: existing.matricule,
+            nomPrenom: existing.nom_prenom,
+            classe: existing.classe,
+            status: 'ignored',
+            message: 'Élève déjà existant (données identiques, doublon ignoré)'
+          });
+        }
+      } else {
+        // 3. Insertion d'un nouvel élève
+        let finalMatricule = rawMatricule;
+        if (!finalMatricule) {
+          finalMatricule = `CI-2026-${Date.now().toString().slice(-6)}${i}`;
+        }
+        // Vérifier si le matricule est déjà pris dans ce tenant par une ligne précédente
+        const checkConflict = findByMatricule.get(targetSchoolId, finalMatricule);
+        if (checkConflict) {
+          finalMatricule = `${finalMatricule}-${Math.floor(100 + Math.random() * 900)}`;
+        }
+
+        insertStmt.run(
+          targetSchoolId,
+          finalMatricule,
+          nomPrenom,
+          sexe,
+          item.red || '',
+          statut,
+          niveau,
+          classe,
+          feeDue,
+          parseFloat(item.noteDev || '10.0'),
+          item.isAbsent ? 1 : 0,
+          parseInt(item.rank || '1', 10),
+          item.mention || 'Passable',
+          parseFloat(item.avg || '10.0'),
+          tuteur,
+          phone,
+          email,
+          dob || null,
+          item.cashDesk || 'PRINCIPALE'
+        );
+
+        summary.imported++;
+        details.push({
+          row: rowNum,
+          matricule: finalMatricule,
+          nomPrenom: nomPrenom,
+          classe: classe,
+          status: 'imported',
+          message: 'Nouvel élève inscrit'
+        });
+      }
+    }
+  });
+
+  addAuditLog(user, {
+    action: 'STUDENTS_BATCH_IMPORT',
+    module: 'Scolarité',
+    target: `Importation (${summary.total} lignes)`,
+    oldVal: '',
+    newVal: `Importés: ${summary.imported}, Mis à jour: ${summary.updated}, Ignorés: ${summary.ignored}, Erreurs: ${summary.errors}`,
+    schoolId: targetSchoolId
+  });
+
+  return {
+    success: true,
+    summary,
+    details,
+    students: getStudents(user, targetSchoolId),
+    stats: getSchoolDashboardStats(user, targetSchoolId)
+  };
+}
+
+/**
+ * Recalcule et réconcilie les soldes financiers des élèves avec leurs paiements réels
+ * @param {number|null} schoolId 
+ */
+function reconcileAccountingBalances(schoolId = null) {
+  try {
+    const students = schoolId 
+      ? db.prepare('SELECT id, school_id, fee_due FROM students WHERE school_id = ?').all(schoolId)
+      : db.prepare('SELECT id, school_id, fee_due FROM students').all();
+
+    const updateStmt = db.prepare('UPDATE students SET fee_paid = ? WHERE id = ?');
+    const sumStmt = db.prepare('SELECT COALESCE(SUM(amount), 0) as total FROM payments WHERE student_id = ?');
+
+    withTransaction(() => {
+      for (const st of students) {
+        const actualPaid = sumStmt.get(st.id).total;
+        updateStmt.run(actualPaid, st.id);
+      }
+    });
+
+    return {
+      success: true,
+      reconciledStudents: students.length
+    };
+  } catch (err) {
+    console.warn('Erreur réconciliation comptable:', err);
+    return {
+      success: false,
+      reconciledStudents: 0,
+      error: err.message
+    };
+  }
+}
+
+/**
+ * Statistiques en temps réel du Tableau de bord d'un établissement (sans cache, calcul réel)
+ * @param {object} user 
+ * @param {number} schoolId 
+ * @returns {object}
+ */
+function getSchoolDashboardStats(user, schoolId) {
+  const sId = parseInt(schoolId, 10);
+  assertSchoolAccess(user, sId, lookupSchool);
+
+  const studentCounts = db.prepare(`
+    SELECT 
+      COUNT(DISTINCT id) as total,
+      COUNT(DISTINCT CASE WHEN statut = 'AFF' THEN id END) as aff,
+      COUNT(DISTINCT CASE WHEN statut != 'AFF' OR statut IS NULL THEN id END) as non_aff,
+      COUNT(DISTINCT CASE WHEN classe IS NOT NULL AND classe != '' AND classe != 'Non assigné' THEN id END) as assigned,
+      COUNT(DISTINCT CASE WHEN classe IS NULL OR classe = '' OR classe = 'Non assigné' THEN id END) as unassigned,
+      COUNT(DISTINCT CASE WHEN sexe IS NULL OR sexe = '' THEN id END) as sans_genre,
+      COUNT(DISTINCT CASE WHEN dob IS NULL OR dob = '' THEN id END) as sans_naissance,
+      COALESCE(SUM(fee_due), 0) as total_due,
+      COALESCE(SUM(fee_paid), 0) as total_paid,
+      COALESCE(ROUND(AVG(avg), 2), 0.0) as general_avg
+    FROM students
+    WHERE school_id = ?
+  `).get(sId);
+
+  const classesCount = db.prepare('SELECT COUNT(DISTINCT id) as count FROM classes WHERE school_id = ?').get(sId).count;
+
+  const paymentStats = db.prepare(`
+    SELECT 
+      COUNT(*) as count,
+      COALESCE(SUM(amount), 0) as total_collected
+    FROM payments
+    WHERE school_id = ?
+  `).get(sId);
+
+  const cashDesksStats = db.prepare(`
+    SELECT 
+      COUNT(*) as count,
+      COALESCE(SUM(balance), 0) as total_cash
+    FROM cash_desks
+    WHERE school_id = ? AND status = 'ACTIVE'
+  `).get(sId);
+
+  const totalDue = Number(studentCounts.total_due || 0);
+  const totalPaid = Number(paymentStats.total_collected || 0);
+  const totalRemaining = Math.max(0, totalDue - totalPaid);
+  const recoveryRate = totalDue > 0 ? Math.round((totalPaid / totalDue) * 10000) / 100 : 0.0;
+
+  return {
+    schoolId: sId,
+    totalStudents: studentCounts.total || 0,
+    totalDue,
+    totalPaid,
+    totalRemaining,
+    balanceRemaining: totalRemaining,
+    recoveryRate,
+    students: {
+      total: studentCounts.total || 0,
+      aff: studentCounts.aff || 0,
+      nonAff: studentCounts.non_aff || 0,
+      assigned: studentCounts.assigned || 0,
+      unassigned: studentCounts.unassigned || 0,
+      sansGenre: studentCounts.sans_genre || 0,
+      sansNaissance: studentCounts.sans_naissance || 0,
+      generalAvg: studentCounts.general_avg || 0.0
+    },
+    classesCount: classesCount || 0,
+    finance: {
+      totalDue,
+      totalPaid,
+      totalRemaining,
+      recoveryRate,
+      paymentsCount: paymentStats.count || 0,
+      totalCashBalance: Number(cashDesksStats.total_cash || 0)
+    }
+  };
 }
 
 // ---------------------------------------------------------------------
@@ -3267,5 +3630,8 @@ module.exports = {
   addAuditLog,
   getAuditLogs,
   ensureSchoolAdminUsers,
-  sanitizeProductionDatabase
+  sanitizeProductionDatabase,
+  batchImportStudents,
+  reconcileAccountingBalances,
+  getSchoolDashboardStats
 };

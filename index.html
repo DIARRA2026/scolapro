@@ -2876,7 +2876,7 @@
                 </svg>
               </div>
               <div>
-                <div id="stat-total" class="text-2xl font-black text-slate-800 leading-tight">1071</div>
+                <div id="stat-total" class="text-2xl font-black text-slate-800 leading-tight">0</div>
                 <div class="text-[11px] font-medium text-slate-500">Total en classe</div>
               </div>
             </div>
@@ -2888,7 +2888,7 @@
                 </svg>
               </div>
               <div>
-                <div id="stat-aff" class="text-2xl font-black text-emerald-600 leading-tight">871</div>
+                <div id="stat-aff" class="text-2xl font-black text-emerald-600 leading-tight">0</div>
                 <div class="text-[11px] font-medium text-slate-500">Affectés</div>
               </div>
             </div>
@@ -2900,7 +2900,7 @@
                 </svg>
               </div>
               <div>
-                <div id="stat-nonaff" class="text-2xl font-black text-red-500 leading-tight">200</div>
+                <div id="stat-nonaff" class="text-2xl font-black text-red-500 leading-tight">0</div>
                 <div class="text-[11px] font-medium text-slate-500">Non affectés</div>
               </div>
             </div>
@@ -2932,11 +2932,11 @@
             <div class="flex flex-wrap items-center gap-2 text-xs">
               <button onclick="setFilter('all')" id="btn-filter-all" class="filter-pill bg-slate-800 text-white font-semibold px-3 py-1.5 rounded-full flex items-center gap-2 shadow-sm transition">
                 <span>Tous</span>
-                <span id="pill-all-count" class="bg-slate-600 text-white text-[10px] px-1.5 py-0.2 rounded-full font-bold">1151</span>
+                <span id="pill-all-count" class="bg-slate-600 text-white text-[10px] px-1.5 py-0.2 rounded-full font-bold">0</span>
               </button>
               <button onclick="setFilter('assigned')" id="btn-filter-assigned" class="filter-pill bg-slate-100 hover:bg-slate-200 text-slate-700 font-medium px-3 py-1.5 rounded-full flex items-center gap-2 transition">
                 <span>Classe renseignée</span>
-                <span id="pill-assigned-count" class="bg-slate-300 text-slate-700 text-[10px] px-1.5 py-0.2 rounded-full font-bold">1071</span>
+                <span id="pill-assigned-count" class="bg-slate-300 text-slate-700 text-[10px] px-1.5 py-0.2 rounded-full font-bold">0</span>
               </button>
               <button onclick="setFilter('nogenre')" id="btn-filter-nogenre" class="filter-pill bg-slate-100 hover:bg-slate-200 text-slate-700 font-medium px-3 py-1.5 rounded-full flex items-center gap-2 transition">
                 <span>Genre non renseigné</span>
@@ -2944,7 +2944,7 @@
               </button>
               <button onclick="setFilter('unassigned')" id="btn-filter-unassigned" class="filter-pill bg-slate-100 hover:bg-slate-200 text-slate-700 font-medium px-3 py-1.5 rounded-full flex items-center gap-2 transition">
                 <span>Classe non renseignée</span>
-                <span id="pill-unassigned-count" class="bg-slate-300 text-slate-700 text-[10px] px-1.5 py-0.2 rounded-full font-bold">80</span>
+                <span id="pill-unassigned-count" class="bg-slate-300 text-slate-700 text-[10px] px-1.5 py-0.2 rounded-full font-bold">0</span>
               </button>
             </div>
 
@@ -5543,6 +5543,117 @@
       <div class="bg-slate-50 px-5 py-3 border-t border-slate-200 flex items-center justify-between">
         <div class="text-[11px] text-slate-500 font-medium">ScolaPro v2.5 — <strong class="text-slate-800">Un produit d'INNOVA GROUP</strong></div>
         <button onclick="closeGuideModal()" class="btn-navy text-white px-4 py-1.5 rounded text-xs font-semibold">Fermer</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ================================================================= -->
+  <!-- MODAL RAPPORT D'IMPORTATION DES ÉLÈVES (Anti-doublons & Résumé)   -->
+  <!-- ================================================================= -->
+  <div id="import-report-modal" class="hidden fixed inset-0 bg-black/60 backdrop-blur-xs z-50 flex items-center justify-center p-3 sm:p-4 overflow-y-auto">
+    <div class="bg-white rounded-2xl shadow-2xl max-w-4xl w-full border border-slate-200 overflow-hidden my-6 flex flex-col max-h-[90vh]">
+      <!-- Header -->
+      <div class="bg-gradient-to-r from-slate-900 via-indigo-950 to-slate-900 text-white px-5 py-4 flex justify-between items-center flex-shrink-0 border-b border-indigo-900/50">
+        <div class="flex items-center gap-2.5">
+          <div class="w-9 h-9 rounded-xl bg-indigo-500/20 border border-indigo-400/30 flex items-center justify-center text-lg">
+            📊
+          </div>
+          <div>
+            <h3 class="font-extrabold text-sm sm:text-base tracking-tight text-white">Rapport d'Importation &amp; Synchronisation des Élèves</h3>
+            <p class="text-[11px] text-indigo-200">Synthèse fidèle et étanche : détection d'existence, mise à jour et élimination des doublons.</p>
+          </div>
+        </div>
+        <button onclick="closeImportReportModal()" class="w-8 h-8 rounded-lg bg-white/10 hover:bg-white/20 text-slate-300 hover:text-white flex items-center justify-center text-lg font-bold transition cursor-pointer">&times;</button>
+      </div>
+
+      <!-- Corps du rapport avec défilement -->
+      <div class="p-5 overflow-y-auto space-y-5 flex-1 custom-scrollbar">
+        <!-- 4 Cartes Résumé KPI -->
+        <div class="grid grid-cols-2 sm:grid-cols-4 gap-3">
+          <div class="bg-emerald-50/80 border border-emerald-200/80 rounded-xl p-3.5 flex items-center gap-3 shadow-xs">
+            <div class="w-10 h-10 rounded-xl bg-emerald-500/10 text-emerald-600 font-bold text-lg flex items-center justify-center flex-shrink-0">
+              📥
+            </div>
+            <div>
+              <div id="rep-imported" class="text-2xl font-black text-emerald-700 leading-tight">0</div>
+              <div class="text-[11px] font-bold text-emerald-800 uppercase tracking-wider">Nouveaux Importés</div>
+            </div>
+          </div>
+
+          <div class="bg-blue-50/80 border border-blue-200/80 rounded-xl p-3.5 flex items-center gap-3 shadow-xs">
+            <div class="w-10 h-10 rounded-xl bg-blue-500/10 text-blue-600 font-bold text-lg flex items-center justify-center flex-shrink-0">
+              🔄
+            </div>
+            <div>
+              <div id="rep-updated" class="text-2xl font-black text-blue-700 leading-tight">0</div>
+              <div class="text-[11px] font-bold text-blue-800 uppercase tracking-wider">Mis à jour</div>
+            </div>
+          </div>
+
+          <div class="bg-slate-100/90 border border-slate-200 rounded-xl p-3.5 flex items-center gap-3 shadow-xs">
+            <div class="w-10 h-10 rounded-xl bg-slate-500/10 text-slate-600 font-bold text-lg flex items-center justify-center flex-shrink-0">
+              ⏭️
+            </div>
+            <div>
+              <div id="rep-ignored" class="text-2xl font-black text-slate-700 leading-tight">0</div>
+              <div class="text-[11px] font-bold text-slate-700 uppercase tracking-wider">Ignorés (Doublons)</div>
+            </div>
+          </div>
+
+          <div class="bg-rose-50/80 border border-rose-200/80 rounded-xl p-3.5 flex items-center gap-3 shadow-xs">
+            <div class="w-10 h-10 rounded-xl bg-rose-500/10 text-rose-600 font-bold text-lg flex items-center justify-center flex-shrink-0">
+              ⚠️
+            </div>
+            <div>
+              <div id="rep-errors" class="text-2xl font-black text-rose-700 leading-tight">0</div>
+              <div class="text-[11px] font-bold text-rose-800 uppercase tracking-wider">Lignes en erreur</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Onglets Filtres & Recherche -->
+        <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2 border-b border-slate-200 pb-2">
+          <div class="flex flex-wrap gap-1.5 text-xs font-semibold" id="import-report-tabs">
+            <button onclick="filterImportReportRows('all')" id="btn-rep-all" class="px-3 py-1.5 rounded-lg bg-slate-900 text-white text-xs font-bold transition">Tous (<span id="rep-tab-total">0</span>)</button>
+            <button onclick="filterImportReportRows('imported')" id="btn-rep-imported" class="px-3 py-1.5 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-semibold transition">Importés (<span id="rep-tab-imported">0</span>)</button>
+            <button onclick="filterImportReportRows('updated')" id="btn-rep-updated" class="px-3 py-1.5 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-semibold transition">Mis à jour (<span id="rep-tab-updated">0</span>)</button>
+            <button onclick="filterImportReportRows('ignored')" id="btn-rep-ignored" class="px-3 py-1.5 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-semibold transition">Ignorés (<span id="rep-tab-ignored">0</span>)</button>
+            <button onclick="filterImportReportRows('error')" id="btn-rep-errors" class="px-3 py-1.5 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-semibold transition">Erreurs (<span id="rep-tab-errors">0</span>)</button>
+          </div>
+          <div class="relative w-full sm:w-60">
+            <input type="text" id="rep-search-input" oninput="filterImportReportSearch()" placeholder="Filtrer nom ou matricule..." class="w-full pl-3 pr-3 py-1 bg-slate-50 border border-slate-300 rounded-lg text-xs focus:bg-white focus:outline-none">
+          </div>
+        </div>
+
+        <!-- Tableau des Lignes Détaillées -->
+        <div class="overflow-x-auto border border-slate-200 rounded-xl bg-white shadow-xs custom-scrollbar max-h-80">
+          <table class="w-full text-left text-xs border-collapse">
+            <thead class="bg-slate-100/90 text-slate-700 font-bold uppercase text-[10.5px] sticky top-0 z-10 border-b border-slate-200">
+              <tr>
+                <th class="py-2.5 px-3 text-center w-12">Ligne</th>
+                <th class="py-2.5 px-3 text-center w-28">Statut</th>
+                <th class="py-2.5 px-3 w-32">Matricule</th>
+                <th class="py-2.5 px-3">Nom &amp; Prénoms</th>
+                <th class="py-2.5 px-3 text-center w-24">Classe</th>
+                <th class="py-2.5 px-3.5">Détail &amp; Action Enregistrée</th>
+              </tr>
+            </thead>
+            <tbody id="import-report-tbody" class="divide-y divide-slate-100 text-xs">
+              <!-- Rendu dynamique par JS -->
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- Footer -->
+      <div class="bg-slate-50 px-5 py-3.5 border-t border-slate-200 flex flex-col sm:flex-row justify-between items-center gap-3 flex-shrink-0">
+        <button onclick="exportImportReportCSV()" class="px-3.5 py-2 bg-white hover:bg-slate-100 border border-slate-300 text-slate-700 rounded-xl text-xs font-bold transition flex items-center gap-2 shadow-xs cursor-pointer">
+          <span>📥</span>
+          <span>Exporter le rapport en CSV</span>
+        </button>
+        <button onclick="closeImportReportModal()" class="w-full sm:w-auto px-5 py-2 bg-gradient-to-r from-indigo-600 to-indigo-700 hover:from-indigo-700 hover:to-indigo-800 text-white rounded-xl text-xs font-bold shadow-md transition cursor-pointer">
+          Fermer &amp; Consulter la Liste des Inscrits
+        </button>
       </div>
     </div>
   </div>
@@ -13018,13 +13129,29 @@
     }
 
     function renderConsultStats() {
-      const scopedStudents = (typeof filterByScope === 'function') ? filterByScope(appState.students || [], 'students_finance') : (appState.students || []);
-      const totalDue = scopedStudents.reduce((sum, s) => sum + (s.feeDue || s.fee_due || 0), 0);
-      const totalPaid = scopedStudents.reduce((sum, s) => sum + (s.feePaid || s.fee_paid || 0), 0);
+      const currentSchoolId = appState.currentSchoolId || (appState.schools && appState.schools[0] ? appState.schools[0].id : 1);
+      const allStudents = (appState.students || []).filter(s => !s.schoolId && !s.school_id || s.schoolId === currentSchoolId || s.school_id === currentSchoolId);
+      
+      // Dédoublonnage par ID / matricule
+      const seenIds = new Set();
+      const dedupedStudents = [];
+      for (const s of allStudents) {
+        const key = s.id ? `id_${s.id}` : `mat_${String(s.matricule || '').toUpperCase().trim()}`;
+        if (!seenIds.has(key)) {
+          seenIds.add(key);
+          dedupedStudents.push(s);
+        }
+      }
+
+      const scopedStudents = (typeof filterByScope === 'function') ? filterByScope(dedupedStudents, 'students_finance') : dedupedStudents;
+      const totalDue = scopedStudents.reduce((sum, s) => sum + (Number(s.feeDue || s.fee_due) || 0), 0);
+      const totalPaid = scopedStudents.reduce((sum, s) => sum + (Number(s.feePaid || s.fee_paid) || 0), 0);
       const totalRemaining = Math.max(0, totalDue - totalPaid);
       const rate = totalDue > 0 ? ((totalPaid / totalDue) * 100).toFixed(1) : '0.0';
       const remRate = totalDue > 0 ? ((totalRemaining / totalDue) * 100).toFixed(1) : '0.0';
-      const paymentsCount = (appState.payments || []).length;
+      
+      const scopedPayments = (appState.payments || []).filter(p => !p.schoolId && !p.school_id || p.schoolId === currentSchoolId || p.school_id === currentSchoolId);
+      const paymentsCount = scopedPayments.length;
 
       const caEl = document.getElementById('stat-ca-prevu');
       const stEl = document.getElementById('stat-eleves-count');
@@ -13034,11 +13161,11 @@
       const restEl = document.getElementById('stat-restant-pct');
       const quittEl = document.getElementById('stat-quittances-count');
 
-      if (caEl) caEl.innerHTML = `${totalDue.toLocaleString()} <span class="text-xs font-normal">XOF</span>`;
+      if (caEl) caEl.innerHTML = `${Math.round(totalDue).toLocaleString()} <span class="text-xs font-normal">XOF</span>`;
       if (stEl) stEl.textContent = `${scopedStudents.length} élève(s) scolarisé(s)`;
-      if (encEl) encEl.innerHTML = `${totalPaid.toLocaleString()} <span class="text-xs font-normal">XOF</span>`;
+      if (encEl) encEl.innerHTML = `${Math.round(totalPaid).toLocaleString()} <span class="text-xs font-normal">XOF</span>`;
       if (realEl) realEl.textContent = `${rate.replace('.', ',')}% de réalisation`;
-      if (recEl) recEl.innerHTML = `${totalRemaining.toLocaleString()} <span class="text-xs font-normal">XOF</span>`;
+      if (recEl) recEl.innerHTML = `${Math.round(totalRemaining).toLocaleString()} <span class="text-xs font-normal">XOF</span>`;
       if (restEl) restEl.textContent = `${remRate.replace('.', ',')}% restant dû`;
       if (quittEl) quittEl.textContent = paymentsCount;
     }
@@ -13473,22 +13600,55 @@
 
     function updateKPIs() {
       const scoped = (typeof filterByScope === 'function') ? filterByScope(appState.students || [], 'students') : (appState.students || []);
-      const total = scoped.length;
-      const aff = scoped.filter(s => s.statut === 'AFF').length;
+      
+      // Déduplication de sécurité par ID unique
+      const uniqueMap = new Map();
+      scoped.forEach(s => {
+        const key = s.id ? `id_${s.id}` : `mat_${s.matricule || s.nomPrenom}`;
+        if (!uniqueMap.has(key)) {
+          uniqueMap.set(key, s);
+        }
+      });
+      const uniqueStudents = Array.from(uniqueMap.values());
+
+      const total = uniqueStudents.length;
+      const aff = uniqueStudents.filter(s => s.statut === 'AFF').length;
       const nonAff = total - aff;
+      const sansGenre = uniqueStudents.filter(s => !s.sexe).length;
+      const sansNaissance = uniqueStudents.filter(s => !s.dob && !s.dateNaissance).length;
+      const assigned = uniqueStudents.filter(s => s.classe && s.classe !== 'Non assigné').length;
+      const unassigned = total - assigned;
 
       const statTotal = document.getElementById('stat-total');
       const statAff = document.getElementById('stat-aff');
       const statNonAff = document.getElementById('stat-nonaff');
+      const statSansGenre = document.getElementById('stat-sansgenre');
+      const statSansNaissance = document.getElementById('stat-sansnaissance');
       const dashTotal = document.getElementById('dash-total-students');
+      const pillAll = document.getElementById('pill-all-count');
+      const pillAssigned = document.getElementById('pill-assigned-count');
+      const pillUnassigned = document.getElementById('pill-unassigned-count');
+      const pillNoGenre = document.getElementById('pill-nogenre-count');
 
       if (statTotal) statTotal.innerText = total;
       if (statAff) statAff.innerText = aff;
       if (statNonAff) statNonAff.innerText = nonAff;
+      if (statSansGenre) statSansGenre.innerText = sansGenre;
+      if (statSansNaissance) statSansNaissance.innerText = sansNaissance;
       if (dashTotal) dashTotal.innerText = total;
+      if (pillAll) pillAll.innerText = total;
+      if (pillAssigned) pillAssigned.innerText = assigned;
+      if (pillUnassigned) pillUnassigned.innerText = unassigned;
+      if (pillNoGenre) pillNoGenre.innerText = sansGenre;
 
-      const pillAssigned = document.getElementById('pill-assigned-count');
-      if (pillAssigned) pillAssigned.innerText = scoped.filter(s => s.classe && s.classe !== 'Non assigné').length;
+      // Calcul dynamique et réel du taux de recouvrement sur le tableau de bord
+      const dashRecRate = document.getElementById('dash-recovery-rate');
+      if (dashRecRate) {
+        const totalDue = uniqueStudents.reduce((sum, s) => sum + (s.feeDue || s.fee_due || 0), 0);
+        const totalPaid = uniqueStudents.reduce((sum, s) => sum + (s.feePaid || s.fee_paid || 0), 0);
+        const rate = totalDue > 0 ? ((totalPaid / totalDue) * 100).toFixed(1) : '0,0';
+        dashRecRate.innerText = `${rate.replace('.', ',')}%`;
+      }
     }
 
     function setFilter(filterType) {
@@ -14148,6 +14308,163 @@
       if (input) input.value = '';
     }
 
+    let currentImportReportDetails = [];
+    let currentImportReportFilter = 'all';
+
+    function openImportReportModal(summary, details) {
+      currentImportReportDetails = details || [];
+      currentImportReportFilter = 'all';
+
+      const s = summary || {};
+      const elImported = document.getElementById('rep-imported');
+      const elUpdated = document.getElementById('rep-updated');
+      const elIgnored = document.getElementById('rep-ignored');
+      const elErrors = document.getElementById('rep-errors');
+
+      if (elImported) elImported.textContent = s.imported || 0;
+      if (elUpdated) elUpdated.textContent = s.updated || 0;
+      if (elIgnored) elIgnored.textContent = s.ignored || 0;
+      if (elErrors) elErrors.textContent = s.errors || 0;
+
+      const tabTotal = document.getElementById('rep-tab-total');
+      const tabImported = document.getElementById('rep-tab-imported');
+      const tabUpdated = document.getElementById('rep-tab-updated');
+      const tabIgnored = document.getElementById('rep-tab-ignored');
+      const tabErrors = document.getElementById('rep-tab-errors');
+
+      if (tabTotal) tabTotal.textContent = s.total || 0;
+      if (tabImported) tabImported.textContent = s.imported || 0;
+      if (tabUpdated) tabUpdated.textContent = s.updated || 0;
+      if (tabIgnored) tabIgnored.textContent = s.ignored || 0;
+      if (tabErrors) tabErrors.textContent = s.errors || 0;
+
+      const searchInput = document.getElementById('rep-search-input');
+      if (searchInput) searchInput.value = '';
+
+      filterImportReportRows('all');
+
+      const modal = document.getElementById('import-report-modal');
+      if (modal) modal.classList.remove('hidden');
+    }
+
+    function closeImportReportModal() {
+      const modal = document.getElementById('import-report-modal');
+      if (modal) modal.classList.add('hidden');
+    }
+
+    function filterImportReportRows(type) {
+      currentImportReportFilter = type;
+      ['all', 'imported', 'updated', 'ignored', 'errors'].forEach(t => {
+        const btn = document.getElementById(`btn-rep-${t}`);
+        if (btn) {
+          if (t === type || (t === 'errors' && type === 'error')) {
+            btn.className = 'px-3 py-1.5 rounded-lg bg-slate-900 text-white text-xs font-bold transition';
+          } else {
+            btn.className = 'px-3 py-1.5 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-semibold transition';
+          }
+        }
+      });
+      renderImportReportTable();
+    }
+
+    function filterImportReportSearch() {
+      renderImportReportTable();
+    }
+
+    function renderImportReportTable() {
+      const tbody = document.getElementById('import-report-tbody');
+      if (!tbody) return;
+
+      const searchInput = document.getElementById('rep-search-input');
+      const query = (searchInput ? searchInput.value : '').toLowerCase().trim();
+
+      const filtered = currentImportReportDetails.filter(item => {
+        if (currentImportReportFilter === 'imported' && item.status !== 'imported') return false;
+        if (currentImportReportFilter === 'updated' && item.status !== 'updated') return false;
+        if (currentImportReportFilter === 'ignored' && item.status !== 'ignored') return false;
+        if ((currentImportReportFilter === 'error' || currentImportReportFilter === 'errors') && item.status !== 'error') return false;
+
+        if (query) {
+          const nom = String(item.nomPrenom || '').toLowerCase();
+          const mat = String(item.matricule || '').toLowerCase();
+          const cls = String(item.classe || '').toLowerCase();
+          if (!nom.includes(query) && !mat.includes(query) && !cls.includes(query)) {
+            return false;
+          }
+        }
+        return true;
+      });
+
+      if (filtered.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="6" class="p-6 text-center text-slate-400 italic font-medium">Aucune ligne ne correspond aux critères sélectionnés.</td></tr>';
+        return;
+      }
+
+      tbody.innerHTML = filtered.map(item => {
+        let badge = '';
+        let rowBg = '';
+        if (item.status === 'imported') {
+          badge = '<span class="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-100 text-emerald-800">📥 Importé</span>';
+          rowBg = 'bg-white hover:bg-emerald-50/30';
+        } else if (item.status === 'updated') {
+          badge = '<span class="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold bg-blue-100 text-blue-800">🔄 Mis à jour</span>';
+          rowBg = 'bg-white hover:bg-blue-50/30';
+        } else if (item.status === 'ignored') {
+          badge = '<span class="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold bg-slate-100 text-slate-700">⏭️ Ignoré</span>';
+          rowBg = 'bg-slate-50/50 hover:bg-slate-100/50';
+        } else {
+          badge = '<span class="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold bg-rose-100 text-rose-800">⚠️ Erreur</span>';
+          rowBg = 'bg-rose-50/40 hover:bg-rose-50/70';
+        }
+
+        let detailText = esc(item.action || '');
+        if (item.changes && item.changes.length > 0) {
+          detailText += `<br><span class="text-[10px] text-blue-600 font-medium">Changements : ${item.changes.map(c => esc(c)).join(', ')}</span>`;
+        }
+        if (item.error) {
+          detailText = `<span class="text-rose-600 font-semibold">${esc(item.error)}</span>`;
+        }
+
+        return `
+          <tr class="${rowBg} transition">
+            <td class="py-2 px-3 text-center font-mono text-slate-400 text-[11px]">${item.row || '-'}</td>
+            <td class="py-2 px-3 text-center">${badge}</td>
+            <td class="py-2 px-3 font-mono font-bold text-slate-700 text-[11px]">${esc(item.matricule || 'N/A')}</td>
+            <td class="py-2 px-3 font-semibold text-slate-900">${esc(item.nomPrenom || 'Inconnu')}</td>
+            <td class="py-2 px-3 text-center font-medium text-slate-600">${esc(item.classe || '-')}</td>
+            <td class="py-2 px-3.5 text-slate-600 text-[11px] leading-tight">${detailText}</td>
+          </tr>
+        `;
+      }).join('');
+    }
+
+    function exportImportReportCSV() {
+      if (!currentImportReportDetails || currentImportReportDetails.length === 0) {
+        showToast("Aucune donnée de rapport à exporter.");
+        return;
+      }
+      const headers = ["Ligne", "Statut", "Matricule", "Nom et Prenom", "Classe", "Action / Details"];
+      const rows = currentImportReportDetails.map(d => [
+        d.row || '',
+        d.status || '',
+        `"${(d.matricule || '').replace(/"/g, '""')}"`,
+        `"${(d.nomPrenom || '').replace(/"/g, '""')}"`,
+        `"${(d.classe || '').replace(/"/g, '""')}"`,
+        `"${((d.action || '') + (d.error ? ' - ' + d.error : '') + (d.changes ? ' - Modifié: ' + d.changes.join('; ') : '')).replace(/"/g, '""')}"`
+      ]);
+
+      const csvContent = '\uFEFF' + [headers.join(','), ...rows.map(r => r.join(','))].join('\r\n');
+      const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `rapport_import_eleves_${new Date().toISOString().slice(0, 10)}.csv`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+    }
+
     async function confirmImport() {
       const confirmBtn = document.getElementById('btn-confirm-import');
       const originalBtnText = confirmBtn ? confirmBtn.innerHTML : "Confirmer l'importation";
@@ -14167,88 +14484,132 @@
             <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
             <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
           </svg>
-          Importation en cours... (0/${listToImport.length})
+          Importation en cours... (${listToImport.length} élèves)
         `;
       }
 
-      let successCount = 0;
-      const existingMatricules = new Set((appState.students || []).map(s => String(s.matricule || '').toUpperCase().trim()));
-
-      for (let i = 0; i < listToImport.length; i++) {
-        const item = listToImport[i];
-        if (confirmBtn) {
-          confirmBtn.innerHTML = `
-            <svg class="animate-spin -ml-1 mr-2 h-4 w-4 text-white inline-block" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-              <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
-              <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-            </svg>
-            Importation en cours... (${i + 1}/${listToImport.length})
-          `;
-        }
-
-        // Assurer l'unicité du matricule
-        let mat = (item.matricule || `MAT-${Date.now().toString().slice(-6)}`).toUpperCase().trim();
-        if (existingMatricules.has(mat)) {
-          mat = `${mat}-${Math.floor(100 + Math.random() * 900)}`;
-        }
-        existingMatricules.add(mat);
-
-        const payload = {
-          ...item,
-          matricule: mat,
-          schoolId: targetSchoolId
-        };
-
-        let registeredStudent = null;
+      try {
+        let importResult = null;
         try {
-          const resp = await fetch('/api/students', {
+          const resp = await fetch('/api/students/import', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(payload),
+            body: JSON.stringify({
+              schoolId: targetSchoolId,
+              students: listToImport
+            }),
             credentials: 'same-origin'
           });
+
           if (resp.ok) {
             const data = await resp.json();
-            registeredStudent = data.student || (data.id ? data : null);
+            const registeredStudent = data.student || (data.id ? data : null);
+            importResult = data;
           } else {
-            console.warn(`Erreur API création élève (${resp.status})`);
+            const errData = await resp.json().catch(() => ({}));
+            throw new Error(errData.details || errData.error || `Erreur serveur HTTP ${resp.status}`);
           }
-        } catch (e) {
-          console.warn('Import API network error:', e);
+        } catch (netErr) {
+          // Si le backend est inaccessible en mode démonstration autonome local
+          console.warn('Backend /api/students/import indisponible, bascule en mode client anti-doublon:', netErr);
+          if (netErr.message && !netErr.message.includes('fetch') && !netErr.message.includes('NetworkError')) {
+            throw netErr;
+          }
+          // Algorithme local identique
+          const summary = { total: listToImport.length, imported: 0, updated: 0, ignored: 0, errors: 0 };
+          const details = [];
+          if (!appState.students) appState.students = [];
+
+          listToImport.forEach((item, idx) => {
+            const mat = String(item.matricule || '').toUpperCase().trim();
+            const nomPrenom = String(item.nomPrenom || '').trim();
+            const dob = String(item.dob || '').trim();
+
+            let existingIdx = -1;
+            if (mat) {
+              existingIdx = appState.students.findIndex(s => String(s.matricule || '').toUpperCase().trim() === mat);
+            }
+            if (existingIdx === -1 && nomPrenom && dob) {
+              existingIdx = appState.students.findIndex(s => 
+                String(s.nomPrenom || '').toLowerCase().trim() === nomPrenom.toLowerCase() &&
+                String(s.dob || '').trim() === dob
+              );
+            }
+
+            if (existingIdx >= 0) {
+              const ex = appState.students[existingIdx];
+              const changes = [];
+              if (item.nomPrenom && item.nomPrenom !== ex.nomPrenom) changes.push(`nom: ${ex.nomPrenom} -> ${item.nomPrenom}`);
+              if (item.classe && item.classe !== ex.classe) changes.push(`classe: ${ex.classe} -> ${item.classe}`);
+              if (item.statut && item.statut !== ex.statut) changes.push(`statut: ${ex.statut} -> ${item.statut}`);
+
+              if (changes.length > 0) {
+                appState.students[existingIdx] = { ...ex, ...item };
+                summary.updated++;
+                details.push({ row: idx + 1, matricule: ex.matricule || mat, nomPrenom: item.nomPrenom, classe: item.classe, status: 'updated', action: 'Informations mises à jour', changes });
+              } else {
+                summary.ignored++;
+                details.push({ row: idx + 1, matricule: ex.matricule || mat, nomPrenom: item.nomPrenom, classe: item.classe, status: 'ignored', action: 'Élève déjà existant identique (doublon ignoré)' });
+              }
+            } else {
+              const newStudent = {
+                id: Date.now() + idx,
+                ...item,
+                schoolId: targetSchoolId,
+                feePaid: 0,
+                feeDue: item.feeDue || 0,
+                balance: item.feeDue || 0
+              };
+              appState.students.unshift(newStudent);
+              summary.imported++;
+              details.push({ row: idx + 1, matricule: newStudent.matricule, nomPrenom: newStudent.nomPrenom, classe: newStudent.classe, status: 'imported', action: 'Nouvel élève inséré' });
+            }
+          });
+
+          importResult = { success: true, summary, details, students: appState.students };
         }
 
-        if (!registeredStudent) {
-          const newId = appState.students.length > 0 ? Math.max(...appState.students.map(s => Number(s.id) || 0)) + 1 : 1;
-          registeredStudent = {
-            id: newId,
-            ...payload
-          };
+        if (Array.isArray(importResult.students)) {
+          appState.students = importResult.students;
         }
 
-        appState.students.unshift(registeredStudent);
-        successCount++;
+        cancelImport();
+
+        // Réinitialiser les filtres et la pagination
+        appState.currentPage = 1;
+        appState.currentFilter = 'all';
+        const searchInput = document.getElementById('search-input');
+        if (searchInput) searchInput.value = '';
+
+        setSubTab('inscrits');
+        renderStudentsTable();
+        updateKPIs();
+        if (typeof renderMesInscritsTable === 'function') renderMesInscritsTable();
+        if (typeof renderConsultStats === 'function') renderConsultStats();
+
+        auditAction(
+          'STUDENTS_BATCH_IMPORT',
+          'Inscription',
+          'Importation Fichier Anti-Doublon',
+          '',
+          `Import terminé: ${importResult.summary.imported} nouveaux, ${importResult.summary.updated} mis à jour, ${importResult.summary.ignored} ignorés, ${importResult.summary.errors} erreurs`,
+          'SUCCÈS'
+        );
+
+        // Ouvrir le rapport d'import détaillé
+        openImportReportModal(importResult.summary, importResult.details);
+
+        showToast(`Importation terminée : ${importResult.summary.imported} ajouté(s), ${importResult.summary.updated} mis à jour, ${importResult.summary.ignored} doublon(s) ignoré(s).`);
+
+      } catch (err) {
+        console.error('Erreur import batch:', err);
+        showToast(`Erreur d'importation : ${err.message || 'Échec de la transaction'}`);
+      } finally {
+        if (confirmBtn) {
+          confirmBtn.disabled = false;
+          confirmBtn.innerHTML = originalBtnText;
+        }
       }
-
-      if (confirmBtn) {
-        confirmBtn.disabled = false;
-        confirmBtn.innerHTML = originalBtnText;
-      }
-
-      cancelImport();
-
-      // Réinitialiser les filtres et la pagination pour que les nouveaux élèves soient immédiatement visibles
-      appState.currentPage = 1;
-      appState.currentFilter = 'all';
-      const searchInput = document.getElementById('search-input');
-      if (searchInput) searchInput.value = '';
-
-      setSubTab('inscrits');
-      renderStudentsTable();
-      updateKPIs();
-      if (typeof renderMesInscritsTable === 'function') renderMesInscritsTable();
-
-      auditAction('STUDENTS_BATCH_IMPORT', 'Inscription', 'Importation Fichier', '', `${successCount} élèves importés et enregistrés`, 'SUCCÈS');
-      showToast(`Importation réussie : ${successCount} élève(s) importé(s) et enregistré(s) avec succès !`);
     }
 
     function renderMesInscritsTable() {
