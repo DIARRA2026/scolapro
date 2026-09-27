@@ -5916,7 +5916,7 @@
         </div>
         <div>
           <label class="block text-slate-600 mb-1 font-semibold">Montant à encaisser (XOF) :</label>
-          <input type="number" id="modal-pay-amount" value="30000" step="5000" class="w-full border border-slate-300 rounded p-2 font-black text-slate-800">
+          <input type="number" id="modal-pay-amount" placeholder="0" step="5000" class="w-full border border-slate-300 rounded p-2 font-black text-slate-800">
         </div>
         <div>
           <label class="block text-slate-600 mb-1 font-semibold">Mode de Paiement :</label>
@@ -5931,7 +5931,7 @@
         </div>
         <div>
           <label class="block text-slate-600 mb-1 font-semibold">Référence reçu / transaction :</label>
-          <input type="text" id="modal-pay-ref" value="WAVE-CI-99482103" class="w-full border border-slate-300 rounded p-2 font-mono font-bold">
+          <input type="text" id="modal-pay-ref" placeholder="Ex: WAVE-CI-..." class="w-full border border-slate-300 rounded p-2 font-mono font-bold">
         </div>
       </div>
 
@@ -6509,7 +6509,7 @@
         </div>
         <div>
           <label class="block text-slate-700 font-semibold mb-1">Bordereau / Référence interne</label>
-          <input type="text" id="sec-dep-ref" value="BORD-DEP-2026-09" class="w-full border border-slate-300 rounded px-2.5 py-1.5 font-mono">
+          <input type="text" id="sec-dep-ref" placeholder="Ex: BORD-DEP-..." class="w-full border border-slate-300 rounded px-2.5 py-1.5 font-mono">
         </div>
         <div class="p-3 bg-amber-50 rounded border border-amber-200 text-[11px] text-amber-800">
           ℹ️ Le montant versé restera consigné avec le statut <strong>EN ATTENTE</strong> jusqu'à ce que le responsable de la Caisse Principale confirme la réception physique des fonds.
@@ -7029,7 +7029,7 @@
         </div>
         <div>
           <label class="block font-semibold text-slate-700 mb-1">Créneau horaire</label>
-          <input type="text" id="m-abs-time" value="08h00 - 10h00" class="w-full border border-slate-300 rounded p-2 font-semibold" required>
+          <input type="text" id="m-abs-time" placeholder="Ex: 08h00 - 10h00" class="w-full border border-slate-300 rounded p-2 font-semibold" required>
         </div>
         <div>
           <label class="block font-semibold text-slate-700 mb-1">Motif déclaré</label>
@@ -7114,7 +7114,7 @@
         </div>
         <div>
           <label class="block font-semibold text-slate-700 mb-1">Format & Référence Fichier</label>
-          <input type="text" id="m-doc-ref" value="DOC-PED-2026-089.PDF" class="w-full border border-slate-300 rounded p-2 font-mono" required>
+          <input type="text" id="m-doc-ref" placeholder="Ex: DOC-PED-2026-089.PDF" class="w-full border border-slate-300 rounded p-2 font-mono" required>
         </div>
         <div class="flex justify-end gap-2 pt-3 border-t border-slate-200">
           <button type="button" onclick="closeAddDocumentModal()" class="px-4 py-1.5 border border-slate-300 rounded text-slate-700 hover:bg-slate-50">Annuler</button>
@@ -8987,11 +8987,11 @@
         <div class="grid grid-cols-2 gap-3">
           <div>
             <label class="block text-slate-700 font-semibold mb-1">Professeur Responsable</label>
-            <input type="text" id="tt-teacher" value="Prof. Titulaire" class="w-full border border-slate-300 rounded-lg px-3 py-2 outline-none font-semibold focus:ring-2 focus:ring-blue-600">
+            <input type="text" id="tt-teacher" placeholder="Ex: Prof. Titulaire" class="w-full border border-slate-300 rounded-lg px-3 py-2 outline-none font-semibold focus:ring-2 focus:ring-blue-600">
           </div>
           <div>
             <label class="block text-slate-700 font-semibold mb-1">Salle de Classe</label>
-            <input type="text" id="tt-room" value="Salle 104" class="w-full border border-slate-300 rounded-lg px-3 py-2 outline-none font-semibold focus:ring-2 focus:ring-blue-600">
+            <input type="text" id="tt-room" placeholder="Ex: Salle 104" class="w-full border border-slate-300 rounded-lg px-3 py-2 outline-none font-semibold focus:ring-2 focus:ring-blue-600">
           </div>
         </div>
 
@@ -10907,20 +10907,35 @@
       }
     }
 
+    function resetNewUserForm() {
+      const form = document.querySelector('#new-user-modal form');
+      if (form && typeof form.reset === 'function') {
+        form.reset();
+      }
+      const fields = ['nu-nom', 'nu-prenoms', 'nu-email', 'nu-phone', 'nu-password', 'nu-password-confirm'];
+      fields.forEach(f => {
+        const el = document.getElementById(f);
+        if (el) el.value = '';
+      });
+      const roleSel = document.getElementById('nu-role');
+      if (roleSel) roleSel.selectedIndex = 0;
+      const scopeSel = document.getElementById('nu-scope');
+      if (scopeSel) scopeSel.selectedIndex = 0;
+      const genBadge = document.getElementById('nu-password-generated-badge');
+      if (genBadge) genBadge.classList.add('hidden');
+    }
+
     function openNewUserModal() {
       if (!hasPerm('users.create')) {
         showToast("Accès refusé : permission users.create requise.");
         return;
       }
-      const pwdEl = document.getElementById('nu-password');
-      const pwdConfEl = document.getElementById('nu-password-confirm');
-      if (pwdEl) pwdEl.value = '';
-      if (pwdConfEl) pwdConfEl.value = '';
-
+      resetNewUserForm();
       document.getElementById('new-user-modal').classList.remove('hidden');
     }
 
     function closeNewUserModal() {
+      resetNewUserForm();
       document.getElementById('new-user-modal').classList.add('hidden');
     }
 
@@ -11287,11 +11302,23 @@
       }
     }
 
+    function resetRejectDepositForm() {
+      const form = document.querySelector('#modal-reject-deposit form');
+      if (form && typeof form.reset === 'function') form.reset();
+      const depId = document.getElementById('rd-dep-id');
+      if (depId) depId.value = '';
+      const reasonSelect = document.getElementById('rd-reason-select');
+      if (reasonSelect) reasonSelect.selectedIndex = 0;
+      const details = document.getElementById('rd-reason-details');
+      if (details) details.value = '';
+    }
+
     function openRejectDepositModal(depositId) {
       if (!hasPerm('cash.deposit.reject')) {
         showToast("Action refusée : permission cash.deposit.reject requise.");
         return;
       }
+      resetRejectDepositForm();
       const dep = appState.cashDeposits.find(d => d.id === depositId);
       if (!dep) return;
       const m = document.getElementById('modal-reject-deposit');
@@ -11305,6 +11332,7 @@
     }
 
     function closeRejectDepositModal() {
+      resetRejectDepositForm();
       const m = document.getElementById('modal-reject-deposit');
       if (m) m.classList.add('hidden');
     }
@@ -11384,7 +11412,17 @@
       });
     }
 
+    function resetSecondaryDepositForm() {
+      const form = document.querySelector('#secondary-deposit-modal form');
+      if (form && typeof form.reset === 'function') form.reset();
+      const amtInput = document.getElementById('sec-dep-amount');
+      if (amtInput) amtInput.value = '';
+      const refInput = document.getElementById('sec-dep-ref');
+      if (refInput) refInput.value = '';
+    }
+
     function openSecondaryDepositModal() {
+      resetSecondaryDepositForm();
       const c2 = (appState.cashDesks || []).find(c => c.id === 'CAISSE_2') || { balance: 0 };
       const bal = c2.balance !== undefined ? c2.balance : (c2.solde || 0);
       const amtInput = document.getElementById('sec-dep-amount');
@@ -11398,6 +11436,7 @@
     }
 
     function closeSecondaryDepositModal() {
+      resetSecondaryDepositForm();
       document.getElementById('secondary-deposit-modal').classList.add('hidden');
     }
 
@@ -11624,19 +11663,25 @@
       showToast(`Caisse ${deskName} supprimée avec succès.`);
     }
 
-    function openCreateCashDeskModal() {
-      const m = document.getElementById('modal-cash-desk-create');
-      if (!m) return;
+    function resetCreateCashDeskForm() {
+      const form = document.querySelector('#modal-cash-desk-create form');
+      if (form && typeof form.reset === 'function') form.reset();
       const nameInp = document.getElementById('cd-name');
       if (nameInp) nameInp.value = `Caisse Secondaire ${appState.cashDesks.length} (Guichet ${String.fromCharCode(65 + appState.cashDesks.length)})`;
       const cashierInp = document.getElementById('cd-cashier');
       if (cashierInp) cashierInp.value = '';
       const floatInp = document.getElementById('cd-initial-float');
       if (floatInp) floatInp.value = '0';
-      m.classList.remove('hidden');
+    }
+
+    function openCreateCashDeskModal() {
+      resetCreateCashDeskForm();
+      const m = document.getElementById('modal-cash-desk-create');
+      if (m) m.classList.remove('hidden');
     }
 
     function closeCreateCashDeskModal() {
+      resetCreateCashDeskForm();
       const m = document.getElementById('modal-cash-desk-create');
       if (m) m.classList.add('hidden');
     }
@@ -12426,9 +12471,27 @@
       });
     }
 
+    function resetFeeInstallmentForm() {
+      const form = document.querySelector('#modal-fee-installment form');
+      if (form && typeof form.reset === 'function') form.reset();
+      const idEl = document.getElementById('inst-id');
+      if (idEl) idEl.value = '';
+      const nameEl = document.getElementById('inst-name');
+      if (nameEl) nameEl.value = '';
+      const dateEl = document.getElementById('inst-date');
+      if (dateEl) dateEl.value = '';
+      const pctEl = document.getElementById('inst-pct');
+      if (pctEl) pctEl.value = 10;
+      const amtEl = document.getElementById('inst-amt-college');
+      if (amtEl) amtEl.value = 0;
+      const obligEl = document.getElementById('inst-obligatory');
+      if (obligEl) obligEl.checked = false;
+    }
+
     function openFeeInstallmentModal(id = null) {
       const m = document.getElementById('modal-fee-installment');
       if (!m) return;
+      resetFeeInstallmentForm();
       document.getElementById('inst-id').value = id !== null ? id : '';
       if (id !== null) {
         const inst = appState.feeInstallments.find(i => i.id === id);
@@ -12439,17 +12502,12 @@
           document.getElementById('inst-amt-college').value = inst.montantCollege || 0;
           document.getElementById('inst-obligatory').checked = !!inst.isObligatory;
         }
-      } else {
-        document.getElementById('inst-name').value = `Tranche ${appState.feeInstallments.length + 1}`;
-        document.getElementById('inst-date').value = '15/01/2027';
-        document.getElementById('inst-pct').value = 10;
-        document.getElementById('inst-amt-college').value = 12000;
-        document.getElementById('inst-obligatory').checked = false;
       }
       m.classList.remove('hidden');
     }
 
     function closeFeeInstallmentModal() {
+      resetFeeInstallmentForm();
       const m = document.getElementById('modal-fee-installment');
       if (m) m.classList.add('hidden');
     }
@@ -12539,9 +12597,28 @@
       });
     }
 
+    function resetFeeTypeForm() {
+      const form = document.querySelector('#modal-fee-type form');
+      if (form && typeof form.reset === 'function') form.reset();
+      const codeInp = document.getElementById('ft-code');
+      if (codeInp) {
+        codeInp.value = 'FRAIS_' + ((appState.feeTypes || []).length + 1);
+        codeInp.readOnly = false;
+      }
+      const nameEl = document.getElementById('ft-name');
+      if (nameEl) nameEl.value = '';
+      const natEl = document.getElementById('ft-nature');
+      if (natEl) natEl.value = 'Obligatoire';
+      const recEl = document.getElementById('ft-recurring');
+      if (recEl) recEl.checked = true;
+      const amtEl = document.getElementById('ft-amount');
+      if (amtEl) amtEl.value = 0;
+    }
+
     function openFeeTypeModal(code = null) {
       const m = document.getElementById('modal-fee-type');
       if (!m) return;
+      resetFeeTypeForm();
       const codeInp = document.getElementById('ft-code');
       if (code !== null) {
         const f = appState.feeTypes.find(x => x.code === code);
@@ -12553,18 +12630,12 @@
           document.getElementById('ft-recurring').checked = !!f.recurring;
           document.getElementById('ft-amount').value = f.amount || 0;
         }
-      } else {
-        codeInp.value = 'FRAIS_' + (appState.feeTypes.length + 1);
-        codeInp.readOnly = false;
-        document.getElementById('ft-name').value = '';
-        document.getElementById('ft-nature').value = 'Obligatoire';
-        document.getElementById('ft-recurring').checked = true;
-        document.getElementById('ft-amount').value = 5000;
       }
       m.classList.remove('hidden');
     }
 
     function closeFeeTypeModal() {
+      resetFeeTypeForm();
       const m = document.getElementById('modal-fee-type');
       if (m) m.classList.add('hidden');
     }
@@ -12653,17 +12724,28 @@
       }
     }
 
+    function resetCostLevelForm() {
+      const form = document.querySelector('#modal-cost-level form');
+      if (form && typeof form.reset === 'function') form.reset();
+      const lvl = document.getElementById('cl-level');
+      if (lvl) lvl.value = '';
+      const cyc = document.getElementById('cl-cycle');
+      if (cyc) cyc.value = 'Premier Cycle';
+      const base = document.getElementById('cl-base');
+      if (base) base.value = '0';
+      const exam = document.getElementById('cl-exam');
+      if (exam) exam.value = '0';
+    }
+
     function openCostLevelModal() {
       const m = document.getElementById('modal-cost-level');
       if (!m) return;
-      document.getElementById('cl-level').value = '';
-      document.getElementById('cl-cycle').value = 'Premier Cycle';
-      document.getElementById('cl-base').value = '120000';
-      document.getElementById('cl-exam').value = '0';
+      resetCostLevelForm();
       m.classList.remove('hidden');
     }
 
     function closeCostLevelModal() {
+      resetCostLevelForm();
       const m = document.getElementById('modal-cost-level');
       if (m) m.classList.add('hidden');
     }
@@ -12745,9 +12827,25 @@
       });
     }
 
+    function resetReductionForm() {
+      const form = document.querySelector('#modal-reduction form');
+      if (form && typeof form.reset === 'function') form.reset();
+      const codeEl = document.getElementById('red-code');
+      if (codeEl) codeEl.value = '';
+      const labelEl = document.getElementById('red-label');
+      if (labelEl) labelEl.value = '';
+      const typeEl = document.getElementById('red-type');
+      if (typeEl) typeEl.value = 'Pourcentage';
+      const valEl = document.getElementById('red-val');
+      if (valEl) valEl.value = '';
+      const appEl = document.getElementById('red-applies');
+      if (appEl) appEl.value = 'Tous';
+    }
+
     function openReductionModal(code = null) {
       const m = document.getElementById('modal-reduction');
       if (!m) return;
+      resetReductionForm();
       document.getElementById('red-code').value = code || '';
       if (code) {
         const d = appState.discountCases.find(x => x.code === code);
@@ -12757,16 +12855,12 @@
           document.getElementById('red-val').value = d.value || '';
           document.getElementById('red-applies').value = d.appliesTo || 'Tous';
         }
-      } else {
-        document.getElementById('red-label').value = 'Bourse Sociale Partielle';
-        document.getElementById('red-type').value = 'Pourcentage';
-        document.getElementById('red-val').value = '30%';
-        document.getElementById('red-applies').value = 'Tous';
       }
       m.classList.remove('hidden');
     }
 
     function closeReductionModal() {
+      resetReductionForm();
       const m = document.getElementById('modal-reduction');
       if (m) m.classList.add('hidden');
     }
@@ -14231,9 +14325,21 @@
       showToast("Dossier réhabilité et retiré de la liste noire !");
     }
 
+    function resetBlacklistForm() {
+      const form = document.querySelector('#modal-discipline-blacklist form');
+      if (form && typeof form.reset === 'function') form.reset();
+      const detEl = document.getElementById('bl-details');
+      if (detEl) detEl.value = '';
+      const notifyEl = document.getElementById('bl-notify-parent');
+      if (notifyEl) notifyEl.checked = false;
+      const dateEl = document.getElementById('bl-date');
+      if (dateEl) dateEl.value = new Date().toISOString().split('T')[0];
+    }
+
     function openBlacklistModal() {
       const modal = document.getElementById('modal-discipline-blacklist');
       if (!modal) return;
+      resetBlacklistForm();
 
       const picker = document.getElementById('bl-student-picker');
       if (picker) {
@@ -14260,6 +14366,7 @@
     }
 
     function closeBlacklistModal() {
+      resetBlacklistForm();
       const modal = document.getElementById('modal-discipline-blacklist');
       if (modal) modal.classList.add('hidden');
     }
@@ -14310,7 +14417,17 @@
       closeBlacklistModal();
     }
 
+    function resetTransferForm() {
+      const form = document.querySelector('#transfer-modal form');
+      if (form && typeof form.reset === 'function') form.reset();
+      const sch = document.getElementById('tr-school');
+      if (sch) sch.value = '';
+      const type = document.getElementById('tr-type');
+      if (type) type.selectedIndex = 0;
+    }
+
     function openTransferModal() {
+      resetTransferForm();
       const picker = document.getElementById('tr-student-select');
       picker.innerHTML = '';
       appState.students.forEach(st => {
@@ -14323,6 +14440,7 @@
     }
 
     function closeTransferModal() {
+      resetTransferForm();
       document.getElementById('transfer-modal').classList.add('hidden');
     }
 
@@ -14456,11 +14574,21 @@
       }
     }
 
+    function resetPaymentForm() {
+      const amtEl = document.getElementById('modal-pay-amount');
+      if (amtEl) amtEl.value = '';
+      const refEl = document.getElementById('modal-pay-ref');
+      if (refEl) refEl.value = '';
+      const methEl = document.getElementById('modal-pay-method');
+      if (methEl) methEl.selectedIndex = 0;
+    }
+
     function openPaymentModal() {
       if (!hasPerm('payments.create')) {
         showToast("Action refusée : permission payments.create requise.");
         return;
       }
+      resetPaymentForm();
       const picker = document.getElementById('modal-pay-student');
       picker.innerHTML = '';
       appState.students.forEach(st => {
@@ -14474,6 +14602,7 @@
     }
 
     function closePaymentModal() {
+      resetPaymentForm();
       document.getElementById('payment-modal').classList.add('hidden');
     }
 
@@ -18825,18 +18954,32 @@ function renderPeriodicites() {
   });
 }
 
+function resetPeriodForm() {
+  const form = document.querySelector('#modal-ped-periodicite form');
+  if (form && typeof form.reset === 'function') form.reset();
+  const idEl = document.getElementById('m-period-id');
+  if (idEl) idEl.value = '';
+  const codeEl = document.getElementById('m-period-code');
+  if (codeEl) codeEl.value = '';
+  const nameEl = document.getElementById('m-period-name');
+  if (nameEl) nameEl.value = '';
+  const startEl = document.getElementById('m-period-start');
+  if (startEl) startEl.value = '';
+  const endEl = document.getElementById('m-period-end');
+  if (endEl) endEl.value = '';
+  const isCurEl = document.getElementById('m-period-iscurrent');
+  if (isCurEl) isCurEl.checked = false;
+  const titleEl = document.getElementById('modal-ped-period-title');
+  if (titleEl) titleEl.innerText = 'Nouvelle Périodicité';
+}
+
 function openAddPeriodModal() {
-  document.getElementById('m-period-id').value = '';
-  document.getElementById('modal-ped-period-title').innerText = 'Nouvelle Périodicité';
-  document.getElementById('m-period-code').value = '';
-  document.getElementById('m-period-name').value = '';
-  document.getElementById('m-period-start').value = '2026-09-01';
-  document.getElementById('m-period-end').value = '2026-11-28';
-  document.getElementById('m-period-iscurrent').checked = false;
+  resetPeriodForm();
   document.getElementById('modal-ped-periodicite').classList.remove('hidden');
 }
 
 function closeAddPeriodModal() {
+  resetPeriodForm();
   document.getElementById('modal-ped-periodicite').classList.add('hidden');
 }
 
@@ -19093,12 +19236,33 @@ function autoFillCycleByLevel(level) {
   }
 }
 
+function resetClassForm() {
+  const form = document.querySelector('#modal-ped-classe form');
+  if (form && typeof form.reset === 'function') form.reset();
+  const idEl = document.getElementById('m-class-id');
+  if (idEl) idEl.value = '';
+  const nameEl = document.getElementById('m-class-name');
+  if (nameEl) nameEl.value = '';
+  const capEl = document.getElementById('m-class-capacity');
+  if (capEl) capEl.value = 45;
+  const roomEl = document.getElementById('m-class-room');
+  if (roomEl) roomEl.value = '';
+  const lvlEl = document.getElementById('m-class-level');
+  if (lvlEl) lvlEl.value = '6EME';
+  const cycEl = document.getElementById('m-class-cycle');
+  if (cycEl) cycEl.value = 'Premier Cycle';
+  const titEl = document.getElementById('m-class-titulaire');
+  if (titEl) titEl.value = '';
+  const eduEl = document.getElementById('m-class-educateur');
+  if (eduEl) eduEl.value = '';
+  const statEl = document.getElementById('m-class-status');
+  if (statEl) statEl.value = 'ACTIF';
+  const titleEl = document.getElementById('modal-ped-class-title');
+  if (titleEl) titleEl.innerText = 'Ajouter une Nouvelle Classe';
+}
+
 function openAddClassModal() {
-  document.getElementById('m-class-id').value = '';
-  document.getElementById('modal-ped-class-title').innerText = 'Ajouter une Nouvelle Classe';
-  document.getElementById('m-class-name').value = '';
-  document.getElementById('m-class-capacity').value = 45;
-  document.getElementById('m-class-room').value = '';
+  resetClassForm();
 
   // Populate titulaire
   const tSel = document.getElementById('m-class-titulaire');
@@ -19122,6 +19286,7 @@ function openAddClassModal() {
 }
 
 function closeAddClassModal() {
+  resetClassForm();
   document.getElementById('modal-ped-classe').classList.add('hidden');
 }
 
@@ -19510,24 +19675,41 @@ function renderMatieres() {
   });
 }
 
+function resetMatiereForm() {
+  const form = document.querySelector('#modal-ped-matiere form');
+  if (form && typeof form.reset === 'function') form.reset();
+  const idEl = document.getElementById('m-matiere-id');
+  if (idEl) idEl.value = '';
+  const codeEl = document.getElementById('m-matiere-code');
+  if (codeEl) codeEl.value = '';
+  const nameEl = document.getElementById('m-matiere-name');
+  if (nameEl) nameEl.value = '';
+  const coeffEl = document.getElementById('m-matiere-coeff');
+  if (coeffEl) coeffEl.value = 3;
+  const hoursEl = document.getElementById('m-matiere-hours');
+  if (hoursEl) hoursEl.value = 4;
+  const tSel = document.getElementById('m-matiere-teacher');
+  if (tSel) tSel.value = '';
+  const titleEl = document.getElementById('modal-ped-matiere-title');
+  if (titleEl) titleEl.innerText = 'Ajouter une Nouvelle Matière';
+}
+
 function openAddMatiereModal() {
-  document.getElementById('m-matiere-id').value = '';
-  document.getElementById('modal-ped-matiere-title').innerText = 'Ajouter une Nouvelle Matière';
-  document.getElementById('m-matiere-code').value = '';
-  document.getElementById('m-matiere-name').value = '';
-  document.getElementById('m-matiere-coeff').value = 3;
-  document.getElementById('m-matiere-hours').value = 4;
+  resetMatiereForm();
 
   const tSel = document.getElementById('m-matiere-teacher');
-  tSel.innerHTML = '<option value="">-- Choisir l\'enseignant référent --</option>';
-  appState.teachers.forEach(t => {
-    tSel.innerHTML += `<option value="${esc(t.name)}">${esc(t.name)} (${esc(t.discipline)})</option>`;
-  });
+  if (tSel) {
+    tSel.innerHTML = '<option value="">-- Choisir l\'enseignant référent --</option>';
+    appState.teachers.forEach(t => {
+      tSel.innerHTML += `<option value="${esc(t.name)}">${esc(t.name)} (${esc(t.discipline)})</option>`;
+    });
+  }
 
   document.getElementById('modal-ped-matiere').classList.remove('hidden');
 }
 
 function closeAddMatiereModal() {
+  resetMatiereForm();
   document.getElementById('modal-ped-matiere').classList.add('hidden');
 }
 
@@ -19718,10 +19900,21 @@ function renderTeacherSchedules() {
   });
 }
 
+function resetTeacherScheduleForm() {
+  const form = document.querySelector('#modal-ped-horaire form');
+  if (form && typeof form.reset === 'function') form.reset();
+  const idEl = document.getElementById('m-sched-id');
+  if (idEl) idEl.value = '';
+  const roomEl = document.getElementById('m-sched-room');
+  if (roomEl) roomEl.value = '';
+  const alertEl = document.getElementById('m-sched-conflict-alert');
+  if (alertEl) alertEl.classList.add('hidden');
+  const titleEl = document.getElementById('modal-ped-horaire-title');
+  if (titleEl) titleEl.innerText = 'Planifier un Créneau Horaire';
+}
+
 function openAddTeacherScheduleModal() {
-  document.getElementById('m-sched-id').value = '';
-  document.getElementById('modal-ped-horaire-title').innerText = 'Planifier un Créneau Horaire';
-  document.getElementById('m-sched-conflict-alert').classList.add('hidden');
+  resetTeacherScheduleForm();
 
   // Enseignants
   const tSel = document.getElementById('m-sched-teacher');
@@ -19764,6 +19957,7 @@ function editTeacherSchedule(id) {
 }
 
 function closeAddTeacherScheduleModal() {
+  resetTeacherScheduleForm();
   document.getElementById('modal-ped-horaire').classList.add('hidden');
 }
 
@@ -19900,7 +20094,21 @@ function renderTimetableGrid() {
   });
 }
 
+function resetTimetableSlotForm() {
+  const form = document.querySelector('#modal-timetable-slot form');
+  if (form && typeof form.reset === 'function') form.reset();
+  const teacherInput = document.getElementById('tt-teacher');
+  if (teacherInput) teacherInput.value = '';
+  const roomInput = document.getElementById('tt-room');
+  if (roomInput) roomInput.value = '';
+  const colorSelect = document.getElementById('tt-color');
+  if (colorSelect) colorSelect.selectedIndex = 0;
+  const subSelect = document.getElementById('tt-subject');
+  if (subSelect && subSelect.options.length) subSelect.selectedIndex = 0;
+}
+
 function openTimetableSlotModal(className, day, slotIdx) {
+  resetTimetableSlotForm();
   const m = document.getElementById('modal-timetable-slot');
   if (!m) return;
   document.getElementById('tt-class').value = className;
@@ -19921,6 +20129,7 @@ function openTimetableSlotModal(className, day, slotIdx) {
 }
 
 function closeTimetableSlotModal() {
+  resetTimetableSlotForm();
   const m = document.getElementById('modal-timetable-slot');
   if (m) m.classList.add('hidden');
 }
@@ -20195,35 +20404,51 @@ function renderHomeworks() {
   });
 }
 
+function resetHomeworkForm() {
+  const form = document.querySelector('#modal-ped-devoir form');
+  if (form && typeof form.reset === 'function') form.reset();
+  const idEl = document.getElementById('m-hw-id');
+  if (idEl) idEl.value = '';
+  const titleEl = document.getElementById('m-hw-title');
+  if (titleEl) titleEl.value = '';
+  const descEl = document.getElementById('m-hw-desc');
+  if (descEl) descEl.value = '';
+  const dueEl = document.getElementById('m-hw-due');
+  if (dueEl) dueEl.value = new Date().toISOString().split('T')[0];
+  const modalTitle = document.getElementById('modal-ped-devoir-title');
+  if (modalTitle) modalTitle.innerText = 'Programmer un Devoir';
+}
+
 function openAddHomeworkModal() {
-  document.getElementById('m-hw-id').value = '';
-  document.getElementById('modal-ped-devoir-title').innerText = 'Programmer un Devoir';
-  document.getElementById('m-hw-title').value = '';
-  document.getElementById('m-hw-desc').value = '';
-  document.getElementById('m-hw-due').value = '2026-09-30';
+  resetHomeworkForm();
 
   // Populate classes with scope check
   const cSel = document.getElementById('m-hw-class');
-  cSel.innerHTML = '';
-  const user = getActiveUser();
-  appState.classes.forEach(c => {
-    if (user.role === 'enseignant' && Array.isArray(user.scopeValue)) {
-      if (!user.scopeValue.includes(c.name)) return;
-    }
-    cSel.innerHTML += `<option value="${esc(c.name)}">${esc(c.name)}</option>`;
-  });
+  if (cSel) {
+    cSel.innerHTML = '';
+    const user = getActiveUser();
+    appState.classes.forEach(c => {
+      if (user.role === 'enseignant' && Array.isArray(user.scopeValue)) {
+        if (!user.scopeValue.includes(c.name)) return;
+      }
+      cSel.innerHTML += `<option value="${esc(c.name)}">${esc(c.name)}</option>`;
+    });
+  }
 
   // Populate subjects
   const sSel = document.getElementById('m-hw-subject');
-  sSel.innerHTML = '';
-  appState.matieres.forEach(m => {
-    sSel.innerHTML += `<option value="${esc(m.name)}">${esc(m.name)} (${esc(m.code)})</option>`;
-  });
+  if (sSel) {
+    sSel.innerHTML = '';
+    appState.matieres.forEach(m => {
+      sSel.innerHTML += `<option value="${esc(m.name)}">${esc(m.name)} (${esc(m.code)})</option>`;
+    });
+  }
 
   document.getElementById('modal-ped-devoir').classList.remove('hidden');
 }
 
 function closeAddHomeworkModal() {
+  resetHomeworkForm();
   document.getElementById('modal-ped-devoir').classList.add('hidden');
 }
 
@@ -20358,19 +20583,40 @@ function renderAbsences() {
   });
 }
 
-function openAddAbsenceModal() {
-  const sSel = document.getElementById('m-abs-student');
-  sSel.innerHTML = '';
-  if (appState.students) {
-    appState.students.forEach(s => {
-      sSel.innerHTML += `<option value="${esc(s.id)}">${esc(s.nomPrenom)} (${esc(s.classe)}) — ${esc(s.matricule)}</option>`;
-    });
+function resetAbsenceForm() {
+  const form = document.querySelector('#modal-ped-absence form');
+  if (form && typeof form.reset === 'function') form.reset();
+  const timeEl = document.getElementById('m-abs-time');
+  if (timeEl) timeEl.value = '';
+  const motifEl = document.getElementById('m-abs-motif');
+  if (motifEl) motifEl.value = '';
+  const smsEl = document.getElementById('m-abs-sms');
+  if (smsEl) smsEl.checked = false;
+  const statusEl = document.getElementById('m-abs-status');
+  if (statusEl) statusEl.selectedIndex = 0;
+  const dateEl = document.getElementById('m-abs-date');
+  if (dateEl) {
+    const today = new Date().toISOString().split('T')[0];
+    dateEl.value = today;
   }
-  document.getElementById('m-abs-date').value = '2026-09-10';
+}
+
+function openAddAbsenceModal() {
+  resetAbsenceForm();
+  const sSel = document.getElementById('m-abs-student');
+  if (sSel) {
+    sSel.innerHTML = '';
+    if (appState.students) {
+      appState.students.forEach(s => {
+        sSel.innerHTML += `<option value="${esc(s.id)}">${esc(s.nomPrenom)} (${esc(s.classe)}) — ${esc(s.matricule)}</option>`;
+      });
+    }
+  }
   document.getElementById('modal-ped-absence').classList.remove('hidden');
 }
 
 function closeAddAbsenceModal() {
+  resetAbsenceForm();
   document.getElementById('modal-ped-absence').classList.add('hidden');
 }
 
@@ -20499,11 +20745,27 @@ function renderAdminDocuments() {
   });
 }
 
+function resetDocumentForm() {
+  const form = document.querySelector('#modal-ped-document form');
+  if (form && typeof form.reset === 'function') form.reset();
+  const idEl = document.getElementById('m-doc-id');
+  if (idEl) idEl.value = '';
+  const titleHeader = document.getElementById('modal-ped-doc-title');
+  if (titleHeader) titleHeader.innerText = 'Enregistrer un Document Administratif';
+  const titleEl = document.getElementById('m-doc-title');
+  if (titleEl) titleEl.value = '';
+  const catEl = document.getElementById('m-doc-cat');
+  if (catEl) catEl.selectedIndex = 0;
+  const targetEl = document.getElementById('m-doc-target');
+  if (targetEl) targetEl.selectedIndex = 0;
+  const refEl = document.getElementById('m-doc-ref');
+  if (refEl) {
+    refEl.value = 'DOC-PED-2026-' + String(Math.floor(Math.random()*900 + 100)).padStart(3, '0') + '.PDF';
+  }
+}
+
 function openAddDocumentModal() {
-  document.getElementById('m-doc-id').value = '';
-  document.getElementById('modal-ped-doc-title').innerText = 'Enregistrer un Document Administratif';
-  document.getElementById('m-doc-title').value = '';
-  document.getElementById('m-doc-ref').value = 'DOC-PED-2026-' + String(Math.floor(Math.random()*900 + 100)).padStart(3, '0') + '.PDF';
+  resetDocumentForm();
   document.getElementById('modal-ped-document').classList.remove('hidden');
 }
 
@@ -20521,6 +20783,7 @@ function openEditDocumentModal(id) {
 }
 
 function closeAddDocumentModal() {
+  resetDocumentForm();
   document.getElementById('modal-ped-document').classList.add('hidden');
 }
 

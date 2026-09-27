@@ -534,3 +534,71 @@ test('AUTH-CODE-15 : Réinitialisation intégrale des formulaires de création (
   assert.ok(closeStudentMatch[1].includes('resetAddStudentForm()'), 'closeAddStudentModal doit appeler resetAddStudentForm');
 });
 
+test('AUTH-CODE-16 : Réinitialisation systématique de TOUS les formulaires d\'inscription et de création', () => {
+  const fs = require('node:fs');
+  const path = require('node:path');
+  const content = fs.readFileSync(path.join(__dirname, '..', 'index.html'), 'utf8');
+
+  // 1. Formulaire de création / inscription d'utilisateur (resetNewUserForm)
+  const resetUserMatch = content.match(/function resetNewUserForm\([^)]*\)\s*\{([\s\S]*?)\n    \}/);
+  assert.ok(resetUserMatch, 'resetNewUserForm doit être définie');
+  const resetUserBody = resetUserMatch[1];
+  assert.ok(resetUserBody.includes("'nu-nom'"), 'Doit réinitialiser nu-nom');
+  assert.ok(resetUserBody.includes("'nu-prenoms'"), 'Doit réinitialiser nu-prenoms');
+  assert.ok(resetUserBody.includes("'nu-email'"), 'Doit réinitialiser nu-email');
+  assert.ok(resetUserBody.includes("'nu-phone'"), 'Doit réinitialiser nu-phone');
+  assert.ok(resetUserBody.includes("'nu-password'"), 'Doit réinitialiser nu-password');
+  assert.ok(resetUserBody.includes("'nu-password-confirm'"), 'Doit réinitialiser nu-password-confirm');
+
+  const openUserMatch = content.match(/function openNewUserModal\([^)]*\)\s*\{([\s\S]*?)\n    \}/);
+  assert.ok(openUserMatch, 'openNewUserModal doit être définie');
+  assert.ok(openUserMatch[1].includes('resetNewUserForm()'), 'openNewUserModal doit appeler resetNewUserForm');
+
+  const closeUserMatch = content.match(/function closeNewUserModal\([^)]*\)\s*\{([\s\S]*?)\n    \}/);
+  assert.ok(closeUserMatch, 'closeNewUserModal doit être définie');
+  assert.ok(closeUserMatch[1].includes('resetNewUserForm()'), 'closeNewUserModal doit appeler resetNewUserForm');
+
+  // 2. Formulaire d'encaissement / paiement (resetPaymentForm)
+  const resetPayMatch = content.match(/function resetPaymentForm\([^)]*\)\s*\{([\s\S]*?)\n    \}/);
+  assert.ok(resetPayMatch, 'resetPaymentForm doit être définie');
+  assert.ok(content.includes('openPaymentModal') && content.includes('resetPaymentForm()'), 'openPaymentModal doit appeler resetPaymentForm');
+  assert.ok(content.includes('closePaymentModal') && content.includes('resetPaymentForm()'), 'closePaymentModal doit appeler resetPaymentForm');
+
+  // 3. Formulaire de versement caisse secondaire (resetSecondaryDepositForm)
+  const resetSecDepMatch = content.match(/function resetSecondaryDepositForm\([^)]*\)\s*\{([\s\S]*?)\n    \}/);
+  assert.ok(resetSecDepMatch, 'resetSecondaryDepositForm doit être définie');
+
+  // 4. Formulaire de création de caisse secondaire (resetCreateCashDeskForm)
+  const resetCdkMatch = content.match(/function resetCreateCashDeskForm\([^)]*\)\s*\{([\s\S]*?)\n    \}/);
+  assert.ok(resetCdkMatch, 'resetCreateCashDeskForm doit être définie');
+
+  // 5. Formulaires d'écolage & tarification
+  assert.ok(content.includes('function resetFeeInstallmentForm'), 'resetFeeInstallmentForm doit être définie');
+  assert.ok(content.includes('function resetFeeTypeForm'), 'resetFeeTypeForm doit être définie');
+  assert.ok(content.includes('function resetCostLevelForm'), 'resetCostLevelForm doit être définie');
+  assert.ok(content.includes('function resetReductionForm'), 'resetReductionForm doit être définie');
+
+  // 6. Formulaires de transfert et discipline
+  assert.ok(content.includes('function resetTransferForm'), 'resetTransferForm doit être définie');
+  assert.ok(content.includes('function resetBlacklistForm'), 'resetBlacklistForm doit être définie');
+
+  // 7. Formulaires pédagogiques
+  assert.ok(content.includes('function resetPeriodForm'), 'resetPeriodForm doit être définie');
+  assert.ok(content.includes('function resetClassForm'), 'resetClassForm doit être définie');
+  assert.ok(content.includes('function resetMatiereForm'), 'resetMatiereForm doit être définie');
+  assert.ok(content.includes('function resetTeacherScheduleForm'), 'resetTeacherScheduleForm doit être définie');
+  assert.ok(content.includes('function resetHomeworkForm'), 'resetHomeworkForm doit être définie');
+  assert.ok(content.includes('function resetAbsenceForm'), 'resetAbsenceForm doit être définie');
+  assert.ok(content.includes('function resetDocumentForm'), 'resetDocumentForm doit être définie');
+  assert.ok(content.includes('function resetTimetableSlotForm'), 'resetTimetableSlotForm doit être définie');
+
+  // 8. Vérification de l'absence de valeurs en dur polluant les formulaires vierges
+  assert.ok(!content.includes('id="p-amount" value="30000"'), 'p-amount ne doit pas avoir de valeur par défaut en dur');
+  assert.ok(!content.includes('id="p-ref" value="WAVE-CI-99482103"'), 'p-ref ne doit pas avoir de valeur par défaut en dur');
+  assert.ok(!content.includes('id="sdep-slip" value="BORD-DEP-2026-09"'), 'sdep-slip ne doit pas avoir de valeur par défaut en dur');
+  assert.ok(!content.includes('id="m-abs-time" value="08h00 - 10h00"'), 'm-abs-time ne doit pas avoir de valeur par défaut en dur');
+  assert.ok(!content.includes('id="tt-teacher" value="Prof. Titulaire"'), 'tt-teacher ne doit pas avoir de valeur par défaut en dur');
+  assert.ok(!content.includes('id="tt-room" value="Salle 104"'), 'tt-room ne doit pas avoir de valeur par défaut en dur');
+});
+
+
