@@ -3035,19 +3035,27 @@
 
           <!-- Simulated preview table for imported rows -->
           <div id="import-preview-box" class="hidden space-y-3">
-            <h4 class="font-bold text-xs uppercase text-slate-700">Aperçu des 3 premiers élèves détectés :</h4>
+            <h4 class="font-bold text-xs uppercase text-slate-700">Aperçu des élèves détectés :</h4>
             <div class="overflow-x-auto border border-slate-200 rounded">
               <table class="w-full text-xs text-left">
                 <thead class="bg-slate-100 text-slate-600 font-bold">
-                  <tr><th class="p-2">Nom & Prénoms</th><th class="p-2">Matricule</th><th class="p-2">Sexe</th><th class="p-2">Niveau</th><th class="p-2">Classe Proposée</th></tr>
+                  <tr>
+                    <th class="p-2">Nom & Prénoms</th>
+                    <th class="p-2">Matricule</th>
+                    <th class="p-2">Sexe</th>
+                    <th class="p-2">Date Naiss. (J/M/A)</th>
+                    <th class="p-2">Statut (AFF/NAFF)</th>
+                    <th class="p-2">Niveau</th>
+                    <th class="p-2">Classe Proposée</th>
+                  </tr>
                 </thead>
                 <tbody class="divide-y divide-slate-100" id="import-preview-tbody"></tbody>
               </table>
             </div>
             <div class="flex justify-end gap-2">
               <button onclick="cancelImport()" class="px-3 py-1.5 border border-slate-300 text-slate-600 rounded text-xs">Annuler</button>
-              <button onclick="confirmImport()" class="btn-navy text-white px-4 py-1.5 rounded text-xs font-bold shadow">
-                Confirmer l'importation de 3 élèves
+              <button onclick="confirmImport()" id="btn-confirm-import" class="btn-navy text-white px-4 py-1.5 rounded text-xs font-bold shadow">
+                Confirmer l'importation
               </button>
             </div>
           </div>
@@ -5591,7 +5599,7 @@
         <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
           <div>
             <label class="block text-slate-700 font-semibold mb-1">Date de naissance</label>
-            <input type="date" id="m-dob" value="2012-05-14" class="w-full border border-slate-300 rounded px-3 py-1.5 focus:outline-none">
+            <input type="date" id="m-dob" class="w-full border border-slate-300 rounded px-3 py-1.5 focus:outline-none">
           </div>
           <div>
             <label class="block text-slate-700 font-semibold mb-1">Niveau</label>
@@ -13592,7 +13600,7 @@
       if (form && typeof form.reset === 'function') {
         form.reset();
       }
-      const fields = ['m-nom', 'm-prenoms', 'm-matricule', 'm-tuteur', 'm-phone', 'm-email'];
+      const fields = ['m-nom', 'm-prenoms', 'm-matricule', 'm-tuteur', 'm-phone', 'm-email', 'm-dob'];
       fields.forEach(f => {
         const el = document.getElementById(f);
         if (el) el.value = '';
@@ -13972,10 +13980,10 @@
     }
 
     function downloadSampleImportTemplate() {
-      const headers = ["MATRICULE", "NOM", "PRENOMS", "SEXE", "DATE_NAISSANCE", "NIVEAU", "CLASSE_SOUHAITEE", "STATUT_AFF"];
+      const headers = ["MATRICULE", "NOM", "PRENOMS", "SEXE", "JOUR", "MOIS", "ANNEE", "NIVEAU", "CLASSE_SOUHAITEE", "STATUT - AFF/NAFF"];
       const sample = [
-        ["23948102A", "KONE", "MAMADOU", "M", "2012-04-12", "6EME", "6EME 1", "AFF"],
-        ["23948103B", "TOURE", "AMENAN", "F", "2011-11-05", "5EME", "5EME 2", "AFF"]
+        ["23948102A", "KONE", "MAMADOU", "M", "12", "04", "2012", "6EME", "6EME 1", "AFF"],
+        ["23948103B", "TOURE", "AMENAN", "F", "05", "11", "2011", "5EME", "5EME 2", "NAFF"]
       ];
       const csv = "\uFEFF" + [headers.join(";"), ...sample.map(r => r.join(";"))].join("\r\n");
       const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
@@ -14019,9 +14027,16 @@
           const idxPrenom = headers.findIndex(h => h.includes('PRENOM'));
           const idxNomPrenom = headers.findIndex(h => h.includes('NOM ET PRENOM') || h.includes('NOM_PRENOM'));
           const idxSexe = headers.findIndex(h => h.includes('SEXE') || h === 'GENRE');
+
+          // Détection Date de Naissance : Séparée (JOUR - MOIS - ANNÉE) ou colonne unique
+          const idxJour = headers.findIndex(h => h === 'JOUR' || h.startsWith('JOUR') || h.includes('JOUR') || h === 'DAY');
+          const idxMois = headers.findIndex(h => h === 'MOIS' || h === 'MOI' || h.startsWith('MOIS') || h.startsWith('MOI') || h.includes('MOIS') || h.includes('MOI') || h === 'MONTH');
+          const idxAnnee = headers.findIndex(h => h === 'ANNEE' || h === 'AN' || h.startsWith('ANN') || h.includes('ANNEE') || h.includes('ANN') || h === 'YEAR');
+          const idxDob = headers.findIndex(h => (h.includes('DATE') && (h.includes('NAIS') || h.includes('BIRTH'))) || h === 'DOB');
+
           const idxNiveau = headers.findIndex(h => h.includes('NIVEAU'));
           const idxClasse = headers.findIndex(h => h.includes('CLASSE'));
-          const idxStatut = headers.findIndex(h => h.includes('STATUT') || h.includes('AFF'));
+          const idxStatut = headers.findIndex(h => h.includes('STATUT') || h.includes('SATATUT') || h.includes('AFF/NAFF') || h.includes('AFF'));
           const idxFeeDue = headers.findIndex(h => h.includes('FRAIS') || h.includes('DUE') || h.includes('ECOLAGE'));
 
           pendingImportedStudents = [];
@@ -14041,9 +14056,33 @@
 
             const mat = (idxMat >= 0 ? parts[idxMat] : '') || `MAT-${Math.floor(100000 + Math.random() * 900000)}`;
             const sexe = (idxSexe >= 0 ? parts[idxSexe].toUpperCase() : 'M').startsWith('F') ? 'F' : 'M';
+            
+            // Reconstitution Date de Naissance (JOUR - MOIS - ANNÉE)
+            let dob = '';
+            if (idxJour >= 0 && idxMois >= 0 && idxAnnee >= 0) {
+              const rawJ = parts[idxJour] ? parts[idxJour].trim() : '';
+              const rawM = parts[idxMois] ? parts[idxMois].trim() : '';
+              let rawA = parts[idxAnnee] ? parts[idxAnnee].trim() : '';
+              if (rawA.length === 2) {
+                rawA = (parseInt(rawA, 10) > 40 ? '19' : '20') + rawA;
+              }
+              const j = rawJ ? rawJ.padStart(2, '0') : '';
+              const m = rawM ? rawM.padStart(2, '0') : '';
+              if (j && m && rawA) {
+                dob = `${rawA}-${m}-${j}`;
+              }
+            } else if (idxDob >= 0 && parts[idxDob]) {
+              dob = parts[idxDob].trim();
+            }
+
             const niveau = (idxNiveau >= 0 ? parts[idxNiveau].toUpperCase() : '6EME') || '6EME';
             const classe = (idxClasse >= 0 ? parts[idxClasse].toUpperCase() : `${niveau} 1`) || `${niveau} 1`;
-            const statut = (idxStatut >= 0 ? parts[idxStatut].toUpperCase() : 'AFF').includes('NON') ? 'NON AFF' : 'AFF';
+            
+            // Statut AFF / NAFF (ou NON AFF / AFFECTÉ / NON AFFECTÉ)
+            const rawStatut = (idxStatut >= 0 && parts[idxStatut] ? parts[idxStatut].toUpperCase().trim() : 'AFF');
+            const isNonAff = rawStatut.includes('NON') || rawStatut.includes('NAFF') || rawStatut === 'N' || rawStatut === 'NON AFF';
+            const statut = isNonAff ? 'NON AFF' : 'AFF';
+
             const feeDue = (idxFeeDue >= 0 && parseInt(parts[idxFeeDue])) ? parseInt(parts[idxFeeDue]) : 120000;
 
             pendingImportedStudents.push({
@@ -14052,6 +14091,8 @@
               sexe: sexe,
               red: "",
               statut: statut,
+              dob: dob,
+              dateNaissance: dob,
               niveau: niveau,
               classe: classe,
               feeDue: feeDue,
@@ -14074,6 +14115,8 @@
               <td class="p-2 font-bold">${esc(st.nomPrenom)}</td>
               <td class="p-2 font-mono">${esc(st.matricule)}</td>
               <td class="p-2 font-bold ${st.sexe === 'F' ? 'text-pink-600' : 'text-blue-600'}">${esc(st.sexe)}</td>
+              <td class="p-2 font-mono text-[11px]">${esc(st.dob || '—')}</td>
+              <td class="p-2"><span class="px-1.5 py-0.5 rounded text-[10px] font-bold ${st.statut === 'AFF' ? 'bg-emerald-100 text-emerald-800 border border-emerald-200' : 'bg-red-100 text-red-800 border border-red-200'}">${esc(st.statut)}</span></td>
               <td class="p-2">${esc(st.niveau)}</td>
               <td class="p-2 font-semibold">${esc(st.classe)}</td>
             `;
@@ -14081,6 +14124,10 @@
           });
 
           previewBox.classList.remove('hidden');
+          const confirmBtn = document.getElementById('btn-confirm-import');
+          if (confirmBtn) {
+            confirmBtn.textContent = `Confirmer l'importation (${pendingImportedStudents.length} élève${pendingImportedStudents.length > 1 ? 's' : ''})`;
+          }
           showToast(`Fichier analysé : ${pendingImportedStudents.length} élève(s) détecté(s) prêt(s) à être inscrit(s) !`);
         } catch (parseErr) {
           console.warn("Erreur lecture CSV:", parseErr);

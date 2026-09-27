@@ -599,6 +599,48 @@ test('AUTH-CODE-16 : Réinitialisation systématique de TOUS les formulaires d\'
   assert.ok(!content.includes('id="m-abs-time" value="08h00 - 10h00"'), 'm-abs-time ne doit pas avoir de valeur par défaut en dur');
   assert.ok(!content.includes('id="tt-teacher" value="Prof. Titulaire"'), 'tt-teacher ne doit pas avoir de valeur par défaut en dur');
   assert.ok(!content.includes('id="tt-room" value="Salle 104"'), 'tt-room ne doit pas avoir de valeur par défaut en dur');
+  assert.ok(!content.includes('id="m-dob" value="2012-05-14"'), 'm-dob ne doit pas avoir de valeur par défaut en dur');
 });
+
+test('AUTH-CODE-17 : Fichier modèle d\'importation avec date de naissance séparée (JOUR - MOIS - ANNÉE) et colonne STATUT - AFF/NAFF', () => {
+  const fs = require('node:fs');
+  const path = require('node:path');
+  const content = fs.readFileSync(path.join(__dirname, '..', 'index.html'), 'utf8');
+
+  // 1. Définition du modèle d'importation dans downloadSampleImportTemplate
+  const tplMatch = content.match(/function downloadSampleImportTemplate\(\)\s*\{([\s\S]*?)\n    \}/);
+  assert.ok(tplMatch, 'downloadSampleImportTemplate doit être définie');
+  const tplBody = tplMatch[1];
+
+  // En-têtes du fichier type
+  assert.ok(tplBody.includes('"JOUR"'), 'Le modèle d\'importation doit contenir la colonne JOUR');
+  assert.ok(tplBody.includes('"MOIS"'), 'Le modèle d\'importation doit contenir la colonne MOIS');
+  assert.ok(tplBody.includes('"ANNEE"'), 'Le modèle d\'importation doit contenir la colonne ANNEE');
+  assert.ok(tplBody.includes('"STATUT - AFF/NAFF"'), 'Le modèle d\'importation doit contenir la colonne STATUT - AFF/NAFF');
+  assert.ok(!tplBody.includes('"DATE_NAISSANCE"'), 'DATE_NAISSANCE ne doit plus être en un seul bloc dans le modèle');
+
+  // Échantillon avec AFF et NAFF
+  assert.ok(tplBody.includes('"AFF"'), 'L\'échantillon doit démontrer le statut AFF');
+  assert.ok(tplBody.includes('"NAFF"'), 'L\'échantillon doit démontrer le statut NAFF');
+
+  // 2. Parser handleFileImport : reconnaissance des colonnes et tolérance
+  const importMatch = content.match(/function handleFileImport\(e\)\s*\{([\s\S]*?)\n    \}/);
+  assert.ok(importMatch, 'handleFileImport doit être définie');
+  const importBody = importMatch[1];
+
+  assert.ok(importBody.includes('idxJour') && importBody.includes('idxMois') && importBody.includes('idxAnnee'), 'handleFileImport doit extraire jour, mois et année');
+  assert.ok(importBody.includes('SATATUT') && importBody.includes('STATUT'), 'handleFileImport doit être tolérant sur l\'orthographe de statut');
+  assert.ok(importBody.includes('NAFF'), 'handleFileImport doit gérer le statut NAFF');
+
+  // 3. Tableau d'aperçu HTML
+  assert.ok(content.includes('Date Naiss. (J/M/A)'), 'La table d\'aperçu doit afficher la colonne Date Naiss.');
+  assert.ok(content.includes('Statut (AFF/NAFF)'), 'La table d\'aperçu doit afficher la colonne Statut.');
+
+  // 4. Formulaire d'inscription élève : m-dob vidé
+  const resetStudentMatch = content.match(/function resetAddStudentForm\(\)\s*\{([\s\S]*?)\n    \}/);
+  assert.ok(resetStudentMatch, 'resetAddStudentForm doit être définie');
+  assert.ok(resetStudentMatch[1].includes("'m-dob'"), 'resetAddStudentForm doit réinitialiser m-dob');
+});
+
 
 
