@@ -675,12 +675,20 @@ const server = http.createServer(async (req, res) => {
     }
 
     // Classes
+    if (reqPath === '/api/classes/batch' && method === 'POST') {
+      const body = await readJsonBody(req);
+      return sendJson(res, 201, db.batchCreateClasses(user, body));
+    }
+
     if (reqPath === '/api/classes') {
       if (method === 'GET') {
         return sendJson(res, 200, db.getClasses(user));
       }
       if (method === 'POST') {
         const body = await readJsonBody(req);
+        if (Array.isArray(body && body.classes)) {
+          return sendJson(res, 201, db.batchCreateClasses(user, body));
+        }
         return sendJson(res, 201, db.createClass(user, body));
       }
     }

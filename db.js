@@ -2581,6 +2581,106 @@ function createClass(user, data) {
   return formatClass(db.prepare('SELECT * FROM classes WHERE id = ?').get(newId));
 }
 
+function batchCreateClasses(user, data) {
+  assertPermission(user, 'classes.create');
+  let requestedSchoolId = data && (data.schoolId !== undefined && data.schoolId !== null && data.schoolId !== '' ? data.schoolId : data.school_id);
+  if (!requestedSchoolId && user && user.schoolId) requestedSchoolId = user.schoolId;
+  if (!requestedSchoolId && user && (user.role === 'concepteur' || user.role === 'fondateur')) {
+    const firstSchool = db.prepare('SELECT id FROM schools LIMIT 1').get();
+    requestedSchoolId = firstSchool ? firstSchool.id : 1;
+  }
+  const targetSchoolId = resolveWriteSchoolId(user, requestedSchoolId, lookupSchool);
+  const rows = Array.isArray(data && data.classes) ? data.classes : [];
+
+  if (rows.length === 0) {
+    throw new Error("Aucune classe fournie pour le déploiement par lot.");
+  }
+
+  const summary = {
+    total: rows.length,
+    created: 0,
+    ignored: 0,
+    skipped: [],
+    createdClasses: []
+  };
+
+  const findExisting = db.prepare(`
+    SELECT id, name FROM classes 
+    WHERE school_id = ? AND UPPER(TRIM(name)) = UPPER(TRIM(?))
+  `);
+
+  const insertStmt = db.prepare(`
+    INSERT INTO classes (school_id, name, level, cycle, capacity, titulaire, educateur, room, status)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'ACTIF')
+  `);
+
+  withTransaction(() => {
+    for (let i = 0; i < rows.length; i++) {
+      const item = rows[i];
+      const rawName = String(item.name || '').trim();
+      if (!rawName) continue;
+
+      const existing = findExisting.get(targetSchoolId, rawName);
+      if (existing) {
+        summary.ignored++;
+        summary.skipped.push(rawName);
+        continue;
+      }
+
+      const level = String(item.level || '6EME').trim().toUpperCase();
+      const cycle = String(item.cycle || (level.startsWith('6') || level.startsWith('5') || level.startsWith('4') || level.startsWith('3') ? 'Premier Cycle' : 'Second Cycle'));
+      const capacity = parseInt(item.capacity || '45', 10) || 45;
+      const titulaire = item.titulaire || 'Non assigné';
+      const educateur = item.educateur || 'Non assigné';
+      const room = item.room || `Salle ${rawName.replace(/\s+/g, '-')}`;
+
+      const res = insertStmt.run(
+        targetSchoolId,
+        rawName,
+        level,
+        cycle,
+        capacity,
+        titulaire,
+        educateur,
+        room
+      );
+
+      summary.created++;
+      summary.createdClasses.push({
+        id: Number(res.lastInsertRowid),
+        schoolId: targetSchoolId,
+        name: rawName,
+        level,
+        cycle,
+        capacity,
+        titulaire,
+        educateur,
+        room,
+        status: 'ACTIF'
+      });
+    }
+  });
+
+  addAuditLog(user, {
+    action: 'CLASSES_BATCH_CREATE',
+    module: 'Pédagogie',
+    target: `Déploiement en masse (${summary.created} classe(s))`,
+    oldVal: '',
+    newVal: `Créées: ${summary.created}, Déjà existantes: ${summary.ignored}`,
+    schoolId: targetSchoolId
+  });
+
+  return {
+    success: true,
+    createdCount: summary.created,
+    skippedCount: summary.ignored,
+    created: summary.createdClasses,
+    skipped: summary.skipped,
+    summary,
+    classes: getClasses(user)
+  };
+}
+
 function updateClass(user, id, data) {
   const cId = parseInt(id, 10);
   const current = db.prepare('SELECT * FROM classes WHERE id = ?').get(cId);
@@ -3692,6 +3792,7 @@ module.exports = {
   formatPayment,
   getClasses,
   createClass,
+  batchCreateClasses,
   updateClass,
   deleteClass,
   getUserById,

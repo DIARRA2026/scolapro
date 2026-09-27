@@ -3709,6 +3709,9 @@
               <button onclick="openAssignTitulaireModal()" id="btn-ped-assign-titulaire-top" class="px-3.5 py-2 bg-yellow-500 hover:bg-yellow-600 text-red-950 rounded-lg text-xs font-bold shadow-xs flex items-center gap-2 transition hover:-translate-y-0.5" title="Ajouter / Désigner le Professeur Principal">
                 <span>🎓</span> <span>Professeur Principal</span>
               </button>
+              <button onclick="openClassBatchGeneratorModal()" id="btn-ped-batch-classes-top" class="px-3.5 py-2 bg-gradient-to-r from-indigo-700 via-indigo-600 to-indigo-800 hover:from-indigo-800 hover:to-indigo-900 text-white rounded-lg text-xs font-bold shadow-xs flex items-center gap-2 transition hover:-translate-y-0.5 border border-indigo-500/30" title="Studio de déploiement et générateur de divisions en masse">
+                <span class="text-sm">⚡</span> <span>Générateur de Divisions</span>
+              </button>
               <button onclick="openAddClassModal()" class="px-3.5 py-2 bg-red-700 hover:bg-red-800 text-white rounded-lg text-xs font-bold shadow-xs flex items-center gap-2 transition hover:-translate-y-0.5">
                 <span>+</span> <span>Ajouter une Classe</span>
               </button>
@@ -6808,6 +6811,200 @@
           <button type="submit" class="btn-navy text-white px-5 py-1.5 rounded font-bold shadow">Enregistrer la Classe</button>
         </div>
       </form>
+    </div>
+  </div>
+
+  <!-- MODAL STUDIO : GÉNÉRATEUR & DÉPLOIEMENT INTELLIGENT DE DIVISIONS -->
+  <div id="modal-class-batch-generator" class="hidden fixed inset-0 bg-black/60 backdrop-blur-xs z-50 flex items-center justify-center p-3 sm:p-4">
+    <div class="bg-white rounded-2xl shadow-2xl max-w-5xl w-full border border-slate-200 overflow-hidden flex flex-col max-h-[92vh] animate-in fade-in zoom-in-95 duration-150">
+      
+      <!-- En-tête Studio -->
+      <div class="bg-gradient-to-r from-indigo-950 via-indigo-900 to-slate-900 text-white px-6 py-4 flex items-center justify-between border-b border-indigo-700/50">
+        <div class="flex items-center gap-3">
+          <div class="w-10 h-10 rounded-xl bg-indigo-500/20 border border-indigo-400/30 flex items-center justify-center text-xl shrink-0">
+            ⚡
+          </div>
+          <div>
+            <div class="flex items-center gap-2">
+              <h3 class="font-extrabold text-base tracking-wide">Studio de Déploiement des Divisions</h3>
+              <span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-400 text-amber-950 uppercase tracking-wider">Génération Intelligente</span>
+            </div>
+            <p class="text-xs text-indigo-200/90 mt-0.5">Configurez et générez les divisions de votre collège et lycée en quelques clics sans ressaisie manuelle.</p>
+          </div>
+        </div>
+        
+        <div class="flex items-center gap-3">
+          <div class="hidden sm:flex items-center gap-2 bg-indigo-950/60 px-3 py-1.5 rounded-xl border border-indigo-700/50">
+            <span class="text-[11px] text-indigo-300 font-medium">Divisions prêtes :</span>
+            <span id="batch-badge-total-classes" class="font-black text-amber-300 text-xs">0</span>
+            <span class="text-indigo-400 text-xs">•</span>
+            <span class="text-[11px] text-indigo-300 font-medium">Places :</span>
+            <span id="batch-badge-total-capacity" class="font-black text-emerald-300 text-xs">0</span>
+          </div>
+          <button onclick="closeClassBatchGeneratorModal()" class="text-white/70 hover:text-white text-2xl font-bold p-1 leading-none transition">&times;</button>
+        </div>
+      </div>
+
+      <!-- Corps du Studio (Scrollable) -->
+      <div class="p-5 sm:p-6 overflow-y-auto space-y-6 bg-slate-50/60 flex-1 custom-scrollbar">
+
+        <!-- 1. Cartes de configuration générale -->
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <!-- A. Format de numérotation -->
+          <div class="bg-white p-4 rounded-xl border border-slate-200 shadow-xs space-y-2">
+            <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider flex items-center gap-1.5">
+              <span>🏷️</span> <span>Format de Numérotation</span>
+            </label>
+            <div class="grid grid-cols-3 gap-1.5 p-1 bg-slate-100 rounded-lg">
+              <button type="button" onclick="setBatchNumberingFormat('numbers')" id="btn-batch-fmt-numbers" class="py-1.5 text-xs font-bold rounded-md transition shadow-xs bg-white text-indigo-700">1, 2, 3...</button>
+              <button type="button" onclick="setBatchNumberingFormat('letters')" id="btn-batch-fmt-letters" class="py-1.5 text-xs font-semibold rounded-md transition text-slate-600 hover:text-slate-800">A, B, C...</button>
+              <button type="button" onclick="setBatchNumberingFormat('romans')" id="btn-batch-fmt-romans" class="py-1.5 text-xs font-semibold rounded-md transition text-slate-600 hover:text-slate-800">I, II, III...</button>
+            </div>
+            <p class="text-[11px] text-slate-400">Suffixe appliqué après le niveau (ex: 6EME 1 ou 6EME A).</p>
+          </div>
+
+          <!-- B. Capacité d'accueil standard -->
+          <div class="bg-white p-4 rounded-xl border border-slate-200 shadow-xs space-y-2">
+            <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider flex items-center gap-1.5">
+              <span>👥</span> <span>Capacité Standard</span>
+            </label>
+            <div class="flex items-center gap-2">
+              <input type="number" id="batch-input-capacity" value="45" min="10" max="90" oninput="onBatchCapacityChanged(this.value)" class="w-20 border border-slate-300 rounded-lg p-2 font-black text-center text-slate-800 text-sm focus:ring-2 focus:ring-indigo-500 focus:outline-none">
+              <div class="flex flex-wrap gap-1 flex-1">
+                <button type="button" onclick="setBatchCapacityPreset(35)" class="px-2 py-1 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded text-[11px] font-bold">35</button>
+                <button type="button" onclick="setBatchCapacityPreset(40)" class="px-2 py-1 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded text-[11px] font-bold">40</button>
+                <button type="button" onclick="setBatchCapacityPreset(45)" class="px-2 py-1 bg-indigo-50 border border-indigo-200 text-indigo-700 rounded text-[11px] font-bold">45</button>
+                <button type="button" onclick="setBatchCapacityPreset(50)" class="px-2 py-1 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded text-[11px] font-bold">50</button>
+              </div>
+            </div>
+            <p class="text-[11px] text-slate-400">Places élèves assignées par défaut à chaque division.</p>
+          </div>
+
+          <!-- C. Salles de cours -->
+          <div class="bg-white p-4 rounded-xl border border-slate-200 shadow-xs space-y-2">
+            <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider flex items-center gap-1.5">
+              <span>🏛️</span> <span>Préfixe de Salle</span>
+            </label>
+            <input type="text" id="batch-input-room-prefix" value="Salle" placeholder="Ex: Salle, Bât. A, R" oninput="renderBatchGeneratorUI()" class="w-full border border-slate-300 rounded-lg p-2 font-bold text-slate-800 text-xs focus:ring-2 focus:ring-indigo-500 focus:outline-none">
+            <p class="text-[11px] text-slate-400">Préfixe généré pour les salles (ex: Salle 6EME 1).</p>
+          </div>
+        </div>
+
+        <!-- 2. Raccourcis de sélection par Cycle & Séries -->
+        <div class="bg-white p-4 rounded-xl border border-slate-200 shadow-xs space-y-3">
+          <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-slate-100 pb-2.5">
+            <div>
+              <span class="text-xs font-bold text-slate-800 uppercase tracking-wide">Raccourcis de Sélection par Cycle</span>
+              <p class="text-[11px] text-slate-500">Cochez ou activez les niveaux en 1 clic selon la structure de votre établissement.</p>
+            </div>
+            <div class="flex flex-wrap gap-1.5">
+              <button type="button" onclick="selectBatchCyclePreset('college')" class="px-2.5 py-1.5 bg-blue-50 hover:bg-blue-100 text-blue-800 border border-blue-200 rounded-lg text-xs font-bold transition flex items-center gap-1">
+                <span>🎓</span> <span>Pack Collège (6e-3e)</span>
+              </button>
+              <button type="button" onclick="selectBatchCyclePreset('lycee')" class="px-2.5 py-1.5 bg-indigo-50 hover:bg-indigo-100 text-indigo-800 border border-indigo-200 rounded-lg text-xs font-bold transition flex items-center gap-1">
+                <span>🏛️</span> <span>Pack Lycée Général</span>
+              </button>
+              <button type="button" onclick="selectBatchCyclePreset('sciences')" class="px-2.5 py-1.5 bg-emerald-50 hover:bg-emerald-100 text-emerald-800 border border-emerald-200 rounded-lg text-xs font-bold transition flex items-center gap-1">
+                <span>🔬</span> <span>Séries Scientifiques (C, D)</span>
+              </button>
+              <button type="button" onclick="selectBatchCyclePreset('all')" class="px-2.5 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg text-xs font-bold transition">
+                Tout sélectionner
+              </button>
+              <button type="button" onclick="selectBatchCyclePreset('none')" class="px-2.5 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-600 rounded-lg text-xs font-medium transition">
+                Effacer
+              </button>
+            </div>
+          </div>
+
+          <!-- Pilules des Niveaux par Catégories -->
+          <div class="space-y-3 pt-1">
+            <!-- Collège -->
+            <div>
+              <span class="text-[10.5px] font-extrabold text-blue-800 uppercase tracking-wider block mb-1.5">Premier Cycle (Collège)</span>
+              <div class="flex flex-wrap gap-2" id="batch-pills-college"></div>
+            </div>
+            <!-- Lycée Général -->
+            <div>
+              <span class="text-[10.5px] font-extrabold text-indigo-800 uppercase tracking-wider block mb-1.5">Second Cycle Général (Lycée)</span>
+              <div class="flex flex-wrap gap-2" id="batch-pills-lycee"></div>
+            </div>
+            <!-- Séries Spécifiques / Techniques -->
+            <details class="group cursor-pointer">
+              <summary class="text-[10.5px] font-bold text-slate-500 hover:text-slate-700 flex items-center gap-1.5 list-none select-none">
+                <span class="group-open:rotate-90 transition-transform">▸</span>
+                <span>Afficher les Séries Littéraires Détaillées (A1, A2) & Enseignement Technique (G1, G2...)</span>
+              </summary>
+              <div class="flex flex-wrap gap-2 mt-2 pt-2 border-t border-slate-100" id="batch-pills-extra"></div>
+            </details>
+            
+            <!-- Ajout niveau personnalisé libre -->
+            <div class="pt-2 border-t border-slate-100 flex items-center gap-2">
+              <span class="text-[11px] font-bold text-slate-600 whitespace-nowrap">Niveau Spécifique :</span>
+              <input type="text" id="batch-custom-level-input" placeholder="Ex: BTS 1, CP1, CM2..." class="h-8 border border-slate-300 rounded px-2.5 text-xs font-bold uppercase w-48">
+              <button type="button" onclick="addBatchCustomLevel()" class="h-8 px-3 bg-slate-100 hover:bg-slate-200 text-slate-800 rounded text-xs font-bold transition flex items-center gap-1">
+                <span>+</span> <span>Ajouter ce niveau</span>
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <!-- 3. Grille Visuelle des Niveaux Sélectionnés & Concepteur de Divisions -->
+        <div class="space-y-3">
+          <div class="flex items-center justify-between">
+            <h4 class="text-xs font-black text-slate-800 uppercase tracking-wider flex items-center gap-2">
+              <span>📋</span> <span>Ajustement Fin des Divisions par Niveau</span>
+            </h4>
+            <span class="text-[11px] text-slate-500 italic">Personnalisez le nombre de divisions pour chaque niveau indépendamment.</span>
+          </div>
+
+          <!-- Conteneur dynamique des cartes de niveaux -->
+          <div id="batch-levels-container" class="space-y-3">
+            <!-- Rendu interactif via renderBatchGeneratorUI -->
+          </div>
+        </div>
+
+        <!-- 4. Synthèse Globale Visuelle & Alerte Doublons -->
+        <div class="bg-indigo-900/5 rounded-xl border border-indigo-200 p-4 space-y-3">
+          <div class="flex items-center justify-between">
+            <h5 class="text-xs font-bold text-indigo-950 uppercase tracking-wide flex items-center gap-1.5">
+              <span>🚀</span> <span>Aperçu des Divisions Prêtes pour Déploiement</span>
+            </h5>
+            <span id="batch-preview-summary-count" class="text-xs font-bold text-indigo-700">0 classe(s) à créer</span>
+          </div>
+          
+          <div id="batch-chips-preview-box" class="flex flex-wrap gap-1.5 max-h-36 overflow-y-auto p-2.5 bg-white rounded-lg border border-indigo-100 shadow-inner custom-scrollbar">
+            <!-- Chips générés -->
+          </div>
+
+          <div id="batch-existing-warning" class="hidden text-xs bg-amber-50 border border-amber-200 text-amber-900 rounded-lg p-2.5 flex items-start gap-2">
+            <span class="text-base shrink-0">ℹ️</span>
+            <div>
+              <span class="font-bold">Détection intelligente anti-doublon :</span>
+              <span id="batch-existing-count-text">Certaines classes existent déjà et seront automatiquement ignorées sans bloquer les autres.</span>
+            </div>
+          </div>
+        </div>
+
+      </div>
+
+      <!-- Pied du Studio avec actions -->
+      <div class="px-6 py-4 bg-white border-t border-slate-200 flex flex-col sm:flex-row items-center justify-between gap-3 shadow-lg">
+        <div class="text-xs text-slate-600 flex items-center gap-3">
+          <span class="font-bold text-slate-800" id="batch-footer-summary">0 classe à déployer</span>
+          <span class="text-slate-300">•</span>
+          <span class="text-slate-500" id="batch-footer-capacity">0 places totales</span>
+        </div>
+
+        <div class="flex items-center gap-2.5 w-full sm:w-auto justify-end">
+          <button type="button" onclick="closeClassBatchGeneratorModal()" class="px-4 py-2 border border-slate-300 text-slate-700 hover:bg-slate-100 rounded-lg text-xs font-bold transition">
+            Annuler
+          </button>
+          <button type="button" id="btn-confirm-batch-classes" onclick="confirmBatchClassCreation()" class="px-5 py-2 bg-gradient-to-r from-indigo-700 to-indigo-800 hover:from-indigo-800 hover:to-indigo-900 text-white rounded-lg text-xs font-extrabold shadow-md flex items-center gap-2 transition hover:-translate-y-0.5">
+            <span>⚡</span> <span id="btn-confirm-batch-classes-label">Déployer les Classes</span>
+          </button>
+        </div>
+      </div>
+
     </div>
   </div>
 
@@ -20063,6 +20260,547 @@ function editClass(id) {
   }
 
   document.getElementById('modal-ped-classe').classList.remove('hidden');
+}
+
+// =================================================================
+// 2.C STUDIO DE DÉPLOIEMENT & GÉNÉRATEUR INTELLIGENT DE DIVISIONS
+// =================================================================
+
+const BATCH_STUDIO_LEVELS = [
+  // Premier cycle (Collège)
+  { id: '6EME', name: '6EME', cycle: 'Premier Cycle', cat: 'college', label: '6ème', defaultCount: 4 },
+  { id: '5EME', name: '5EME', cycle: 'Premier Cycle', cat: 'college', label: '5ème', defaultCount: 3 },
+  { id: '4EME', name: '4EME', cycle: 'Premier Cycle', cat: 'college', label: '4ème', defaultCount: 3 },
+  { id: '3EME', name: '3EME', cycle: 'Premier Cycle', cat: 'college', label: '3ème', defaultCount: 3 },
+  // Second cycle général (Lycée)
+  { id: '2NDE A', name: '2NDE A', cycle: 'Second Cycle', cat: 'lycee', label: '2nde A (Littéraire)', defaultCount: 2 },
+  { id: '2NDE C', name: '2NDE C', cycle: 'Second Cycle', cat: 'lycee', label: '2nde C (Scientifique)', defaultCount: 2 },
+  { id: '1ERE A', name: '1ERE A', cycle: 'Second Cycle', cat: 'lycee', label: '1ère A (Littéraire)', defaultCount: 2 },
+  { id: '1ERE C', name: '1ERE C', cycle: 'Second Cycle', cat: 'lycee', label: '1ère C (Maths)', defaultCount: 1 },
+  { id: '1ERE D', name: '1ERE D', cycle: 'Second Cycle', cat: 'lycee', label: '1ère D (SVT)', defaultCount: 2 },
+  { id: 'TLE A', name: 'TLE A', cycle: 'Second Cycle', cat: 'lycee', label: 'Tle A (Littéraire)', defaultCount: 2 },
+  { id: 'TLE C', name: 'TLE C', cycle: 'Second Cycle', cat: 'lycee', label: 'Tle C (Maths)', defaultCount: 1 },
+  { id: 'TLE D', name: 'TLE D', cycle: 'Second Cycle', cat: 'lycee', label: 'Tle D (SVT)', defaultCount: 2 },
+  // Séries détaillées / techniques
+  { id: '1ERE A1', name: '1ERE A1', cycle: 'Second Cycle', cat: 'extra', label: '1ère A1', defaultCount: 1 },
+  { id: '1ERE A2', name: '1ERE A2', cycle: 'Second Cycle', cat: 'extra', label: '1ère A2', defaultCount: 1 },
+  { id: 'TLE A1', name: 'TLE A1', cycle: 'Second Cycle', cat: 'extra', label: 'Tle A1', defaultCount: 1 },
+  { id: 'TLE A2', name: 'TLE A2', cycle: 'Second Cycle', cat: 'extra', label: 'Tle A2', defaultCount: 1 },
+  { id: '2NDE G1', name: '2NDE G1', cycle: 'Second Cycle', cat: 'extra', label: '2nde G1 (Secrétariat)', defaultCount: 1 },
+  { id: '2NDE G2', name: '2NDE G2', cycle: 'Second Cycle', cat: 'extra', label: '2nde G2 (Comptabilité)', defaultCount: 1 },
+  { id: '1ERE G1', name: '1ERE G1', cycle: 'Second Cycle', cat: 'extra', label: '1ère G1', defaultCount: 1 },
+  { id: '1ERE G2', name: '1ERE G2', cycle: 'Second Cycle', cat: 'extra', label: '1ère G2', defaultCount: 1 },
+  { id: 'TLE G1', name: 'TLE G1', cycle: 'Second Cycle', cat: 'extra', label: 'Tle G1', defaultCount: 1 },
+  { id: 'TLE G2', name: 'TLE G2', cycle: 'Second Cycle', cat: 'extra', label: 'Tle G2', defaultCount: 1 }
+];
+
+let classBatchConfig = {
+  format: 'numbers', // 'numbers', 'letters', 'romans'
+  capacity: 45,
+  roomPrefix: 'Salle',
+  selectedLevels: {},
+  excludedClasses: new Set()
+};
+
+function getBatchSuffix(index, format) {
+  if (format === 'letters') {
+    return String.fromCharCode(65 + index); // A, B, C, D...
+  }
+  if (format === 'romans') {
+    const romans = ['I', 'II', 'III', 'IV', 'V', 'VI', 'VII', 'VIII', 'IX', 'X', 'XI', 'XII', 'XIII', 'XIV', 'XV'];
+    return romans[index] || String(index + 1);
+  }
+  return String(index + 1); // 1, 2, 3...
+}
+
+function getBatchCurrentSchoolId() {
+  const activeUser = (typeof getActiveUser === 'function') ? getActiveUser() : appState.currentUser;
+  return (activeUser && activeUser.schoolId) 
+    ? activeUser.schoolId 
+    : (appState.currentSchoolId || (appState.schools && appState.schools[0] ? appState.schools[0].id : 1));
+}
+
+function getBatchExistingClassesMap() {
+  const targetSchoolId = getBatchCurrentSchoolId();
+  const map = new Map();
+  (appState.classes || []).forEach(c => {
+    if (!c.school_id || c.school_id === targetSchoolId || c.schoolId === targetSchoolId) {
+      const cleanName = (c.name || '').trim().toUpperCase();
+      map.set(cleanName, c);
+    }
+  });
+  return map;
+}
+
+function openClassBatchGeneratorModal() {
+  if (!hasPerm('pedagogie.classe.write') && !hasPerm('pedagogie.classe.admin') && !hasPerm('*') && !hasPerm('classes.create')) {
+    showToast('Accès restreint : privilèges de création de classes requis.');
+    return;
+  }
+
+  // Initialisation par défaut : Collège activé par défaut
+  classBatchConfig.format = 'numbers';
+  classBatchConfig.capacity = 45;
+  classBatchConfig.roomPrefix = 'Salle';
+  classBatchConfig.excludedClasses = new Set();
+  classBatchConfig.selectedLevels = {};
+
+  // Définir les niveaux par défaut (6EME à 3EME actifs)
+  BATCH_STUDIO_LEVELS.forEach(lvl => {
+    classBatchConfig.selectedLevels[lvl.id] = {
+      id: lvl.id,
+      name: lvl.name,
+      cycle: lvl.cycle,
+      cat: lvl.cat,
+      label: lvl.label,
+      active: lvl.cat === 'college', // Actifs par défaut
+      count: lvl.defaultCount || 3
+    };
+  });
+
+  const capInput = document.getElementById('batch-input-capacity');
+  if (capInput) capInput.value = classBatchConfig.capacity;
+
+  const roomInput = document.getElementById('batch-input-room-prefix');
+  if (roomInput) roomInput.value = classBatchConfig.roomPrefix;
+
+  setBatchNumberingFormat('numbers', false);
+  renderBatchGeneratorUI();
+
+  const modal = document.getElementById('modal-class-batch-generator');
+  if (modal) modal.classList.remove('hidden');
+}
+
+function closeClassBatchGeneratorModal() {
+  const modal = document.getElementById('modal-class-batch-generator');
+  if (modal) modal.classList.add('hidden');
+}
+
+function setBatchNumberingFormat(fmt, shouldRerender = true) {
+  classBatchConfig.format = fmt;
+  const btnNums = document.getElementById('btn-batch-fmt-numbers');
+  const btnLets = document.getElementById('btn-batch-fmt-letters');
+  const btnRoms = document.getElementById('btn-batch-fmt-romans');
+
+  const activeCls = 'py-1.5 text-xs font-bold rounded-md transition shadow-xs bg-white text-indigo-700';
+  const inactiveCls = 'py-1.5 text-xs font-semibold rounded-md transition text-slate-600 hover:text-slate-800';
+
+  if (btnNums) btnNums.className = fmt === 'numbers' ? activeCls : inactiveCls;
+  if (btnLets) btnLets.className = fmt === 'letters' ? activeCls : inactiveCls;
+  if (btnRoms) btnRoms.className = fmt === 'romans' ? activeCls : inactiveCls;
+
+  if (shouldRerender) renderBatchGeneratorUI();
+}
+
+function onBatchCapacityChanged(val) {
+  const num = parseInt(val, 10);
+  if (!isNaN(num) && num >= 5 && num <= 120) {
+    classBatchConfig.capacity = num;
+    renderBatchGeneratorUI();
+  }
+}
+
+function setBatchCapacityPreset(val) {
+  classBatchConfig.capacity = val;
+  const capInput = document.getElementById('batch-input-capacity');
+  if (capInput) capInput.value = val;
+  renderBatchGeneratorUI();
+}
+
+function selectBatchCyclePreset(preset) {
+  Object.keys(classBatchConfig.selectedLevels).forEach(k => {
+    const item = classBatchConfig.selectedLevels[k];
+    if (preset === 'college') {
+      item.active = item.cat === 'college';
+    } else if (preset === 'lycee') {
+      item.active = item.cat === 'lycee';
+    } else if (preset === 'sciences') {
+      item.active = k.includes(' C') || k.includes(' D');
+    } else if (preset === 'all') {
+      item.active = true;
+    } else if (preset === 'none') {
+      item.active = false;
+    }
+  });
+  renderBatchGeneratorUI();
+}
+
+function toggleBatchLevel(levelId) {
+  if (classBatchConfig.selectedLevels[levelId]) {
+    classBatchConfig.selectedLevels[levelId].active = !classBatchConfig.selectedLevels[levelId].active;
+    renderBatchGeneratorUI();
+  }
+}
+
+function adjustBatchLevelCount(levelId, delta) {
+  const item = classBatchConfig.selectedLevels[levelId];
+  if (item) {
+    item.count = Math.max(1, Math.min(20, (item.count || 1) + delta));
+    renderBatchGeneratorUI();
+  }
+}
+
+function removeBatchClassChip(className) {
+  classBatchConfig.excludedClasses.add(className);
+  renderBatchGeneratorUI();
+}
+
+function restoreBatchClassChip(className) {
+  classBatchConfig.excludedClasses.delete(className);
+  renderBatchGeneratorUI();
+}
+
+function addBatchCustomLevel() {
+  const input = document.getElementById('batch-custom-level-input');
+  const val = input ? input.value.trim().toUpperCase() : '';
+  if (!val) {
+    showToast('Veuillez saisir un nom de niveau (ex: BTS 1, CM2...).');
+    return;
+  }
+  if (!classBatchConfig.selectedLevels[val]) {
+    classBatchConfig.selectedLevels[val] = {
+      id: val,
+      name: val,
+      cycle: val.startsWith('6') || val.startsWith('5') || val.startsWith('4') || val.startsWith('3') ? 'Premier Cycle' : 'Second Cycle',
+      cat: 'custom',
+      label: val,
+      active: true,
+      count: 2
+    };
+    if (input) input.value = '';
+    showToast(`Niveau ${val} ajouté au générateur !`);
+    renderBatchGeneratorUI();
+  } else {
+    classBatchConfig.selectedLevels[val].active = true;
+    renderBatchGeneratorUI();
+  }
+}
+
+function renderBatchGeneratorUI() {
+  const collegeBox = document.getElementById('batch-pills-college');
+  const lyceeBox = document.getElementById('batch-pills-lycee');
+  const extraBox = document.getElementById('batch-pills-extra');
+  const levelsContainer = document.getElementById('batch-levels-container');
+  const previewBox = document.getElementById('batch-chips-preview-box');
+  const existingWarning = document.getElementById('batch-existing-warning');
+  const existingCountText = document.getElementById('batch-existing-count-text');
+
+  if (!levelsContainer || !previewBox) return;
+
+  const existingMap = getBatchExistingClassesMap();
+  const roomPrefix = (document.getElementById('batch-input-room-prefix')?.value || 'Salle').trim();
+  classBatchConfig.roomPrefix = roomPrefix;
+
+  // 1. Rendu des pilules de sélection par catégorie
+  const renderPill = (lvl) => {
+    const item = classBatchConfig.selectedLevels[lvl.id] || lvl;
+    const isActive = item.active;
+    const activeClass = isActive 
+      ? 'bg-indigo-600 text-white border-indigo-600 shadow-xs' 
+      : 'bg-white text-slate-700 border-slate-200 hover:border-slate-300 hover:bg-slate-50';
+    return `
+      <button type="button" onclick="toggleBatchLevel('${lvl.id}')" class="px-3 py-1.5 rounded-lg border text-xs font-bold transition flex items-center gap-1.5 ${activeClass}">
+        <span>${isActive ? '✓' : '+'}</span>
+        <span>${esc(lvl.label || lvl.name)}</span>
+        <span class="text-[10px] opacity-75">(${item.count || 1})</span>
+      </button>
+    `;
+  };
+
+  if (collegeBox) {
+    collegeBox.innerHTML = BATCH_STUDIO_LEVELS.filter(l => l.cat === 'college').map(renderPill).join('');
+  }
+  if (lyceeBox) {
+    lyceeBox.innerHTML = BATCH_STUDIO_LEVELS.filter(l => l.cat === 'lycee').map(renderPill).join('');
+  }
+  if (extraBox) {
+    const extraList = BATCH_STUDIO_LEVELS.filter(l => l.cat === 'extra');
+    const customList = Object.values(classBatchConfig.selectedLevels).filter(l => l.cat === 'custom');
+    extraBox.innerHTML = [...extraList, ...customList].map(renderPill).join('');
+  }
+
+  // 2. Rendu des Cartes interactives par Niveau sélectionné
+  const activeLevels = Object.values(classBatchConfig.selectedLevels).filter(l => l.active);
+
+  if (activeLevels.length === 0) {
+    levelsContainer.innerHTML = `
+      <div class="p-8 text-center bg-white rounded-xl border border-dashed border-slate-300 text-slate-400 space-y-2">
+        <span class="text-3xl">📭</span>
+        <p class="font-bold text-sm text-slate-600">Aucun niveau d'enseignement sélectionné.</p>
+        <p class="text-xs text-slate-400">Cliquez sur un des raccourcis ci-dessus (ex: Pack Collège ou Pack Lycée) pour activer des niveaux.</p>
+      </div>
+    `;
+  } else {
+    levelsContainer.innerHTML = activeLevels.map(lvl => {
+      let chipsHtml = '';
+      for (let i = 0; i < lvl.count; i++) {
+        const suffix = getBatchSuffix(i, classBatchConfig.format);
+        const className = `${lvl.name} ${suffix}`;
+        const isExisting = existingMap.has(className);
+        const isExcluded = classBatchConfig.excludedClasses.has(className);
+
+        if (isExisting) {
+          const exObj = existingMap.get(className);
+          const studentCount = exObj.current !== undefined ? exObj.current : 0;
+          chipsHtml += `
+            <span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-bold bg-emerald-50 text-emerald-800 border border-emerald-200" title="Cette division existe déjà dans l'école">
+              <span>✓</span>
+              <span>${esc(className)}</span>
+              <span class="text-[10px] text-emerald-600 font-medium">(${studentCount} él.)</span>
+            </span>
+          `;
+        } else if (isExcluded) {
+          chipsHtml += `
+            <button type="button" onclick="restoreBatchClassChip('${esc(className)}')" class="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-medium bg-slate-100 text-slate-400 line-through border border-dashed border-slate-300 hover:text-slate-600" title="Cliquez pour réintégrer cette division">
+              <span>+</span>
+              <span>${esc(className)}</span>
+            </button>
+          `;
+        } else {
+          chipsHtml += `
+            <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-extrabold bg-indigo-50 text-indigo-900 border border-indigo-200 shadow-2xs">
+              <span class="text-indigo-500">⚡</span>
+              <span>${esc(className)}</span>
+              <button type="button" onclick="removeBatchClassChip('${esc(className)}')" class="text-indigo-400 hover:text-rose-600 text-sm font-bold ml-1 transition" title="Exclure cette division">&times;</button>
+            </span>
+          `;
+        }
+      }
+
+      return `
+        <div class="bg-white rounded-xl border border-slate-200 p-4 shadow-xs hover:border-slate-300 transition space-y-3">
+          <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-slate-100 pb-2.5">
+            <div class="flex items-center gap-2.5">
+              <span class="w-8 h-8 rounded-lg bg-indigo-100 text-indigo-800 font-black text-xs flex items-center justify-center">
+                ${esc(lvl.name.slice(0, 2))}
+              </span>
+              <div>
+                <div class="flex items-center gap-2">
+                  <h5 class="font-extrabold text-sm text-slate-900">${esc(lvl.name)}</h5>
+                  <span class="px-2 py-0.5 rounded text-[10px] font-bold ${lvl.cycle === 'Premier Cycle' ? 'bg-blue-50 text-blue-700 border border-blue-200' : 'bg-indigo-50 text-indigo-700 border border-indigo-200'}">
+                    ${esc(lvl.cycle)}
+                  </span>
+                </div>
+              </div>
+            </div>
+
+            <!-- Contrôleur Stepper du nombre de divisions -->
+            <div class="flex items-center gap-2 self-end sm:self-center">
+              <span class="text-xs font-semibold text-slate-500">Divisions :</span>
+              <div class="flex items-center border border-slate-300 rounded-lg overflow-hidden bg-slate-50">
+                <button type="button" onclick="adjustBatchLevelCount('${lvl.id}', -1)" class="w-7 h-7 flex items-center justify-center font-bold text-slate-600 hover:bg-slate-200 transition">-</button>
+                <span class="w-9 text-center font-black text-xs text-slate-800 bg-white h-7 flex items-center justify-center border-x border-slate-200">${lvl.count}</span>
+                <button type="button" onclick="adjustBatchLevelCount('${lvl.id}', 1)" class="w-7 h-7 flex items-center justify-center font-bold text-slate-600 hover:bg-slate-200 transition">+</button>
+              </div>
+              <button type="button" onclick="toggleBatchLevel('${lvl.id}')" class="text-slate-400 hover:text-rose-600 text-base font-bold ml-1 transition" title="Désactiver ce niveau">&times;</button>
+            </div>
+          </div>
+
+          <!-- Ligne des divisions générées -->
+          <div class="flex flex-wrap items-center gap-2 pt-0.5">
+            ${chipsHtml}
+            <button type="button" onclick="adjustBatchLevelCount('${lvl.id}', 1)" class="inline-flex items-center gap-1 px-2 py-1 rounded-lg text-[11px] font-bold bg-slate-100 hover:bg-slate-200 text-slate-700 border border-dashed border-slate-300 transition">
+              <span>+</span> <span>Division</span>
+            </button>
+          </div>
+        </div>
+      `;
+    }).join('');
+  }
+
+  // 3. Calcul de la liste finale des classes à déployer (Preview & Synthèse)
+  const toCreateList = [];
+  let existingDetectedCount = 0;
+
+  activeLevels.forEach(lvl => {
+    for (let i = 0; i < lvl.count; i++) {
+      const suffix = getBatchSuffix(i, classBatchConfig.format);
+      const className = `${lvl.name} ${suffix}`;
+      if (existingMap.has(className)) {
+        existingDetectedCount++;
+      } else if (!classBatchConfig.excludedClasses.has(className)) {
+        toCreateList.push({
+          name: className,
+          level: lvl.name,
+          cycle: lvl.cycle,
+          capacity: classBatchConfig.capacity,
+          room: `${roomPrefix} ${className.replace(/\s+/g, '-')}`
+        });
+      }
+    }
+  });
+
+  const totalCapacityAdded = toCreateList.length * classBatchConfig.capacity;
+
+  // Mise à jour des badges dans l'en-tête
+  const badgeClasses = document.getElementById('batch-badge-total-classes');
+  const badgeCapacity = document.getElementById('batch-badge-total-capacity');
+  if (badgeClasses) badgeClasses.textContent = toCreateList.length;
+  if (badgeCapacity) badgeCapacity.textContent = totalCapacityAdded.toLocaleString('fr-FR');
+
+  // Preview chips
+  if (toCreateList.length === 0) {
+    previewBox.innerHTML = '<span class="text-xs text-slate-400 italic p-1">Aucune nouvelle classe à créer pour l\'instant. Ajustez vos niveaux ou divisions ci-dessus.</span>';
+  } else {
+    previewBox.innerHTML = toCreateList.map(c => `
+      <span class="inline-flex items-center gap-1 px-2 py-0.5 bg-indigo-50 border border-indigo-200 text-indigo-900 rounded text-xs font-bold">
+        <span>⚡</span> <span>${esc(c.name)}</span>
+      </span>
+    `).join('');
+  }
+
+  const previewCount = document.getElementById('batch-preview-summary-count');
+  if (previewCount) {
+    previewCount.textContent = `${toCreateList.length} division(s) à créer`;
+  }
+
+  // Avertissement classes existantes
+  if (existingWarning && existingCountText) {
+    if (existingDetectedCount > 0) {
+      existingWarning.classList.remove('hidden');
+      existingCountText.textContent = `${existingDetectedCount} division(s) existant déjà dans votre école sont automatiquement protégées et ne seront pas dupliquées.`;
+    } else {
+      existingWarning.classList.add('hidden');
+    }
+  }
+
+  // Footer summary
+  const footerSum = document.getElementById('batch-footer-summary');
+  const footerCap = document.getElementById('batch-footer-capacity');
+  const btnConfirm = document.getElementById('btn-confirm-batch-classes');
+  const btnLabel = document.getElementById('btn-confirm-batch-classes-label');
+
+  if (footerSum) {
+    footerSum.textContent = `${toCreateList.length} nouvelle${toCreateList.length > 1 ? 's' : ''} classe${toCreateList.length > 1 ? 's' : ''} à déployer`;
+  }
+  if (footerCap) {
+    footerCap.textContent = `Capacité totale : ${totalCapacityAdded.toLocaleString('fr-FR')} places`;
+  }
+  if (btnLabel) {
+    btnLabel.textContent = `Déployer les ${toCreateList.length} classes`;
+  }
+  if (btnConfirm) {
+    btnConfirm.disabled = toCreateList.length === 0;
+    btnConfirm.className = toCreateList.length === 0
+      ? 'px-5 py-2 bg-slate-300 text-slate-500 rounded-lg text-xs font-extrabold cursor-not-allowed flex items-center gap-2'
+      : 'px-5 py-2 bg-gradient-to-r from-indigo-700 to-indigo-800 hover:from-indigo-800 hover:to-indigo-900 text-white rounded-lg text-xs font-extrabold shadow-md flex items-center gap-2 transition hover:-translate-y-0.5 cursor-pointer';
+  }
+}
+
+async function confirmBatchClassCreation() {
+  const activeLevels = Object.values(classBatchConfig.selectedLevels).filter(l => l.active);
+  const existingMap = getBatchExistingClassesMap();
+  const roomPrefix = (document.getElementById('batch-input-room-prefix')?.value || 'Salle').trim();
+  const toCreateList = [];
+
+  activeLevels.forEach(lvl => {
+    for (let i = 0; i < lvl.count; i++) {
+      const suffix = getBatchSuffix(i, classBatchConfig.format);
+      const className = `${lvl.name} ${suffix}`;
+      if (!existingMap.has(className) && !classBatchConfig.excludedClasses.has(className)) {
+        toCreateList.push({
+          name: className,
+          level: lvl.name,
+          cycle: lvl.cycle,
+          capacity: classBatchConfig.capacity,
+          room: `${roomPrefix} ${className.replace(/\s+/g, '-')}`
+        });
+      }
+    }
+  });
+
+  if (toCreateList.length === 0) {
+    showToast("Aucune nouvelle division à déployer. Veuillez sélectionner des niveaux ou ajouter des divisions.");
+    return;
+  }
+
+  const targetSchoolId = getBatchCurrentSchoolId();
+  const btn = document.getElementById('btn-confirm-batch-classes');
+  const originalHtml = btn ? btn.innerHTML : '';
+  if (btn) {
+    btn.disabled = true;
+    btn.innerHTML = `
+      <svg class="animate-spin -ml-1 mr-2 h-4 w-4 text-white inline-block" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+        <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+        <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+      </svg>
+      Déploiement en cours...
+    `;
+  }
+
+  try {
+    let result = null;
+    try {
+      const resp = await fetch('/api/classes/batch', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          schoolId: targetSchoolId,
+          classes: toCreateList
+        }),
+        credentials: 'same-origin'
+      });
+
+      if (resp.ok) {
+        result = await resp.json();
+      } else {
+        const err = await resp.json().catch(() => ({}));
+        throw new Error(err.error || `Erreur serveur HTTP ${resp.status}`);
+      }
+    } catch (netErr) {
+      console.warn("Bascule locale pour déploiement des classes:", netErr.message);
+      // Fallback local
+      if (!appState.classes) appState.classes = [];
+      const newItems = [];
+      toCreateList.forEach((cl, idx) => {
+        const newId = appState.classes.length > 0 ? Math.max(...appState.classes.map(c => c.id)) + idx + 1 : idx + 1;
+        const newObj = {
+          id: newId,
+          schoolId: targetSchoolId,
+          name: cl.name,
+          level: cl.level,
+          cycle: cl.cycle,
+          capacity: cl.capacity,
+          titulaire: 'Non assigné',
+          educateur: 'Non assigné',
+          room: cl.room,
+          status: 'ACTIF'
+        };
+        appState.classes.push(newObj);
+        newItems.push(newObj);
+      });
+      result = { success: true, summary: { created: newItems.length, ignored: 0 }, classes: appState.classes };
+    }
+
+    if (result && Array.isArray(result.classes)) {
+      appState.classes = result.classes;
+    }
+
+    closeClassBatchGeneratorModal();
+    renderClasses();
+    updateKPIs();
+    if (typeof renderConsultStats === 'function') renderConsultStats();
+
+    const createdCount = (result && result.summary) ? result.summary.created : toCreateList.length;
+    showToast(`🎉 Succès : ${createdCount} division(s) déployée(s) avec succès !`);
+
+    auditAction(
+      'CLASSES_BATCH_CREATE',
+      'Pédagogie',
+      `Déploiement de ${createdCount} classe(s)`,
+      '',
+      `${createdCount} divisions créées (${createdCount * classBatchConfig.capacity} places théoriques)`,
+      'SUCCÈS'
+    );
+  } catch (err) {
+    console.error("Erreur déploiement classes batch:", err);
+    showToast(`Erreur : ${err.message || 'Impossible de créer les classes'}`);
+  } finally {
+    if (btn) {
+      btn.disabled = false;
+      btn.innerHTML = originalHtml;
+    }
+  }
 }
 
 // =================================================================

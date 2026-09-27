@@ -1130,5 +1130,118 @@ test('AUTH-CODE-20 : Option de répartition automatique équilibrée vs affectat
   assert.ok(indexHtml.includes('updateImportPreview'), 'La fonction updateImportPreview doit être définie');
 });
 
+test('AUTH-CODE-21 : Studio de déploiement en masse des divisions et classes', async () => {
+  const adminLogin = await loginUser(baseUrl, TEST_USERS.concepteur, TEST_PASSWORD);
+  assert.strictEqual(adminLogin.statusCode, 200);
+
+  // 1. Créer une nouvelle école dédiée pour ce test
+  const uniqueCode = 'SCH-BATCH-' + Date.now();
+  const schRes = await makeRequest(baseUrl, {
+    path: '/api/schools',
+    method: 'POST',
+    headers: { cookie: adminLogin.cookie }
+  }, {
+    name: 'Institut Expérimental du Batch',
+    code: uniqueCode,
+    type: 'COLLEGE_LYCEE',
+    city: 'Yamoussoukro',
+    phone: '+225 0500000021',
+    email: `batch-${Date.now()}@ecole.ci`,
+    academicYear: '2026-2027',
+    password: 'Password@2026'
+  });
+  assert.strictEqual(schRes.statusCode, 201);
+  const testSchoolId = schRes.json.school ? schRes.json.school.id : schRes.json.id;
+
+  // 2. Pré-créer une classe existante (ex: 6EME 1)
+  const preClassRes = await makeRequest(baseUrl, {
+    path: '/api/classes',
+    method: 'POST',
+    headers: { cookie: adminLogin.cookie }
+  }, {
+    schoolId: testSchoolId,
+    name: '6EME 1',
+    level: '6EME',
+    cycle: 'Premier Cycle',
+    capacity: 40,
+    status: 'ACTIF'
+  });
+  assert.strictEqual(preClassRes.statusCode, 201);
+
+  // 3. Appel de l'API batch création :
+  // - 6EME 1 (déjà existante : doit être ignorée / retournée dans skipped)
+  // - 6EME 2 (nouvelle)
+  // - 6EME 3 (nouvelle)
+  // - 3EME A (nouvelle)
+  // - 3EME B (nouvelle)
+  // - TLE D 1 (nouvelle)
+  const batchPayload = {
+    schoolId: testSchoolId,
+    classes: [
+      { name: '6EME 1', level: '6EME', cycle: 'Premier Cycle', capacity: 40, room: 'Salle 1' },
+      { name: '6EME 2', level: '6EME', cycle: 'Premier Cycle', capacity: 40, room: 'Salle 2' },
+      { name: '6EME 3', level: '6EME', cycle: 'Premier Cycle', capacity: 40, room: 'Salle 3' },
+      { name: '3EME A', level: '3EME', cycle: 'Premier Cycle', capacity: 35, room: 'Salle 4' },
+      { name: '3EME B', level: '3EME', cycle: 'Premier Cycle', capacity: 35, room: 'Salle 5' },
+      { name: 'TLE D 1', level: 'TLE D', cycle: 'Second Cycle', capacity: 45, room: 'Labo 1' }
+    ]
+  };
+
+  const batchRes = await makeRequest(baseUrl, {
+    path: '/api/classes/batch',
+    method: 'POST',
+    headers: { cookie: adminLogin.cookie }
+  }, batchPayload);
+
+  assert.strictEqual(batchRes.statusCode, 201);
+  assert.strictEqual(batchRes.json.success, true);
+  assert.strictEqual(batchRes.json.createdCount, 5, '5 nouvelles classes doivent avoir été créées');
+  assert.strictEqual(batchRes.json.skippedCount, 1, '1 classe existante (6EME 1) doit avoir été ignorée');
+  assert.strictEqual(batchRes.json.created.length, 5);
+  assert.ok(batchRes.json.skipped.includes('6EME 1'));
+
+  // 4. Vérifier en base de données que les classes existent bien pour cette école
+  const schoolClasses = db.db.prepare('SELECT name, level, cycle, capacity, room FROM classes WHERE school_id = ? ORDER BY name').all(testSchoolId);
+  assert.strictEqual(schoolClasses.length, 6, 'Total 6 classes (1 existante + 5 créées par le lot)');
+
+  const names = schoolClasses.map(c => c.name);
+  assert.ok(names.includes('6EME 1'));
+  assert.ok(names.includes('6EME 2'));
+  assert.ok(names.includes('6EME 3'));
+  assert.ok(names.includes('3EME A'));
+  assert.ok(names.includes('3EME B'));
+  assert.ok(names.includes('TLE D 1'));
+
+  // 5. Tester l'alternative Array sur POST /api/classes (compatibilité polyvalente)
+  const directArrayRes = await makeRequest(baseUrl, {
+    path: '/api/classes',
+    method: 'POST',
+    headers: { cookie: adminLogin.cookie }
+  }, {
+    schoolId: testSchoolId,
+    classes: [
+      { name: '5EME 1', level: '5EME', cycle: 'Premier Cycle', capacity: 40 },
+      { name: '5EME 2', level: '5EME', cycle: 'Premier Cycle', capacity: 40 }
+    ]
+  });
+  assert.strictEqual(directArrayRes.statusCode, 201);
+  assert.strictEqual(directArrayRes.json.createdCount, 2);
+
+  // 6. Vérifier les composants UI du Studio dans index.html
+  const fs = require('node:fs');
+  const path = require('node:path');
+  const indexHtml = fs.readFileSync(path.join(__dirname, '..', 'index.html'), 'utf8');
+
+  assert.ok(indexHtml.includes('id="modal-class-batch-generator"'), 'Le modal Studio de déploiement en masse doit exister');
+  assert.ok(indexHtml.includes('id="btn-ped-batch-classes-top"'), 'Le bouton Générateur de Divisions doit exister');
+  assert.ok(indexHtml.includes('openClassBatchGeneratorModal'), 'La fonction openClassBatchGeneratorModal doit être déclarée');
+  assert.ok(indexHtml.includes('closeClassBatchGeneratorModal'), 'La fonction closeClassBatchGeneratorModal doit être déclarée');
+  assert.ok(indexHtml.includes('renderBatchGeneratorUI'), 'Le moteur de rendu live renderBatchGeneratorUI doit être défini');
+  assert.ok(indexHtml.includes('confirmBatchClassCreation'), 'La fonction d\'enregistrement confirmBatchClassCreation doit être définie');
+  assert.ok(indexHtml.includes('adjustBatchLevelCount'), 'Le stepper intelligent de division adjustBatchLevelCount doit être défini');
+  assert.ok(indexHtml.includes('setBatchNumberingFormat'), 'Le choix de format de numérotation setBatchNumberingFormat doit exister');
+});
+
+
 
 
