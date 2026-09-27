@@ -1480,8 +1480,12 @@ function createStudent(user, data) {
 
   const feeDue = data.feeDue !== undefined ? parseAmount(data.feeDue, 5000000) : 120000;
   const feePaid = 0; // Toujours 0 à la création : les règlements passent par quittance
-  const matricule = data.matricule || `CI-2026-${Date.now().toString().slice(-6)}`;
-  const nomPrenom = `${data.nom || ''} ${data.prenom || ''}`.trim();
+  let matricule = (data.matricule || `CI-2026-${Date.now().toString().slice(-6)}`).trim();
+  const existingMat = db.prepare('SELECT id FROM students WHERE matricule = ?').get(matricule);
+  if (existingMat) {
+    matricule = `${matricule}-${Date.now().toString().slice(-4)}`;
+  }
+  const nomPrenom = (data.nomPrenom || `${data.nom || ''} ${data.prenom || ''}`).trim();
 
   const stmt = db.prepare(`
     INSERT INTO students (

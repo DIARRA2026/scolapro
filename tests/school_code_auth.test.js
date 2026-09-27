@@ -642,5 +642,61 @@ test('AUTH-CODE-17 : Fichier modèle d\'importation avec date de naissance sépa
   assert.ok(resetStudentMatch[1].includes("'m-dob'"), 'resetAddStudentForm doit réinitialiser m-dob');
 });
 
+test('AUTH-CODE-18 : Confirmation de l\'importation des élèves fiabilisée (API, état, UI, KPIs) et bouton ScolaIA Copilot déplaçable', async () => {
+  const fs = require('node:fs');
+  const path = require('node:path');
+  const content = fs.readFileSync(path.join(__dirname, '..', 'index.html'), 'utf8');
+
+  // 1. Bouton ScolaIA déplaçable : styles, gestionnaires d'événements et fonction d'initialisation
+  assert.ok(content.includes('initDraggableScolaAIBtn'), 'initDraggableScolaAIBtn doit être définie');
+  assert.ok(content.includes('scolaAIDragMoved'), 'Le suivi de déplacement du bouton ScolaIA doit être géré');
+  assert.ok(content.includes('scolaAIIgnoreClick'), 'Le clic doit être ignoré si le bouton a été déplacé');
+  assert.ok(content.includes('scolapro_scolaia_btn_pos'), 'La position personnalisée du bouton doit être mémorisée dans le stockage local');
+  assert.ok(content.includes('cursor-grab') && content.includes('touch-none'), 'Le bouton ScolaIA doit comporter les classes pour le glisser-déposer');
+
+  // 2. Fonction confirmImport : fiabilisation de l'enregistrement et mise à jour de l'UI
+  const confirmMatch = content.match(/async function confirmImport\(\)\s*\{([\s\S]*?)\n    \}/);
+  assert.ok(confirmMatch, 'confirmImport doit être définie');
+  const confirmBody = confirmMatch[1];
+
+  assert.ok(confirmBody.includes('targetSchoolId'), 'confirmImport doit résoudre targetSchoolId');
+  assert.ok(confirmBody.includes('schoolId: targetSchoolId'), 'confirmImport doit inclure schoolId dans la charge utile de chaque élève');
+  assert.ok(confirmBody.includes('registeredStudent = data.student || (data.id ? data : null)'), 'confirmImport doit extraire l\'élève créé quelle que soit la forme du retour API');
+  assert.ok(confirmBody.includes('Importation en cours...'), 'confirmImport doit afficher un retour d\'état visuel en cours d\'importation');
+  assert.ok(confirmBody.includes("setSubTab('inscrits')"), 'confirmImport doit basculer automatiquement sur l\'onglet inscrits');
+  assert.ok(confirmBody.includes('renderStudentsTable()'), 'confirmImport doit rafraîchir la table des élèves inscrits');
+  assert.ok(confirmBody.includes('updateKPIs()'), 'confirmImport doit recalculer les KPIs de scolarité');
+
+  // 3. Backend db.js createStudent : conservation du nom complet via nomPrenom
+  const adminLogin = await loginUser(baseUrl, TEST_USERS.concepteur, TEST_PASSWORD);
+  const testMatricule = 'IMP-' + Date.now().toString().slice(-6);
+  const testStudentName = 'KOUASSI YAO INVENTAIRE ' + Date.now().toString().slice(-4);
+
+  const createRes = await makeRequest(baseUrl, {
+    path: '/api/students',
+    method: 'POST',
+    headers: { cookie: adminLogin.cookie }
+  }, {
+    schoolId: 1,
+    matricule: testMatricule,
+    nomPrenom: testStudentName,
+    sexe: 'M',
+    statut: 'AFF',
+    niveau: '5EME',
+    classe: '5EME 2',
+    feeDue: 135000
+  });
+
+  assert.strictEqual(createRes.statusCode, 201, 'La création d\'élève avec nomPrenom doit réussir');
+  const createdStudent = createRes.json;
+  assert.ok(createdStudent.id, 'L\'élève créé doit avoir un ID');
+  assert.strictEqual(createdStudent.nomPrenom, testStudentName, 'Le nom complet doit être préservé sans repli sur Élève Anonyme');
+
+  const dbStudent = db.db.prepare('SELECT nom_prenom, matricule, school_id FROM students WHERE id = ?').get(createdStudent.id);
+  assert.ok(dbStudent, 'L\'élève doit exister en base');
+  assert.strictEqual(dbStudent.nom_prenom, testStudentName);
+  assert.strictEqual(dbStudent.school_id, 1);
+});
+
 
 

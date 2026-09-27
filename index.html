@@ -9278,7 +9278,8 @@
   <!-- ================================================================= -->
   <!-- BOUTON FLOTTANT INTELLIGENT SCOLAPRO (ScolaIA Copilot)            -->
   <!-- ================================================================= -->
-  <button id="btn-toggle-scola-ai" onclick="toggleScolaAICopilot()" class="fixed bottom-6 right-6 z-40 px-4 py-3 sm:px-5 sm:py-3.5 rounded-full bg-gradient-to-r from-purple-700 via-indigo-600 to-amber-500 hover:from-purple-800 hover:to-amber-600 text-white font-black text-xs uppercase tracking-wider shadow-2xl shadow-indigo-900/60 transition transform hover:scale-105 active:scale-95 flex items-center gap-2.5 cursor-pointer border-2 border-amber-300/40 backdrop-blur-md group" title="Ouvrir l'Assistant Intelligent ScolaIA (Ctrl+K)">
+  <button id="btn-toggle-scola-ai" onclick="toggleScolaAICopilot()" class="fixed bottom-6 right-6 z-40 px-3.5 py-3 sm:px-5 sm:py-3.5 rounded-full bg-gradient-to-r from-purple-700 via-indigo-600 to-amber-500 hover:from-purple-800 hover:to-amber-600 text-white font-black text-xs uppercase tracking-wider shadow-2xl shadow-indigo-900/60 transition transform hover:scale-105 active:scale-95 flex items-center gap-2 cursor-grab select-none touch-none border-2 border-amber-300/40 backdrop-blur-md group" title="ScolaIA Copilot (Cliquer pour ouvrir, Glisser pour déplacer)">
+    <div class="flex items-center text-white/50 group-hover:text-white/80 transition -ml-1 text-[11px] select-none" title="Glisser pour déplacer">⠿</div>
     <div class="relative flex items-center justify-center">
       <span class="text-lg group-hover:rotate-12 transition">✨</span>
       <span class="absolute -top-1 -right-1 w-2.5 h-2.5 rounded-full bg-emerald-400 border border-slate-900 animate-pulse"></span>
@@ -13727,7 +13728,8 @@
         });
         if (resp.ok) {
           const resData = await resp.json();
-          if (resData.student) newStudent = resData.student;
+          const studentObj = resData.student || (resData.id ? resData : null);
+          if (studentObj) newStudent = studentObj;
         }
       } catch (err) {
         console.warn('API student create failed, keeping local:', err);
@@ -13737,6 +13739,8 @@
       resetAddStudentForm();
       closeAddStudentModal();
       renderStudentsTable();
+      updateKPIs();
+      if (typeof renderMesInscritsTable === 'function') renderMesInscritsTable();
       auditAction('STUDENT_ENROLL', 'Inscription', `Élève #${esc(newStudent.id)}`, '', `${esc(newStudent.nomPrenom)} (${matricule})`, 'SUCCÈS');
       showToast(`Inscription validée : ${esc(newStudent.nomPrenom)} (${matricule}) ajouté !`);
     }
@@ -14145,42 +14149,106 @@
     }
 
     async function confirmImport() {
-      const listToImport = (pendingImportedStudents && pendingImportedStudents.length > 0) ? pendingImportedStudents : [
-        { nomPrenom: "CISSE IBRAHIM", matricule: "23948104C", sexe: "M", red: "", statut: "AFF", niveau: "4EME", classe: "4EME 5", feeDue: 120000, feePaid: 0, enrolledAt: "09/09/2026", cashDesk: 'CAISSE_2' },
-        { nomPrenom: "GOUROU ESTHER", matricule: "23948105D", sexe: "F", red: "", statut: "AFF", niveau: "4EME", classe: "4EME 5", feeDue: 120000, feePaid: 120000, enrolledAt: "09/09/2026", cashDesk: 'CAISSE_2' },
-        { nomPrenom: "N'DA KOUADIO", matricule: "23948106E", sexe: "M", red: "", statut: "AFF", niveau: "3EME", classe: "3EME 5", feeDue: 120000, feePaid: 60000, enrolledAt: "09/09/2026", cashDesk: 'CAISSE_1' }
-      ];
+      const confirmBtn = document.getElementById('btn-confirm-import');
+      const originalBtnText = confirmBtn ? confirmBtn.innerHTML : "Confirmer l'importation";
+
+      if (!pendingImportedStudents || pendingImportedStudents.length === 0) {
+        showToast("Aucun élève en attente d'importation. Veuillez sélectionner un fichier.");
+        return;
+      }
+
+      const listToImport = [...pendingImportedStudents];
+      const targetSchoolId = appState.currentSchoolId || (appState.schools && appState.schools[0] ? appState.schools[0].id : 1);
+
+      if (confirmBtn) {
+        confirmBtn.disabled = true;
+        confirmBtn.innerHTML = `
+          <svg class="animate-spin -ml-1 mr-2 h-4 w-4 text-white inline-block" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+            <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+            <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+          </svg>
+          Importation en cours... (0/${listToImport.length})
+        `;
+      }
 
       let successCount = 0;
-      for (const item of listToImport) {
+      const existingMatricules = new Set((appState.students || []).map(s => String(s.matricule || '').toUpperCase().trim()));
+
+      for (let i = 0; i < listToImport.length; i++) {
+        const item = listToImport[i];
+        if (confirmBtn) {
+          confirmBtn.innerHTML = `
+            <svg class="animate-spin -ml-1 mr-2 h-4 w-4 text-white inline-block" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+              <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+              <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+            </svg>
+            Importation en cours... (${i + 1}/${listToImport.length})
+          `;
+        }
+
+        // Assurer l'unicité du matricule
+        let mat = (item.matricule || `MAT-${Date.now().toString().slice(-6)}`).toUpperCase().trim();
+        if (existingMatricules.has(mat)) {
+          mat = `${mat}-${Math.floor(100 + Math.random() * 900)}`;
+        }
+        existingMatricules.add(mat);
+
+        const payload = {
+          ...item,
+          matricule: mat,
+          schoolId: targetSchoolId
+        };
+
+        let registeredStudent = null;
         try {
           const resp = await fetch('/api/students', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(item),
+            body: JSON.stringify(payload),
             credentials: 'same-origin'
           });
           if (resp.ok) {
             const data = await resp.json();
-            if (data.student) {
-              appState.students.unshift(data.student);
-              successCount++;
-              continue;
-            }
+            registeredStudent = data.student || (data.id ? data : null);
+          } else {
+            console.warn(`Erreur API création élève (${resp.status})`);
           }
         } catch (e) {
-          console.warn('Import API fallback:', e);
+          console.warn('Import API network error:', e);
         }
-        const newId = appState.students.length > 0 ? Math.max(...appState.students.map(s => s.id)) + 1 : 1;
-        appState.students.unshift({ id: newId, ...item });
+
+        if (!registeredStudent) {
+          const newId = appState.students.length > 0 ? Math.max(...appState.students.map(s => Number(s.id) || 0)) + 1 : 1;
+          registeredStudent = {
+            id: newId,
+            ...payload
+          };
+        }
+
+        appState.students.unshift(registeredStudent);
         successCount++;
       }
 
+      if (confirmBtn) {
+        confirmBtn.disabled = false;
+        confirmBtn.innerHTML = originalBtnText;
+      }
+
       cancelImport();
-      renderStudentsTable();
+
+      // Réinitialiser les filtres et la pagination pour que les nouveaux élèves soient immédiatement visibles
+      appState.currentPage = 1;
+      appState.currentFilter = 'all';
+      const searchInput = document.getElementById('search-input');
+      if (searchInput) searchInput.value = '';
+
       setSubTab('inscrits');
+      renderStudentsTable();
+      updateKPIs();
+      if (typeof renderMesInscritsTable === 'function') renderMesInscritsTable();
+
       auditAction('STUDENTS_BATCH_IMPORT', 'Inscription', 'Importation Fichier', '', `${successCount} élèves importés et enregistrés`, 'SUCCÈS');
-      showToast(`Importation réussie : ${successCount} élève(s) ajouté(s) et enregistré(s) dans la base !`);
+      showToast(`Importation réussie : ${successCount} élève(s) importé(s) et enregistré(s) avec succès !`);
     }
 
     function renderMesInscritsTable() {
@@ -21795,6 +21863,153 @@ function openAutoTimetableModal() {
     auditAction('AI_TIMETABLE_OPTIMIZE', 'Pédagogie', 'Moteur EDT ScolaIA', '', 'Optimisation heuristique des créneaux sans conflit', 'SUCCÈS');
   }
   showToast("Moteur heuristique ScolaIA : Analyse et répartition des créneaux de cours sans conflit activée !");
+}
+
+// =================================================================
+// BOUTON FLOTTANT SCOLAIA COPILOT DÉPLAÇABLE (DRAGGABLE)
+// =================================================================
+let isScolaAIDragging = false;
+let scolaAIDragMoved = false;
+let scolaAIStartX = 0;
+let scolaAIStartY = 0;
+let scolaAIInitialLeft = 0;
+let scolaAIInitialTop = 0;
+let scolaAIIgnoreClick = false;
+
+function initDraggableScolaAIBtn() {
+  const btn = document.getElementById('btn-toggle-scola-ai');
+  if (!btn || btn._hasDragInit) return;
+  btn._hasDragInit = true;
+
+  btn.style.touchAction = 'none';
+
+  // Restaurer la position sauvegardée si valide
+  try {
+    const saved = localStorage.getItem('scolapro_scolaia_btn_pos');
+    if (saved) {
+      const pos = JSON.parse(saved);
+      if (typeof pos.left === 'number' && typeof pos.top === 'number') {
+        const btnW = btn.offsetWidth || 180;
+        const btnH = btn.offsetHeight || 50;
+        const maxLeft = Math.max(10, window.innerWidth - btnW - 10);
+        const maxTop = Math.max(10, window.innerHeight - btnH - 10);
+        const clampedLeft = Math.min(Math.max(10, pos.left), maxLeft);
+        const clampedTop = Math.min(Math.max(10, pos.top), maxTop);
+        btn.style.right = 'auto';
+        btn.style.bottom = 'auto';
+        btn.style.left = clampedLeft + 'px';
+        btn.style.top = clampedTop + 'px';
+      }
+    }
+  } catch (e) {
+    console.warn('Erreur restauration position ScolaIA:', e);
+  }
+
+  btn.addEventListener('pointerdown', (e) => {
+    if (e.button !== 0 && e.pointerType === 'mouse') return;
+
+    isScolaAIDragging = true;
+    scolaAIDragMoved = false;
+    scolaAIStartX = e.clientX;
+    scolaAIStartY = e.clientY;
+
+    const rect = btn.getBoundingClientRect();
+    scolaAIInitialLeft = rect.left;
+    scolaAIInitialTop = rect.top;
+
+    try {
+      btn.setPointerCapture(e.pointerId);
+    } catch (_) {}
+    btn.style.transition = 'none';
+  });
+
+  btn.addEventListener('pointermove', (e) => {
+    if (!isScolaAIDragging) return;
+
+    const dx = e.clientX - scolaAIStartX;
+    const dy = e.clientY - scolaAIStartY;
+
+    if (!scolaAIDragMoved && Math.hypot(dx, dy) > 5) {
+      scolaAIDragMoved = true;
+      btn.classList.add('cursor-grabbing');
+      btn.classList.remove('cursor-grab');
+    }
+
+    if (scolaAIDragMoved) {
+      const btnW = btn.offsetWidth || 180;
+      const btnH = btn.offsetHeight || 50;
+      const maxLeft = Math.max(10, window.innerWidth - btnW - 10);
+      const maxTop = Math.max(10, window.innerHeight - btnH - 10);
+
+      const targetLeft = Math.min(Math.max(10, scolaAIInitialLeft + dx), maxLeft);
+      const targetTop = Math.min(Math.max(10, scolaAIInitialTop + dy), maxTop);
+
+      btn.style.right = 'auto';
+      btn.style.bottom = 'auto';
+      btn.style.left = targetLeft + 'px';
+      btn.style.top = targetTop + 'px';
+    }
+  });
+
+  const onPointerUp = (e) => {
+    if (!isScolaAIDragging) return;
+    isScolaAIDragging = false;
+    btn.classList.remove('cursor-grabbing');
+    btn.classList.add('cursor-grab');
+    btn.style.transition = '';
+
+    try {
+      if (btn.hasPointerCapture(e.pointerId)) {
+        btn.releasePointerCapture(e.pointerId);
+      }
+    } catch (_) {}
+
+    if (scolaAIDragMoved) {
+      scolaAIIgnoreClick = true;
+      try {
+        const rect = btn.getBoundingClientRect();
+        localStorage.setItem('scolapro_scolaia_btn_pos', JSON.stringify({
+          left: Math.round(rect.left),
+          top: Math.round(rect.top)
+        }));
+      } catch (_) {}
+      setTimeout(() => {
+        scolaAIIgnoreClick = false;
+      }, 120);
+    }
+  };
+
+  btn.addEventListener('pointerup', onPointerUp);
+  btn.addEventListener('pointercancel', onPointerUp);
+
+  // Empêcher l'ouverture du copilot lors d'un déplacement
+  btn.addEventListener('click', (e) => {
+    if (scolaAIIgnoreClick) {
+      e.preventDefault();
+      e.stopImmediatePropagation();
+      scolaAIIgnoreClick = false;
+    }
+  }, true);
+
+  // Recalibrer la position lors du redimensionnement de l'écran
+  window.addEventListener('resize', () => {
+    if (btn.style.left && btn.style.left !== 'auto') {
+      const btnW = btn.offsetWidth || 180;
+      const btnH = btn.offsetHeight || 50;
+      const maxLeft = Math.max(10, window.innerWidth - btnW - 10);
+      const maxTop = Math.max(10, window.innerHeight - btnH - 10);
+      const curLeft = parseInt(btn.style.left, 10);
+      const curTop = parseInt(btn.style.top, 10);
+      btn.style.left = Math.min(Math.max(10, curLeft), maxLeft) + 'px';
+      btn.style.top = Math.min(Math.max(10, curTop), maxTop) + 'px';
+    }
+  });
+}
+
+if (document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', initDraggableScolaAIBtn);
+} else {
+  initDraggableScolaAIBtn();
 }
 
 // Raccourcis Clavier Universels (Ctrl+K / Cmd+K et Échap)
