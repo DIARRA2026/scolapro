@@ -630,10 +630,10 @@ const server = http.createServer(async (req, res) => {
       return sendJson(res, 200, db.getSchoolDashboardStats(user, sId));
     }
 
-    // Import par lot transactionnel d'élèves (Anti-doublons & multi-tenant)
+    // Import par lot transactionnel d'élèves (Anti-doublons & multi-tenant, limite étendue à 10 Mo)
     if (reqPath === '/api/students/import' && method === 'POST') {
       try {
-        const body = await readJsonBody(req);
+        const body = await readJsonBody(req, 10485760);
         const result = db.batchImportStudents(user, body);
         return sendJson(res, 200, result);
       } catch (err) {
@@ -644,6 +644,19 @@ const server = http.createServer(async (req, res) => {
           details: err.message
         });
       }
+    }
+
+    // Historique des listes et lots importés
+    if (reqPath === '/api/students/import/batches' && method === 'GET') {
+      const sId = queryParams.school_id || queryParams.schoolId || user.schoolId || (user.role === 'concepteur' ? 1 : null);
+      return sendJson(res, 200, { success: true, batches: db.getImportBatches(user, sId) });
+    }
+
+    const importBatchMatch = reqPath.match(/^\/api\/students\/import\/batches\/(\d+)$/);
+    if (importBatchMatch && method === 'GET') {
+      const batch = db.getImportBatchById(user, importBatchMatch[1]);
+      if (!batch) return sendError(res, new Error("Lot d'importation introuvable."), 404);
+      return sendJson(res, 200, { success: true, batch });
     }
 
     // Élèves

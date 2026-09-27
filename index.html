@@ -9,6 +9,7 @@
   <!-- Configuration d'Environnement Client (INNOVA GROUP) -->
   <script src="config.js"></script>
   <script src="https://www.gstatic.com/antigravity/web/dev/tailwindcss.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
@@ -3089,6 +3090,44 @@
               <button onclick="confirmImport()" id="btn-confirm-import" class="btn-navy text-white px-4 py-1.5 rounded text-xs font-bold shadow">
                 Confirmer l'importation
               </button>
+            </div>
+          </div>
+
+          <!-- Registre & Historique Permanent des Listes Importées & Sauvegardées -->
+          <div class="mt-6 pt-5 border-t border-slate-200 space-y-3">
+            <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+              <div class="flex items-center gap-2">
+                <span class="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse"></span>
+                <h4 class="font-bold text-sm text-slate-800 tracking-tight">Registre des Listes Importées & Sauvegardées</h4>
+                <span id="import-batches-count-badge" class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-slate-100 text-slate-700 border border-slate-200">
+                  0 liste archivée
+                </span>
+              </div>
+              <button type="button" onclick="loadImportBatches()" class="self-start sm:self-auto text-xs text-indigo-600 hover:text-indigo-800 font-bold flex items-center gap-1 cursor-pointer">
+                <span>🔄</span> <span>Actualiser le registre</span>
+              </button>
+            </div>
+            
+            <div class="overflow-x-auto border border-slate-200 rounded-xl bg-white shadow-xs">
+              <table class="w-full text-xs text-left">
+                <thead class="bg-slate-50 text-slate-600 font-bold text-[11px] uppercase tracking-wider border-b border-slate-200">
+                  <tr>
+                    <th class="py-3 px-3.5">Fichier & Lot Importé</th>
+                    <th class="py-3 px-3">Date & Heure</th>
+                    <th class="py-3 px-3">Opérateur</th>
+                    <th class="py-3 px-3 text-center">Bilan Élèves</th>
+                    <th class="py-3 px-3 text-center">Statut</th>
+                    <th class="py-3 px-3 text-center w-36">Actions</th>
+                  </tr>
+                </thead>
+                <tbody id="import-batches-tbody" class="divide-y divide-slate-100 text-slate-700">
+                  <tr>
+                    <td colspan="6" class="p-6 text-center text-slate-400 italic">
+                      Chargement de l'historique des listes importées...
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
             </div>
           </div>
         </div>
@@ -10181,6 +10220,7 @@
                 if (Array.isArray(bData.classes)) appState.classes = bData.classes;
                 if (Array.isArray(bData.cashDesks)) appState.cashDesks = bData.cashDesks;
                 if (Array.isArray(bData.users)) appState.users = bData.users;
+                if (Array.isArray(bData.importBatches)) appState.importBatches = bData.importBatches;
               }
             } catch (_) {}
             if (typeof syncHeaderUserSelectors === 'function') syncHeaderUserSelectors();
@@ -13722,6 +13762,9 @@
       });
 
       if (tabId === 'inscrits') renderStudentsTable();
+      if (tabId === 'import') {
+        if (typeof loadImportBatches === 'function') loadImportBatches();
+      }
       if (tabId === 'mesinscrits') renderMesInscritsTable();
       if (tabId === 'doc') {
         populateDocStudentPicker();
@@ -14389,6 +14432,7 @@
     }
 
     let pendingImportedStudents = [];
+    let pendingImportFileName = '';
 
     function toggleImportDistributionCheckbox() {
       const cb = document.getElementById('import-auto-distribute-toggle');
@@ -14527,118 +14571,148 @@
         return;
       }
 
+      pendingImportFileName = file.name || 'Liste_Eleves.csv';
+      const ext = (file.name || '').split('.').pop().toLowerCase();
+
+      function processTextLines(text) {
+        const lines = text.split(/\r?\n/).map(l => l.trim()).filter(l => l.length > 0);
+        if (lines.length <= 1) {
+          showToast("Le fichier sélectionné semble vide ou ne contient que l'en-tête.");
+          return;
+        }
+
+        const headerLine = lines[0];
+        const sep = headerLine.includes(';') ? ';' : (headerLine.includes('\t') ? '\t' : ',');
+        const headers = headerLine.split(sep).map(h => h.trim().toUpperCase().replace(/["']/g, ''));
+
+        const idxMat = headers.findIndex(h => h.includes('MATRICULE') || h.includes('MAT'));
+        const idxNom = headers.findIndex(h => h === 'NOM' || h.includes('NOM'));
+        const idxPrenom = headers.findIndex(h => h.includes('PRENOM'));
+        const idxNomPrenom = headers.findIndex(h => h.includes('NOM ET PRENOM') || h.includes('NOM_PRENOM'));
+        const idxSexe = headers.findIndex(h => h.includes('SEXE') || h === 'GENRE');
+
+        // Détection Date de Naissance : Séparée (JOUR - MOIS - ANNÉE) ou colonne unique
+        const idxJour = headers.findIndex(h => h === 'JOUR' || h.startsWith('JOUR') || h.includes('JOUR') || h === 'DAY');
+        const idxMois = headers.findIndex(h => h === 'MOIS' || h === 'MOI' || h.startsWith('MOIS') || h.startsWith('MOI') || h.includes('MOIS') || h.includes('MOI') || h === 'MONTH');
+        const idxAnnee = headers.findIndex(h => h === 'ANNEE' || h === 'AN' || h.startsWith('ANN') || h.includes('ANNEE') || h.includes('ANN') || h === 'YEAR');
+        const idxDob = headers.findIndex(h => (h.includes('DATE') && (h.includes('NAIS') || h.includes('BIRTH'))) || h === 'DOB');
+
+        const idxNiveau = headers.findIndex(h => h.includes('NIVEAU'));
+        const idxClasse = headers.findIndex(h => h.includes('CLASSE'));
+        const idxStatut = headers.findIndex(h => h.includes('STATUT') || h.includes('SATATUT') || h.includes('AFF/NAFF') || h.includes('AFF'));
+        const idxFeeDue = headers.findIndex(h => h.includes('FRAIS') || h.includes('DUE') || h.includes('ECOLAGE'));
+
+        pendingImportedStudents = [];
+        for (let i = 1; i < lines.length; i++) {
+          const parts = lines[i].split(sep).map(p => p.trim().replace(/^["']|["']$/g, ''));
+          if (parts.length < 2) continue;
+
+          let nomComplet = '';
+          if (idxNomPrenom >= 0 && parts[idxNomPrenom]) {
+            nomComplet = parts[idxNomPrenom];
+          } else {
+            const n = idxNom >= 0 ? (parts[idxNom] || '') : '';
+            const p = idxPrenom >= 0 ? (parts[idxPrenom] || '') : '';
+            nomComplet = `${n} ${p}`.trim();
+          }
+          if (!nomComplet && parts[0]) nomComplet = parts[0];
+
+          const mat = (idxMat >= 0 ? parts[idxMat] : '') || `MAT-${Math.floor(100000 + Math.random() * 900000)}`;
+          const sexe = (idxSexe >= 0 ? parts[idxSexe].toUpperCase() : 'M').startsWith('F') ? 'F' : 'M';
+          
+          // Reconstitution Date de Naissance (JOUR - MOIS - ANNÉE)
+          let dob = '';
+          if (idxJour >= 0 && idxMois >= 0 && idxAnnee >= 0) {
+            const rawJ = parts[idxJour] ? parts[idxJour].trim() : '';
+            const rawM = parts[idxMois] ? parts[idxMois].trim() : '';
+            let rawA = parts[idxAnnee] ? parts[idxAnnee].trim() : '';
+            if (rawA.length === 2) {
+              rawA = (parseInt(rawA, 10) > 40 ? '19' : '20') + rawA;
+            }
+            const j = rawJ ? rawJ.padStart(2, '0') : '';
+            const m = rawM ? rawM.padStart(2, '0') : '';
+            if (j && m && rawA) {
+              dob = `${rawA}-${m}-${j}`;
+            }
+          } else if (idxDob >= 0 && parts[idxDob]) {
+            dob = parts[idxDob].trim();
+          }
+
+          const niveau = (idxNiveau >= 0 ? parts[idxNiveau].toUpperCase() : '6EME') || '6EME';
+          const rawClasse = (idxClasse >= 0 && parts[idxClasse]) ? parts[idxClasse].toUpperCase().trim() : '';
+          const hasExplicitClass = Boolean(rawClasse && rawClasse !== 'NON ASSIGNÉ' && rawClasse !== 'NON ASSIGNE');
+          const classe = hasExplicitClass ? rawClasse : 'Non assigné';
+          
+          // Statut AFF / NAFF (ou NON AFF / AFFECTÉ / NON AFFECTÉ)
+          const rawStatut = (idxStatut >= 0 && parts[idxStatut] ? parts[idxStatut].toUpperCase().trim() : 'AFF');
+          const isNonAff = rawStatut.includes('NON') || rawStatut.includes('NAFF') || rawStatut === 'N' || rawStatut === 'NON AFF';
+          const statut = isNonAff ? 'NON AFF' : 'AFF';
+
+          const feeDue = (idxFeeDue >= 0 && parseInt(parts[idxFeeDue])) ? parseInt(parts[idxFeeDue]) : 120000;
+
+          pendingImportedStudents.push({
+            nomPrenom: nomComplet.toUpperCase(),
+            matricule: mat.toUpperCase(),
+            sexe: sexe,
+            red: "",
+            statut: statut,
+            dob: dob,
+            dateNaissance: dob,
+            niveau: niveau,
+            rawClasse: rawClasse,
+            hasExplicitClass: hasExplicitClass,
+            classe: classe,
+            feeDue: feeDue,
+            feePaid: 0,
+            isAbsent: false,
+            enrolledAt: new Date().toLocaleDateString('fr-FR'),
+            cashDesk: 'PRINCIPALE'
+          });
+        }
+
+        if (pendingImportedStudents.length === 0) {
+          showToast("Aucun élève valide détecté dans le fichier.");
+          return;
+        }
+
+        updateImportPreview();
+
+        previewBox.classList.remove('hidden');
+        const confirmBtn = document.getElementById('btn-confirm-import');
+        if (confirmBtn) {
+          confirmBtn.textContent = `Confirmer l'importation (${pendingImportedStudents.length} élève${pendingImportedStudents.length > 1 ? 's' : ''})`;
+        }
+        showToast(`Fichier analysé : ${pendingImportedStudents.length} élève(s) détecté(s) prêt(s) à être inscrit(s) !`);
+      }
+
+      // Décodage natif Excel (.xlsx, .xls) si SheetJS est chargé
+      if ((ext === 'xlsx' || ext === 'xls') && typeof XLSX !== 'undefined') {
+        const reader = new FileReader();
+        reader.onload = function(evt) {
+          try {
+            const data = new Uint8Array(evt.target.result);
+            const workbook = XLSX.read(data, { type: 'array' });
+            const firstSheetName = workbook.SheetNames[0];
+            const worksheet = workbook.Sheets[firstSheetName];
+            const csvText = XLSX.utils.sheet_to_csv(worksheet, { FS: ';' });
+            processTextLines(csvText);
+          } catch (err) {
+            console.warn('Erreur lecture XLSX:', err);
+            showToast("Erreur lors de la lecture du fichier Excel. Veuillez le sauvegarder en format CSV (séparateur point-virgule).");
+          }
+        };
+        reader.readAsArrayBuffer(file);
+        return;
+      }
+
+      if (ext === 'xlsx' || ext === 'xls') {
+        showToast("Fichier Excel détecté. Pour une compatibilité hors-ligne maximale, privilégiez le format CSV ou utilisez notre modèle.");
+      }
+
       const reader = new FileReader();
       reader.onload = function(evt) {
         try {
-          const text = evt.target.result;
-          const lines = text.split(/\r?\n/).map(l => l.trim()).filter(l => l.length > 0);
-          if (lines.length <= 1) {
-            showToast("Le fichier sélectionné semble vide ou ne contient que l'en-tête.");
-            return;
-          }
-
-          const headerLine = lines[0];
-          const sep = headerLine.includes(';') ? ';' : (headerLine.includes('\t') ? '\t' : ',');
-          const headers = headerLine.split(sep).map(h => h.trim().toUpperCase().replace(/["']/g, ''));
-
-          const idxMat = headers.findIndex(h => h.includes('MATRICULE') || h.includes('MAT'));
-          const idxNom = headers.findIndex(h => h === 'NOM' || h.includes('NOM'));
-          const idxPrenom = headers.findIndex(h => h.includes('PRENOM'));
-          const idxNomPrenom = headers.findIndex(h => h.includes('NOM ET PRENOM') || h.includes('NOM_PRENOM'));
-          const idxSexe = headers.findIndex(h => h.includes('SEXE') || h === 'GENRE');
-
-          // Détection Date de Naissance : Séparée (JOUR - MOIS - ANNÉE) ou colonne unique
-          const idxJour = headers.findIndex(h => h === 'JOUR' || h.startsWith('JOUR') || h.includes('JOUR') || h === 'DAY');
-          const idxMois = headers.findIndex(h => h === 'MOIS' || h === 'MOI' || h.startsWith('MOIS') || h.startsWith('MOI') || h.includes('MOIS') || h.includes('MOI') || h === 'MONTH');
-          const idxAnnee = headers.findIndex(h => h === 'ANNEE' || h === 'AN' || h.startsWith('ANN') || h.includes('ANNEE') || h.includes('ANN') || h === 'YEAR');
-          const idxDob = headers.findIndex(h => (h.includes('DATE') && (h.includes('NAIS') || h.includes('BIRTH'))) || h === 'DOB');
-
-          const idxNiveau = headers.findIndex(h => h.includes('NIVEAU'));
-          const idxClasse = headers.findIndex(h => h.includes('CLASSE'));
-          const idxStatut = headers.findIndex(h => h.includes('STATUT') || h.includes('SATATUT') || h.includes('AFF/NAFF') || h.includes('AFF'));
-          const idxFeeDue = headers.findIndex(h => h.includes('FRAIS') || h.includes('DUE') || h.includes('ECOLAGE'));
-
-          pendingImportedStudents = [];
-          for (let i = 1; i < lines.length; i++) {
-            const parts = lines[i].split(sep).map(p => p.trim().replace(/^["']|["']$/g, ''));
-            if (parts.length < 2) continue;
-
-            let nomComplet = '';
-            if (idxNomPrenom >= 0 && parts[idxNomPrenom]) {
-              nomComplet = parts[idxNomPrenom];
-            } else {
-              const n = idxNom >= 0 ? (parts[idxNom] || '') : '';
-              const p = idxPrenom >= 0 ? (parts[idxPrenom] || '') : '';
-              nomComplet = `${n} ${p}`.trim();
-            }
-            if (!nomComplet && parts[0]) nomComplet = parts[0];
-
-            const mat = (idxMat >= 0 ? parts[idxMat] : '') || `MAT-${Math.floor(100000 + Math.random() * 900000)}`;
-            const sexe = (idxSexe >= 0 ? parts[idxSexe].toUpperCase() : 'M').startsWith('F') ? 'F' : 'M';
-            
-            // Reconstitution Date de Naissance (JOUR - MOIS - ANNÉE)
-            let dob = '';
-            if (idxJour >= 0 && idxMois >= 0 && idxAnnee >= 0) {
-              const rawJ = parts[idxJour] ? parts[idxJour].trim() : '';
-              const rawM = parts[idxMois] ? parts[idxMois].trim() : '';
-              let rawA = parts[idxAnnee] ? parts[idxAnnee].trim() : '';
-              if (rawA.length === 2) {
-                rawA = (parseInt(rawA, 10) > 40 ? '19' : '20') + rawA;
-              }
-              const j = rawJ ? rawJ.padStart(2, '0') : '';
-              const m = rawM ? rawM.padStart(2, '0') : '';
-              if (j && m && rawA) {
-                dob = `${rawA}-${m}-${j}`;
-              }
-            } else if (idxDob >= 0 && parts[idxDob]) {
-              dob = parts[idxDob].trim();
-            }
-
-            const niveau = (idxNiveau >= 0 ? parts[idxNiveau].toUpperCase() : '6EME') || '6EME';
-            const rawClasse = (idxClasse >= 0 && parts[idxClasse]) ? parts[idxClasse].toUpperCase().trim() : '';
-            const hasExplicitClass = Boolean(rawClasse && rawClasse !== 'NON ASSIGNÉ' && rawClasse !== 'NON ASSIGNE');
-            const classe = hasExplicitClass ? rawClasse : 'Non assigné';
-            
-            // Statut AFF / NAFF (ou NON AFF / AFFECTÉ / NON AFFECTÉ)
-            const rawStatut = (idxStatut >= 0 && parts[idxStatut] ? parts[idxStatut].toUpperCase().trim() : 'AFF');
-            const isNonAff = rawStatut.includes('NON') || rawStatut.includes('NAFF') || rawStatut === 'N' || rawStatut === 'NON AFF';
-            const statut = isNonAff ? 'NON AFF' : 'AFF';
-
-            const feeDue = (idxFeeDue >= 0 && parseInt(parts[idxFeeDue])) ? parseInt(parts[idxFeeDue]) : 120000;
-
-            pendingImportedStudents.push({
-              nomPrenom: nomComplet.toUpperCase(),
-              matricule: mat.toUpperCase(),
-              sexe: sexe,
-              red: "",
-              statut: statut,
-              dob: dob,
-              dateNaissance: dob,
-              niveau: niveau,
-              rawClasse: rawClasse,
-              hasExplicitClass: hasExplicitClass,
-              classe: classe,
-              feeDue: feeDue,
-              feePaid: 0,
-              isAbsent: false,
-              enrolledAt: new Date().toLocaleDateString('fr-FR'),
-              cashDesk: 'PRINCIPALE'
-            });
-          }
-
-          if (pendingImportedStudents.length === 0) {
-            showToast("Aucun élève valide détecté dans le fichier.");
-            return;
-          }
-
-          updateImportPreview();
-
-          previewBox.classList.remove('hidden');
-          const confirmBtn = document.getElementById('btn-confirm-import');
-          if (confirmBtn) {
-            confirmBtn.textContent = `Confirmer l'importation (${pendingImportedStudents.length} élève${pendingImportedStudents.length > 1 ? 's' : ''})`;
-          }
-          showToast(`Fichier analysé : ${pendingImportedStudents.length} élève(s) détecté(s) prêt(s) à être inscrit(s) !`);
+          processTextLines(evt.target.result);
         } catch (parseErr) {
           console.warn("Erreur lecture CSV:", parseErr);
           showToast("Erreur lors de la lecture du fichier CSV.");
@@ -14647,8 +14721,15 @@
       reader.readAsText(file, 'UTF-8');
     }
 
+    function parseAndPreviewCSVText(text, originalFileName) {
+      if (originalFileName) pendingImportFileName = originalFileName;
+      const fakeEvt = { target: { files: [new File([text], originalFileName || 'import.csv', { type: 'text/csv' })] } };
+      handleFileImport(fakeEvt);
+    }
+
     function cancelImport() {
       pendingImportedStudents = [];
+      pendingImportFileName = '';
       document.getElementById('import-preview-box').classList.add('hidden');
       const input = document.getElementById('file-upload-input');
       if (input) input.value = '';
@@ -14849,6 +14930,7 @@
             body: JSON.stringify({
               schoolId: targetSchoolId,
               autoDistributeClasses: autoDistributeClasses,
+              filename: pendingImportFileName || 'Liste_Eleves.csv',
               students: listToImport
             }),
             credentials: 'same-origin'
@@ -14858,6 +14940,13 @@
             const data = await resp.json();
             const registeredStudent = data.student || (data.id ? data : null);
             importResult = data;
+            if (Array.isArray(data.students)) {
+              appState.students = data.students;
+            }
+            if (data.batch) {
+              if (!appState.importBatches) appState.importBatches = [];
+              appState.importBatches = [data.batch, ...appState.importBatches.filter(b => b.id !== data.batch.id)];
+            }
           } else {
             const errData = await resp.json().catch(() => ({}));
             console.warn('Erreur API /api/students/import (' + resp.status + '):', errData);
@@ -14965,11 +15054,41 @@
             }
           });
 
-          importResult = { success: true, summary, details, students: appState.students };
+          const localBatch = {
+            id: 'batch_local_' + Date.now(),
+            school_id: targetSchoolId,
+            batch_name: (pendingImportFileName || 'Liste_Eleves.csv').replace(/\.[^/.]+$/, ''),
+            filename: pendingImportFileName || 'Liste_Eleves.csv',
+            operator: (activeUser && (activeUser.name || activeUser.username)) || 'Utilisateur',
+            imported_count: summary.imported,
+            updated_count: summary.updated,
+            ignored_count: summary.ignored,
+            errors_count: summary.errors,
+            total_count: summary.total,
+            summary_json: JSON.stringify(summary),
+            details_json: JSON.stringify(details),
+            summary: summary,
+            details: details,
+            created_at: new Date().toISOString()
+          };
+          if (!appState.importBatches) appState.importBatches = [];
+          appState.importBatches.unshift(localBatch);
+
+          importResult = { success: true, summary, details, students: appState.students, batch: localBatch };
         }
 
         if (Array.isArray(importResult.students)) {
           appState.students = importResult.students;
+        }
+
+        // Persistance locale miroir systématique
+        try {
+          localStorage.setItem('scolapro_students', JSON.stringify(appState.students));
+          if (appState.importBatches) {
+            localStorage.setItem('scolapro_import_batches', JSON.stringify(appState.importBatches));
+          }
+        } catch (storageErr) {
+          console.warn('Erreur écriture miroir localStorage:', storageErr);
         }
 
         cancelImport();
@@ -14998,6 +15117,11 @@
         // Ouvrir le rapport d'import détaillé
         openImportReportModal(importResult.summary, importResult.details);
 
+        // Rafraîchir immédiatement le registre des lots archivés
+        if (typeof loadImportBatches === 'function') {
+          loadImportBatches();
+        }
+
         showToast(`Importation terminée : ${importResult.summary.imported} ajouté(s), ${importResult.summary.updated} mis à jour, ${importResult.summary.ignored} doublon(s) ignoré(s).`);
 
       } catch (err) {
@@ -15009,6 +15133,224 @@
           confirmBtn.innerHTML = originalBtnText;
         }
       }
+    }
+
+    async function loadImportBatches() {
+      const activeUser = (typeof getActiveUser === 'function') ? getActiveUser() : appState.currentUser;
+      const targetSchoolId = (activeUser && activeUser.schoolId) 
+        ? activeUser.schoolId 
+        : (appState.currentSchoolId || (appState.schools && appState.schools[0] ? appState.schools[0].id : 1));
+
+      try {
+        const resp = await fetch(`/api/students/import/batches?schoolId=${encodeURIComponent(targetSchoolId)}`, {
+          credentials: 'same-origin'
+        });
+        if (resp.ok) {
+          const data = await resp.json();
+          if (Array.isArray(data.batches)) {
+            appState.importBatches = data.batches;
+            try {
+              localStorage.setItem('scolapro_import_batches', JSON.stringify(data.batches));
+            } catch (_) {}
+          }
+        } else {
+          // Secours local si le serveur ne renvoie pas 200
+          const cached = localStorage.getItem('scolapro_import_batches');
+          if (cached && (!appState.importBatches || appState.importBatches.length === 0)) {
+            appState.importBatches = JSON.parse(cached);
+          }
+        }
+      } catch (err) {
+        console.warn('Chargement des lots importés hors ligne/local:', err);
+        const cached = localStorage.getItem('scolapro_import_batches');
+        if (cached && (!appState.importBatches || appState.importBatches.length === 0)) {
+          appState.importBatches = JSON.parse(cached);
+        }
+      }
+
+      renderImportBatchesTable();
+    }
+
+    function renderImportBatchesTable() {
+      const tbody = document.getElementById('import-batches-tbody');
+      const countBadge = document.getElementById('import-batches-count-badge');
+      if (!tbody) return;
+
+      const activeUser = (typeof getActiveUser === 'function') ? getActiveUser() : appState.currentUser;
+      const targetSchoolId = (activeUser && activeUser.schoolId) 
+        ? activeUser.schoolId 
+        : (appState.currentSchoolId || (appState.schools && appState.schools[0] ? appState.schools[0].id : null));
+
+      let batches = appState.importBatches || [];
+      if (targetSchoolId && (!activeUser || (activeUser.role !== 'concepteur' && activeUser.id !== 0))) {
+        batches = batches.filter(b => !b.school_id || b.school_id === targetSchoolId);
+      }
+
+      if (countBadge) {
+        countBadge.textContent = `${batches.length} liste${batches.length > 1 ? 's' : ''} archivée${batches.length > 1 ? 's' : ''}`;
+      }
+
+      if (batches.length === 0) {
+        tbody.innerHTML = `
+          <tr>
+            <td colspan="6" class="p-8 text-center text-slate-400 italic font-medium">
+              <div class="flex flex-col items-center justify-center gap-2">
+                <span class="text-3xl">📥</span>
+                <span>Aucune liste importée enregistrée pour le moment.</span>
+                <span class="text-[11px] text-slate-400">Importez un fichier ci-dessus pour inscrire vos élèves et créer votre premier historique permanent.</span>
+              </div>
+            </td>
+          </tr>
+        `;
+        return;
+      }
+
+      tbody.innerHTML = batches.map(b => {
+        const rawDate = b.created_at ? new Date(b.created_at) : new Date();
+        const formattedDate = !isNaN(rawDate) 
+          ? rawDate.toLocaleDateString('fr-FR', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' })
+          : (b.created_at || 'Récent');
+
+        const total = b.total_count || ( (b.imported_count || 0) + (b.updated_count || 0) + (b.ignored_count || 0) + (b.errors_count || 0) );
+        const hasErrors = (b.errors_count || 0) > 0;
+        
+        let statusBadge = '';
+        if (hasErrors) {
+          statusBadge = `<span class="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-100 text-amber-800 border border-amber-200">Partiel (${b.errors_count} err.)</span>`;
+        } else {
+          statusBadge = `<span class="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-100 text-emerald-800 border border-emerald-200">✅ Sauvegardé & Intégré</span>`;
+        }
+
+        const safeBatchId = escJs(String(b.id));
+
+        return `
+          <tr class="hover:bg-slate-50/80 transition">
+            <td class="py-3 px-3.5">
+              <div class="flex items-center gap-2.5">
+                <div class="w-8 h-8 rounded-lg bg-indigo-50 text-indigo-600 flex items-center justify-center font-bold text-sm shrink-0 border border-indigo-100">
+                  📊
+                </div>
+                <div>
+                  <div class="font-bold text-slate-800 hover:text-indigo-600 cursor-pointer" onclick="openImportReportFromBatch(${safeBatchId})">
+                    ${esc(b.filename || b.batch_name || 'Liste_Eleves.csv')}
+                  </div>
+                  <div class="text-[10px] text-slate-400 font-mono">
+                    Lot ${esc(b.batch_name || 'Lot')} &bull; ${total} ligne${total > 1 ? 's' : ''}
+                  </div>
+                </div>
+              </div>
+            </td>
+            <td class="py-3 px-3 text-slate-600 font-mono text-[11px]">
+              ${esc(formattedDate)}
+            </td>
+            <td class="py-3 px-3 font-medium text-slate-700">
+              <span class="inline-flex items-center gap-1">
+                <span class="w-2 h-2 rounded-full bg-slate-400"></span>
+                ${esc(b.operator || 'Opérateur')}
+              </span>
+            </td>
+            <td class="py-3 px-3 text-center">
+              <div class="inline-flex items-center gap-1.5 flex-wrap justify-center font-bold font-mono text-[11px]">
+                <span class="px-1.5 py-0.5 rounded bg-emerald-100 text-emerald-800" title="Élèves nouvellement inscrits">+${b.imported_count || 0}</span>
+                <span class="px-1.5 py-0.5 rounded bg-blue-100 text-blue-800" title="Élèves mis à jour">~${b.updated_count || 0}</span>
+                <span class="px-1.5 py-0.5 rounded bg-slate-100 text-slate-600" title="Doublons identiques ignorés">=${b.ignored_count || 0}</span>
+                ${hasErrors ? `<span class="px-1.5 py-0.5 rounded bg-rose-100 text-rose-800" title="Erreurs">!${b.errors_count}</span>` : ''}
+              </div>
+            </td>
+            <td class="py-3 px-3 text-center">
+              ${statusBadge}
+            </td>
+            <td class="py-3 px-3 text-center">
+              <div class="flex items-center justify-center gap-1.5">
+                <button type="button" onclick="openImportReportFromBatch(${safeBatchId})" 
+                  class="px-2.5 py-1 text-[11px] font-bold rounded-lg bg-indigo-50 hover:bg-indigo-100 text-indigo-700 transition flex items-center gap-1 cursor-pointer"
+                  title="Consulter le rapport détaillé de ce lot">
+                  <span>📋</span> <span>Rapport</span>
+                </button>
+                <button type="button" onclick="exportBatchReportCSV(${safeBatchId})" 
+                  class="p-1 text-[11px] rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 transition cursor-pointer"
+                  title="Exporter le rapport d'audit CSV">
+                  <span>📥</span>
+                </button>
+              </div>
+            </td>
+          </tr>
+        `;
+      }).join('');
+    }
+
+    async function openImportReportFromBatch(batchId) {
+      let batch = (appState.importBatches || []).find(b => String(b.id) === String(batchId));
+      
+      if (!batch || !batch.details || (Array.isArray(batch.details) && batch.details.length === 0)) {
+        try {
+          const resp = await fetch(`/api/students/import/batches/${encodeURIComponent(batchId)}`, { credentials: 'same-origin' });
+          if (resp.ok) {
+            const data = await resp.json();
+            if (data.batch) {
+              batch = data.batch;
+            }
+          }
+        } catch (_) {}
+      }
+
+      if (!batch) {
+        showToast("Lot d'importation introuvable.");
+        return;
+      }
+
+      let summary = batch.summary;
+      if (!summary && batch.summary_json) {
+        try { summary = typeof batch.summary_json === 'string' ? JSON.parse(batch.summary_json) : batch.summary_json; } catch (_) {}
+      }
+      if (!summary) {
+        summary = {
+          imported: batch.imported_count || 0,
+          updated: batch.updated_count || 0,
+          ignored: batch.ignored_count || 0,
+          errors: batch.errors_count || 0,
+          total: batch.total_count || 0
+        };
+      }
+
+      let details = batch.details;
+      if (!details && batch.details_json) {
+        try { details = typeof batch.details_json === 'string' ? JSON.parse(batch.details_json) : batch.details_json; } catch (_) {}
+      }
+      if (!Array.isArray(details)) details = [];
+
+      openImportReportModal(summary, details);
+    }
+
+    async function exportBatchReportCSV(batchId) {
+      let batch = (appState.importBatches || []).find(b => String(b.id) === String(batchId));
+      if (!batch || !batch.details || (Array.isArray(batch.details) && batch.details.length === 0)) {
+        try {
+          const resp = await fetch(`/api/students/import/batches/${encodeURIComponent(batchId)}`, { credentials: 'same-origin' });
+          if (resp.ok) {
+            const data = await resp.json();
+            if (data.batch) batch = data.batch;
+          }
+        } catch (_) {}
+      }
+
+      if (!batch) {
+        showToast("Lot d'importation introuvable.");
+        return;
+      }
+
+      let details = batch.details;
+      if (!details && batch.details_json) {
+        try { details = typeof batch.details_json === 'string' ? JSON.parse(batch.details_json) : batch.details_json; } catch (_) {}
+      }
+
+      if (!Array.isArray(details) || details.length === 0) {
+        showToast("Aucun détail enregistré pour ce lot d'importation.");
+        return;
+      }
+
+      currentImportReportDetails = details;
+      exportImportReportCSV();
     }
 
     function renderMesInscritsTable() {
@@ -16462,6 +16804,7 @@
             if (Array.isArray(bootData.classes)) appState.classes = bootData.classes;
             if (Array.isArray(bootData.cashDesks)) appState.cashDesks = bootData.cashDesks;
             if (Array.isArray(bootData.users)) appState.users = bootData.users;
+            if (Array.isArray(bootData.importBatches)) appState.importBatches = bootData.importBatches;
           }
         } catch (_) {}
 
@@ -19495,6 +19838,7 @@
           if (Array.isArray(data.payments)) appState.payments = data.payments;
           if (Array.isArray(data.users)) appState.users = data.users;
           if (Array.isArray(data.auditLogs)) appState.auditLogs = data.auditLogs;
+          if (Array.isArray(data.importBatches)) appState.importBatches = data.importBatches;
         } else if (resp.status === 401) {
           appState.isAuthenticated = false;
           sessionStorage.removeItem('scolapro_authenticated');
@@ -19502,6 +19846,43 @@
       } catch (err) {
         console.warn('[FullStack Bootstrap] Mode local ou hors ligne:', err.message);
       }
+
+      // Restauration / Réconciliation avec le stockage local miroir (Offline/Resilience)
+      try {
+        const localSavedStudents = localStorage.getItem('scolapro_students');
+        if (localSavedStudents) {
+          const parsed = JSON.parse(localSavedStudents);
+          if (Array.isArray(parsed) && parsed.length > 0) {
+            if (!appState.students || appState.students.length === 0) {
+              appState.students = parsed;
+            } else {
+              parsed.forEach(ls => {
+                if (!appState.students.some(s => s.id === ls.id || (s.matricule && s.matricule === ls.matricule))) {
+                  appState.students.push(ls);
+                }
+              });
+            }
+          }
+        }
+      } catch (_) {}
+
+      try {
+        const localSavedBatches = localStorage.getItem('scolapro_import_batches');
+        if (localSavedBatches) {
+          const parsedB = JSON.parse(localSavedBatches);
+          if (Array.isArray(parsedB) && parsedB.length > 0) {
+            if (!appState.importBatches || appState.importBatches.length === 0) {
+              appState.importBatches = parsedB;
+            } else {
+              parsedB.forEach(lb => {
+                if (!appState.importBatches.some(b => b.id === lb.id)) {
+                  appState.importBatches.push(lb);
+                }
+              });
+            }
+          }
+        }
+      } catch (_) {}
 
       // 3. Fusionner les fondations et écoles locales créées
       storedFoundations.forEach(sf => {

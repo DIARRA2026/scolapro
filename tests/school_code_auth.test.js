@@ -1242,6 +1242,162 @@ test('AUTH-CODE-21 : Studio de déploiement en masse des divisions et classes', 
   assert.ok(indexHtml.includes('setBatchNumberingFormat'), 'Le choix de format de numérotation setBatchNumberingFormat doit exister');
 });
 
+test('AUTH-CODE-22 : Persistance garantie des listes importées et registre permanent des lots archivés', async () => {
+  const adminLogin = await loginUser(baseUrl, TEST_USERS.concepteur, TEST_PASSWORD);
+  assert.strictEqual(adminLogin.statusCode, 200);
+
+  const schoolCode = 'GSH-IMP-' + Math.floor(Math.random() * 9000 + 1000);
+  const createSchoolRes = await makeRequest(baseUrl, {
+    path: '/api/schools',
+    method: 'POST',
+    headers: { cookie: adminLogin.cookie }
+  }, {
+    name: 'Collège d\'Importation Garantie',
+    code: schoolCode,
+    shortName: 'CIG Test',
+    schoolType: 'COLLÈGE',
+    city: 'Yamoussoukro',
+    password: 'ImportSecure2026!'
+  });
+  assert.strictEqual(createSchoolRes.statusCode, 201);
+  const targetSchoolId = createSchoolRes.json.school.id;
+
+  // 1. Importer un premier lot d'élèves via POST /api/students/import
+  const testFileName = 'Liste_Ministere_Rentree_2026.csv';
+  const importStudents = [
+    {
+      matricule: 'IMP-TEST-001-' + Date.now(),
+      nomPrenom: 'KOUAME YAO MARCELLIN',
+      sexe: 'M',
+      dob: '2012-04-15',
+      statut: 'AFF',
+      niveau: '6EME',
+      classe: '6EME 1',
+      feeDue: 130000
+    },
+    {
+      matricule: 'IMP-TEST-002-' + Date.now(),
+      nomPrenom: 'DIABATE FATIMATA',
+      sexe: 'F',
+      dob: '2011-09-22',
+      statut: 'AFF',
+      niveau: '5EME',
+      classe: '5EME 2',
+      feeDue: 140000
+    }
+  ];
+
+  const importRes = await makeRequest(baseUrl, {
+    path: '/api/students/import',
+    method: 'POST',
+    headers: { cookie: adminLogin.cookie }
+  }, {
+    schoolId: targetSchoolId,
+    filename: testFileName,
+    autoDistributeClasses: false,
+    students: importStudents
+  });
+
+  assert.strictEqual(importRes.statusCode, 200, 'L\'API d\'importation doit répondre 200 OK');
+  assert.strictEqual(importRes.json.success, true);
+  assert.strictEqual(importRes.json.summary.imported, 2);
+  assert.ok(importRes.json.batch, 'Un lot importé (batch) doit être retourné');
+  assert.strictEqual(importRes.json.batch.filename, testFileName);
+  assert.strictEqual(importRes.json.batch.imported_count, 2);
+  const batchId = importRes.json.batch.id;
+
+  // 2. Vérifier la persistance directe dans la base de données SQLite
+  const savedStudents = db.db.prepare('SELECT matricule, nom_prenom, school_id, fee_due FROM students WHERE school_id = ?').all(targetSchoolId);
+  assert.strictEqual(savedStudents.length, 2, 'Les 2 élèves importés doivent être définitivement enregistrés en SQLite');
+  assert.ok(savedStudents.some(s => s.matricule === importStudents[0].matricule));
+  assert.ok(savedStudents.some(s => s.matricule === importStudents[1].matricule));
+
+  const savedBatch = db.db.prepare('SELECT id, filename, operator, imported_count, total_count FROM import_batches WHERE id = ?').get(batchId);
+  assert.ok(savedBatch, 'Le lot doit être persisté dans la table import_batches');
+  assert.strictEqual(savedBatch.filename, testFileName);
+  assert.strictEqual(savedBatch.imported_count, 2);
+  assert.strictEqual(savedBatch.total_count, 2);
+
+  // 3. Vérifier la route GET /api/students/import/batches
+  const listBatchesRes = await makeRequest(baseUrl, {
+    path: `/api/students/import/batches?schoolId=${targetSchoolId}`,
+    method: 'GET',
+    headers: { cookie: adminLogin.cookie }
+  });
+  assert.strictEqual(listBatchesRes.statusCode, 200);
+  assert.ok(Array.isArray(listBatchesRes.json.batches));
+  const foundInList = listBatchesRes.json.batches.find(b => b.id === batchId);
+  assert.ok(foundInList, 'Le lot archivé doit apparaître dans le registre de l\'école');
+
+  // 4. Vérifier la route GET /api/students/import/batches/:id
+  const getBatchRes = await makeRequest(baseUrl, {
+    path: `/api/students/import/batches/${batchId}`,
+    method: 'GET',
+    headers: { cookie: adminLogin.cookie }
+  });
+  assert.strictEqual(getBatchRes.statusCode, 200);
+  assert.strictEqual(getBatchRes.json.batch.id, batchId);
+  assert.ok(Array.isArray(getBatchRes.json.batch.details));
+  assert.strictEqual(getBatchRes.json.batch.details.length, 2);
+
+  // 5. Tester la mise à jour / anti-doublon lors d'une ré-importation du même fichier
+  const reimportStudents = [
+    {
+      matricule: importStudents[0].matricule, // Même élève avec changement de classe
+      nomPrenom: 'KOUAME YAO MARCELLIN',
+      sexe: 'M',
+      dob: '2012-04-15',
+      statut: 'AFF',
+      niveau: '6EME',
+      classe: '6EME 2', // Mise à jour de classe
+      feeDue: 130000
+    },
+    {
+      matricule: importStudents[1].matricule, // Élève strictement identique -> ignoré
+      nomPrenom: 'DIABATE FATIMATA',
+      sexe: 'F',
+      dob: '2011-09-22',
+      statut: 'AFF',
+      niveau: '5EME',
+      classe: '5EME 2',
+      feeDue: 140000
+    }
+  ];
+
+  const reimportRes = await makeRequest(baseUrl, {
+    path: '/api/students/import',
+    method: 'POST',
+    headers: { cookie: adminLogin.cookie }
+  }, {
+    schoolId: targetSchoolId,
+    filename: 'Liste_Ajustee_Rentree_2026.csv',
+    autoDistributeClasses: false,
+    students: reimportStudents
+  });
+  assert.strictEqual(reimportRes.statusCode, 200);
+  assert.strictEqual(reimportRes.json.summary.updated, 1, '1 élève doit être mis à jour');
+  assert.strictEqual(reimportRes.json.summary.ignored, 1, '1 doublon identique doit être ignoré');
+  assert.strictEqual(reimportRes.json.summary.imported, 0);
+
+  // Vérifier en base que la classe a bien été modifiée
+  const updatedStudent = db.db.prepare('SELECT classe FROM students WHERE matricule = ?').get(importStudents[0].matricule);
+  assert.strictEqual(updatedStudent.classe, '6EME 2', 'La classe de l\'élève doit être mise à jour en base de données');
+
+  // 6. Vérifier la présence des éléments UI dans index.html
+  const fs = require('node:fs');
+  const path = require('node:path');
+  const indexHtml = fs.readFileSync(path.join(__dirname, '..', 'index.html'), 'utf8');
+
+  assert.ok(indexHtml.includes('id="import-batches-tbody"'), 'Le tableau de registre d\'archivage des lots doit exister');
+  assert.ok(indexHtml.includes('id="import-batches-count-badge"'), 'Le badge compteur de lots archivés doit exister');
+  assert.ok(indexHtml.includes('loadImportBatches'), 'La fonction loadImportBatches doit être définie');
+  assert.ok(indexHtml.includes('renderImportBatchesTable'), 'La fonction renderImportBatchesTable doit être définie');
+  assert.ok(indexHtml.includes('openImportReportFromBatch'), 'La fonction openImportReportFromBatch doit être définie');
+  assert.ok(indexHtml.includes('exportBatchReportCSV'), 'La fonction exportBatchReportCSV doit être définie');
+  assert.ok(indexHtml.includes('parseAndPreviewCSVText'), 'La fonction modulaire parseAndPreviewCSVText doit être définie');
+  assert.ok(indexHtml.includes('pendingImportFileName'), 'Le suivi de nom de fichier pendingImportFileName doit exister');
+});
+
 
 
 

@@ -380,12 +380,30 @@ function initSchema() {
       PRIMARY KEY (school_id, key)
     );
 
+    -- 15. REGISTRE & ARCHIVES DES LISTES IMPORTÉES
+    CREATE TABLE IF NOT EXISTS import_batches (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      school_id INTEGER NOT NULL REFERENCES schools(id) ON DELETE CASCADE,
+      batch_name TEXT NOT NULL,
+      filename TEXT NOT NULL,
+      operator TEXT NOT NULL,
+      imported_count INTEGER NOT NULL DEFAULT 0,
+      updated_count INTEGER NOT NULL DEFAULT 0,
+      ignored_count INTEGER NOT NULL DEFAULT 0,
+      errors_count INTEGER NOT NULL DEFAULT 0,
+      total_count INTEGER NOT NULL DEFAULT 0,
+      summary_json TEXT,
+      details_json TEXT,
+      created_at TEXT NOT NULL DEFAULT (datetime('now'))
+    );
+
     -- INDEX DE PERFORMANCES ET CLOISONNEMENT
     CREATE INDEX IF NOT EXISTS idx_found_settings ON foundation_settings(foundation_id);
     CREATE INDEX IF NOT EXISTS idx_school_settings ON school_settings(school_id);
     CREATE INDEX IF NOT EXISTS idx_schools_found ON schools(foundation_id);
     CREATE INDEX IF NOT EXISTS idx_classes_school ON classes(school_id);
     CREATE INDEX IF NOT EXISTS idx_students_school ON students(school_id);
+    CREATE INDEX IF NOT EXISTS idx_import_batches_school ON import_batches(school_id, created_at DESC);
     CREATE INDEX IF NOT EXISTS idx_desks_school ON cash_desks(school_id);
     CREATE INDEX IF NOT EXISTS idx_deposits_school ON cash_deposits(school_id);
     CREATE INDEX IF NOT EXISTS idx_payments_school ON payments(school_id);
@@ -1056,6 +1074,7 @@ function formatStudent(row) {
     classe: row.classe,
     dob: row.dob || '',
     dateNaissance: row.dob || '',
+    feeDue: row.fee_due,
     feeTotal: row.fee_due,
     feePaid: row.fee_paid,
     solde: row.fee_due - row.fee_paid,
@@ -1643,13 +1662,17 @@ function deleteStudent(user, id) {
 function batchImportStudents(user, data) {
   assertPermission(user, 'students.create');
   
-  let requestedSchoolId = data && (data.schoolId !== undefined && data.schoolId !== null && data.schoolId !== '' ? data.schoolId : data.school_id);
-  if (!requestedSchoolId && user && user.schoolId) requestedSchoolId = user.schoolId;
-  if (!requestedSchoolId && user && (user.role === 'concepteur' || user.role === 'fondateur')) {
-    const firstSchool = db.prepare('SELECT id FROM schools LIMIT 1').get();
-    requestedSchoolId = firstSchool ? firstSchool.id : 1;
+  let targetSchoolId;
+  if (user && user.schoolId) {
+    targetSchoolId = parseInt(user.schoolId, 10);
+  } else {
+    let requestedSchoolId = data && (data.schoolId !== undefined && data.schoolId !== null && data.schoolId !== '' ? data.schoolId : data.school_id);
+    if (!requestedSchoolId && user && (user.role === 'concepteur' || user.role === 'fondateur')) {
+      const firstSchool = db.prepare('SELECT id FROM schools LIMIT 1').get();
+      requestedSchoolId = firstSchool ? firstSchool.id : 1;
+    }
+    targetSchoolId = resolveWriteSchoolId(user, requestedSchoolId, lookupSchool);
   }
-  const targetSchoolId = resolveWriteSchoolId(user, requestedSchoolId, lookupSchool);
   const rows = Array.isArray(data && data.students) ? data.students : [];
 
   if (rows.length === 0) {
@@ -1709,6 +1732,11 @@ function batchImportStudents(user, data) {
     WHERE school_id = ? AND UPPER(TRIM(matricule)) = ?
   `);
 
+  const findGlobalMatricule = db.prepare(`
+    SELECT id, school_id FROM students 
+    WHERE UPPER(TRIM(matricule)) = ?
+  `);
+
   const findByNameAndDob = db.prepare(`
     SELECT * FROM students 
     WHERE school_id = ? 
@@ -1747,6 +1775,12 @@ function batchImportStudents(user, data) {
       email = CASE WHEN ? IS NOT NULL AND ? != '' THEN ? ELSE email END
     WHERE id = ? AND school_id = ?
   `);
+
+  // Détermination du nom de fichier / lot
+  const filename = String((data && (data.filename || data.fileName || data.batchName)) || `Import_Eleves_${new Date().toISOString().slice(0, 10)}.csv`).trim();
+  const operator = `${user.prenom || ''} ${user.nom || ''}`.trim() || user.email || (user.role ? user.role.toUpperCase() : 'Opérateur');
+
+  let createdBatch = null;
 
   // Exécution 100% transactionnelle (Atomique et résiliente)
   withTransaction(() => {
@@ -1884,10 +1918,18 @@ function batchImportStudents(user, data) {
           if (!finalMatricule) {
             finalMatricule = `CI-2026-${Date.now().toString().slice(-6)}${i}`;
           }
-          // Vérifier si le matricule est déjà pris dans ce tenant par une ligne précédente
+
+          // Anti-conflit d'unicité globale (ne jamais bloquer sur une contrainte UNIQUE SQLite d'une autre école)
+          const globalConflict = findGlobalMatricule.get(finalMatricule);
+          if (globalConflict && globalConflict.school_id !== targetSchoolId) {
+            finalMatricule = `${finalMatricule}-S${targetSchoolId}`;
+          }
           const checkConflict = findByMatricule.get(targetSchoolId, finalMatricule);
           if (checkConflict) {
             finalMatricule = `${finalMatricule}-${Math.floor(100 + Math.random() * 900)}`;
+          }
+          while (findGlobalMatricule.get(finalMatricule)) {
+            finalMatricule = `${rawMatricule || 'MAT'}-${Date.now().toString().slice(-4)}-${Math.floor(100 + Math.random() * 900)}`;
           }
 
           insertStmt.run(
@@ -1935,12 +1977,59 @@ function batchImportStudents(user, data) {
         });
       }
     }
+
+    // 4. Enregistrement permanent du lot dans import_batches
+    try {
+      const bRes = db.prepare(`
+        INSERT INTO import_batches (
+          school_id, batch_name, filename, operator,
+          imported_count, updated_count, ignored_count, errors_count, total_count,
+          summary_json, details_json
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+      `).run(
+        targetSchoolId,
+        filename,
+        filename,
+        operator,
+        summary.imported,
+        summary.updated,
+        summary.ignored,
+        summary.errors,
+        summary.total,
+        JSON.stringify(summary),
+        JSON.stringify(details)
+      );
+
+      const bId = Number(bRes.lastInsertRowid);
+      createdBatch = {
+        id: bId,
+        school_id: targetSchoolId,
+        batch_name: filename,
+        filename: filename,
+        operator: operator,
+        imported_count: summary.imported,
+        updated_count: summary.updated,
+        ignored_count: summary.ignored,
+        errors_count: summary.errors,
+        total_count: summary.total,
+        imported: summary.imported,
+        updated: summary.updated,
+        ignored: summary.ignored,
+        errors: summary.errors,
+        total: summary.total,
+        summary: summary,
+        details: details,
+        createdAt: new Date().toISOString()
+      };
+    } catch (batchErr) {
+      console.warn('Erreur archivage lot import_batches:', batchErr.message);
+    }
   });
 
   addAuditLog(user, {
     action: 'STUDENTS_BATCH_IMPORT',
     module: 'Scolarité',
-    target: `Importation (${summary.total} lignes)`,
+    target: `Importation (${summary.total} lignes) - ${filename}`,
     oldVal: '',
     newVal: `Importés: ${summary.imported}, Mis à jour: ${summary.updated}, Ignorés: ${summary.ignored}, Erreurs: ${summary.errors}`,
     schoolId: targetSchoolId
@@ -1950,8 +2039,109 @@ function batchImportStudents(user, data) {
     success: true,
     summary,
     details,
+    batch: createdBatch || {
+      id: Date.now(),
+      school_id: targetSchoolId,
+      batch_name: filename,
+      filename,
+      operator,
+      imported_count: summary.imported,
+      updated_count: summary.updated,
+      ignored_count: summary.ignored,
+      errors_count: summary.errors,
+      total_count: summary.total,
+      total: summary.total,
+      imported: summary.imported,
+      updated: summary.updated,
+      ignored: summary.ignored,
+      errors: summary.errors,
+      summary,
+      details,
+      createdAt: new Date().toISOString()
+    },
     students: getStudents(user, targetSchoolId),
+    batches: getImportBatches(user, targetSchoolId),
     stats: getSchoolDashboardStats(user, targetSchoolId)
+  };
+}
+
+/**
+ * Récupère l'historique de toutes les listes importées pour un établissement
+ * @param {object} user 
+ * @param {number|null} schoolId 
+ * @returns {Array<object>}
+ */
+function getImportBatches(user, schoolId = null) {
+  const allowed = readableSchoolIds(user);
+  if (allowed !== 'ALL' && allowed.length === 0) return [];
+
+  let query = 'SELECT id, school_id, batch_name, filename, operator, imported_count, updated_count, ignored_count, errors_count, total_count, summary_json, created_at FROM import_batches';
+  const params = [];
+
+  if (schoolId !== null && schoolId !== undefined) {
+    const sId = parseInt(schoolId, 10);
+    assertSchoolAccess(user, sId, lookupSchool);
+    query += ' WHERE school_id = ?';
+    params.push(sId);
+  } else if (allowed !== 'ALL') {
+    query += ` WHERE school_id IN (${allowed.map(() => '?').join(',')})`;
+    params.push(...allowed);
+  }
+
+  query += ' ORDER BY id DESC LIMIT 100';
+
+  return db.prepare(query).all(...params).map(row => {
+    let summary = {};
+    try { summary = JSON.parse(row.summary_json || '{}'); } catch (_) {}
+    return {
+      id: row.id,
+      schoolId: row.school_id,
+      batchName: row.batch_name,
+      filename: row.filename,
+      operator: row.operator,
+      importedCount: row.imported_count,
+      updatedCount: row.updated_count,
+      ignoredCount: row.ignored_count,
+      errorsCount: row.errors_count,
+      totalCount: row.total_count,
+      summary,
+      createdAt: row.created_at
+    };
+  });
+}
+
+/**
+ * Récupère les détails complets d'un lot d'importation spécifique
+ * @param {object} user 
+ * @param {number|string} id 
+ * @returns {object|null}
+ */
+function getImportBatchById(user, id) {
+  const batchId = parseInt(id, 10);
+  const row = db.prepare('SELECT * FROM import_batches WHERE id = ?').get(batchId);
+  if (!row) return null;
+
+  assertSchoolAccess(user, row.school_id, lookupSchool);
+
+  let summary = {};
+  let details = [];
+  try { summary = JSON.parse(row.summary_json || '{}'); } catch (_) {}
+  try { details = JSON.parse(row.details_json || '[]'); } catch (_) {}
+
+  return {
+    id: row.id,
+    schoolId: row.school_id,
+    batchName: row.batch_name,
+    filename: row.filename,
+    operator: row.operator,
+    importedCount: row.imported_count,
+    updatedCount: row.updated_count,
+    ignoredCount: row.ignored_count,
+    errorsCount: row.errors_count,
+    totalCount: row.total_count,
+    summary,
+    details,
+    createdAt: row.created_at
   };
 }
 
@@ -3684,6 +3874,11 @@ function getBootstrapData(user) {
     auditLogs = getAuditLogs(user);
   } catch (_) {}
 
+  let importBatches = [];
+  try {
+    importBatches = getImportBatches(user);
+  } catch (_) {}
+
   return {
     currentUser: user,
     schools,
@@ -3691,6 +3886,7 @@ function getBootstrapData(user) {
     activeSchool: user.schoolId ? lookupSchool(user.schoolId) : (schools[0] || null),
     classes,
     students,
+    importBatches,
     cashDesks,
     cashDeposits,
     payments,
@@ -3825,6 +4021,8 @@ module.exports = {
   ensureSchoolAdminUsers,
   sanitizeProductionDatabase,
   batchImportStudents,
+  getImportBatches,
+  getImportBatchById,
   reconcileAccountingBalances,
   getSchoolDashboardStats
 };
