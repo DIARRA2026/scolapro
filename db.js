@@ -1666,6 +1666,43 @@ function batchImportStudents(user, data) {
 
   const details = [];
 
+  // Option de répartition des classes :
+  // Si autoDistributeClasses === true, les élèves sans classe explicite sont répartis équitablement
+  // entre les divisions actives de leur niveau.
+  // Si false (ou non demandé), ils sont marqués 'Non assigné' pour une affectation manuelle ultérieure.
+  const autoDistribute = Boolean(data && (data.autoDistributeClasses !== undefined ? data.autoDistributeClasses : data.autoDistribute));
+
+  // Préparation du distributeur de classes actives équilibré pour le tenant
+  const activeClasses = db.prepare(`
+    SELECT c.name, c.level,
+      (SELECT COUNT(*) FROM students s WHERE s.classe = c.name AND s.school_id = c.school_id) as current_count
+    FROM classes c
+    WHERE c.school_id = ? AND c.status = 'ACTIF'
+    ORDER BY c.level ASC, c.name ASC
+  `).all(targetSchoolId);
+
+  const classesByLevel = {};
+  activeClasses.forEach(c => {
+    const lvl = (c.level || '').toUpperCase().trim();
+    if (!classesByLevel[lvl]) classesByLevel[lvl] = [];
+    classesByLevel[lvl].push({
+      name: c.name,
+      count: Number(c.current_count) || 0
+    });
+  });
+
+  function getAutoClassForLevel(studentLevel) {
+    const lvl = (studentLevel || '6EME').toUpperCase().trim();
+    const list = classesByLevel[lvl];
+    if (list && list.length > 0) {
+      list.sort((a, b) => a.count - b.count || a.name.localeCompare(b.name));
+      const target = list[0];
+      target.count++;
+      return target.name;
+    }
+    return `${lvl} 1`;
+  }
+
   // Requêtes préparées filtrées strictement par tenant
   const findByMatricule = db.prepare(`
     SELECT * FROM students 
@@ -1742,7 +1779,8 @@ function batchImportStudents(user, data) {
         const statut = isNonAff ? 'NON AFF' : 'AFF';
         
         const niveau = (item.niveau ? String(item.niveau).trim().toUpperCase() : '6EME') || '6EME';
-        const classe = (item.classe ? String(item.classe).trim().toUpperCase() : `${niveau} 1`) || `${niveau} 1`;
+        const rawClasse = item.classe ? String(item.classe).trim().toUpperCase() : '';
+        const hasExplicitClass = Boolean(rawClasse && rawClasse !== 'NON ASSIGNÉ' && rawClasse !== 'NON ASSIGNE');
         
         // Parsing sécurisé sans crash des frais de scolarité
         let feeDue = 120000;
@@ -1770,6 +1808,28 @@ function batchImportStudents(user, data) {
           existing = findByNameOnly.get(targetSchoolId, nomPrenom);
         }
 
+        // Détermination intelligente de la classe
+        let finalClasse = '';
+        if (existing) {
+          if (hasExplicitClass) {
+            finalClasse = rawClasse;
+          } else if (existing.classe && existing.classe !== 'Non assigné') {
+            finalClasse = existing.classe;
+          } else if (autoDistribute) {
+            finalClasse = getAutoClassForLevel(niveau);
+          } else {
+            finalClasse = 'Non assigné';
+          }
+        } else {
+          if (hasExplicitClass) {
+            finalClasse = rawClasse;
+          } else if (autoDistribute) {
+            finalClasse = getAutoClassForLevel(niveau);
+          } else {
+            finalClasse = 'Non assigné';
+          }
+        }
+
         // 2. Gestion de l'élève existant : ne pas dupliquer, mettre à jour si changé ou ignorer
         if (existing) {
           const changes = [];
@@ -1777,7 +1837,7 @@ function batchImportStudents(user, data) {
           if (sexe !== existing.sexe) changes.push(`Sexe : ${existing.sexe} → ${sexe}`);
           if (statut !== existing.statut) changes.push(`Statut : ${existing.statut} → ${statut}`);
           if (niveau !== existing.niveau) changes.push(`Niveau : ${existing.niveau} → ${niveau}`);
-          if (classe !== existing.classe) changes.push(`Classe : ${existing.classe} → ${classe}`);
+          if (finalClasse !== existing.classe) changes.push(`Classe : ${existing.classe} → ${finalClasse}`);
           if (feeDue !== existing.fee_due) changes.push(`Frais dus : ${existing.fee_due} → ${feeDue}`);
           if (dob && dob !== existing.dob) changes.push(`Date naiss. : ${existing.dob || 'non renseignée'} → ${dob}`);
 
@@ -1788,7 +1848,7 @@ function batchImportStudents(user, data) {
               existing.red || '',
               statut,
               niveau,
-              classe,
+              finalClasse,
               feeDue,
               dob, dob, dob,
               tuteur, tuteur, tuteur,
@@ -1802,7 +1862,7 @@ function batchImportStudents(user, data) {
               row: rowNum,
               matricule: existing.matricule,
               nomPrenom: nomPrenom,
-              classe: classe,
+              classe: finalClasse,
               status: 'updated',
               action: `Mis à jour (${changes.join(', ')})`,
               changes
@@ -1838,7 +1898,7 @@ function batchImportStudents(user, data) {
             item.red || '',
             statut,
             niveau,
-            classe,
+            finalClasse,
             feeDue,
             parseFloat(item.noteDev || '10.0') || 10.0,
             item.isAbsent ? 1 : 0,
@@ -1857,7 +1917,7 @@ function batchImportStudents(user, data) {
             row: rowNum,
             matricule: finalMatricule,
             nomPrenom: nomPrenom,
-            classe: classe,
+            classe: finalClasse,
             status: 'imported',
             action: 'Nouvel élève inscrit'
           });

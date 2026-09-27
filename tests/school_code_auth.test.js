@@ -940,5 +940,195 @@ test('AUTH-CODE-19 : Importation transactionnelle multi-tenant anti-doublon, rap
   assert.ok(indexHtml.includes('rep-errors'), 'Le compteur rep-errors doit exister');
 });
 
+test('AUTH-CODE-20 : Option de répartition automatique équilibrée vs affectation manuelle des classes', async () => {
+  const adminLogin = await loginUser(baseUrl, TEST_USERS.concepteur, TEST_PASSWORD);
+  assert.strictEqual(adminLogin.statusCode, 200);
+
+  // 1. Créer une nouvelle école test pour ce scénario
+  const schCode = `DISTRIB-${Date.now().toString().slice(-4)}`;
+  const schRes = await makeRequest(baseUrl, {
+    path: '/api/schools',
+    method: 'POST',
+    headers: { cookie: adminLogin.cookie }
+  }, {
+    name: 'Collège Répartition Test',
+    code: schCode,
+    director: 'Directeur Test',
+    email: `distrib-${Date.now()}@scolapro.ci`,
+    phone: '+225 0700000000',
+    type: 'SECONDAIRE',
+    academicYear: '2026-2027',
+    password: 'Password@2026'
+  });
+  assert.strictEqual(schRes.statusCode, 201);
+  const testSchoolId = schRes.json.school ? schRes.json.school.id : schRes.json.id;
+
+  // Créer 2 classes actives pour le niveau 6EME dans cette école
+  const cl1Res = await makeRequest(baseUrl, {
+    path: '/api/classes',
+    method: 'POST',
+    headers: { cookie: adminLogin.cookie }
+  }, {
+    schoolId: testSchoolId,
+    name: '6EME 1',
+    level: '6EME',
+    cycle: 'Premier Cycle',
+    capacity: 35,
+    status: 'ACTIF'
+  });
+  assert.strictEqual(cl1Res.statusCode, 201);
+
+  const cl2Res = await makeRequest(baseUrl, {
+    path: '/api/classes',
+    method: 'POST',
+    headers: { cookie: adminLogin.cookie }
+  }, {
+    schoolId: testSchoolId,
+    name: '6EME 2',
+    level: '6EME',
+    cycle: 'Premier Cycle',
+    capacity: 35,
+    status: 'ACTIF'
+  });
+  assert.strictEqual(cl2Res.statusCode, 201);
+
+  // 2. TEST MODE MANUEL (autoDistributeClasses = false) :
+  // Les élèves sans classe explicite doivent rester 'Non assigné'
+  const manualBatch = [
+    {
+      matricule: 'MAT-MAN-001',
+      nomPrenom: 'ELEVE SANS CLASSE 1',
+      sexe: 'M',
+      niveau: '6EME',
+      classe: '', // Pas de classe spécifiée
+      dob: '2012-01-01'
+    },
+    {
+      matricule: 'MAT-MAN-002',
+      nomPrenom: 'ELEVE AVEC CLASSE',
+      sexe: 'F',
+      niveau: '6EME',
+      classe: '6EME 1', // Classe explicite
+      dob: '2012-02-02'
+    }
+  ];
+
+  const manualImportRes = await makeRequest(baseUrl, {
+    path: '/api/students/import',
+    method: 'POST',
+    headers: { cookie: adminLogin.cookie }
+  }, {
+    schoolId: testSchoolId,
+    autoDistributeClasses: false,
+    students: manualBatch
+  });
+
+  assert.strictEqual(manualImportRes.statusCode, 200);
+  assert.strictEqual(manualImportRes.json.summary.imported, 2);
+
+  // Vérifier en base : l'élève sans classe doit être STRICTEMENT 'Non assigné'
+  const st1 = db.db.prepare('SELECT classe FROM students WHERE school_id = ? AND matricule = ?').get(testSchoolId, 'MAT-MAN-001');
+  assert.strictEqual(st1.classe, 'Non assigné', 'En mode manuel, l\'élève sans classe doit être Non assigné');
+
+  // L'élève avec classe explicite doit avoir sa classe
+  const st2 = db.db.prepare('SELECT classe FROM students WHERE school_id = ? AND matricule = ?').get(testSchoolId, 'MAT-MAN-002');
+  assert.strictEqual(st2.classe, '6EME 1', 'La classe explicite fournie dans le fichier doit toujours être conservée');
+
+  // Vérifier les stats du dashboard : 1 assigné, 1 non assigné
+  const statsRes = await makeRequest(baseUrl, {
+    path: `/api/dashboard/stats?schoolId=${testSchoolId}`,
+    method: 'GET',
+    headers: { cookie: adminLogin.cookie }
+  });
+  assert.strictEqual(statsRes.statusCode, 200);
+  assert.strictEqual(statsRes.json.students.unassigned, 1, 'Le compteur non assigné doit compter exactement 1');
+  assert.strictEqual(statsRes.json.students.assigned, 1, 'Le compteur assigné doit compter exactement 1');
+  assert.strictEqual(statsRes.json.totalStudents, 2, 'Total élèves = 2');
+
+  // 3. TEST MODE AUTOMATIQUE ÉQUILIBRÉ (autoDistributeClasses = true) :
+  // Actuellement : 6EME 1 a 1 élève (MAT-MAN-002), 6EME 2 a 0 élève.
+  // Si on importe 2 nouveaux élèves sans classe :
+  // - Le 1er doit aller en 6EME 2 (effectif le plus faible = 0)
+  // - Le 2ème doit aller en 6EME 1 (effectif à égalité = 1)
+  const autoBatch = [
+    {
+      matricule: 'MAT-AUTO-001',
+      nomPrenom: 'ELEVE EQUILIBRE 1',
+      sexe: 'M',
+      niveau: '6EME',
+      classe: '',
+      dob: '2012-03-03'
+    },
+    {
+      matricule: 'MAT-AUTO-002',
+      nomPrenom: 'ELEVE EQUILIBRE 2',
+      sexe: 'F',
+      niveau: '6EME',
+      classe: '',
+      dob: '2012-04-04'
+    }
+  ];
+
+  const autoImportRes = await makeRequest(baseUrl, {
+    path: '/api/students/import',
+    method: 'POST',
+    headers: { cookie: adminLogin.cookie }
+  }, {
+    schoolId: testSchoolId,
+    autoDistributeClasses: true,
+    students: autoBatch
+  });
+
+  assert.strictEqual(autoImportRes.statusCode, 200);
+  assert.strictEqual(autoImportRes.json.summary.imported, 2);
+
+  const autoSt1 = db.db.prepare('SELECT classe FROM students WHERE school_id = ? AND matricule = ?').get(testSchoolId, 'MAT-AUTO-001');
+  const autoSt2 = db.db.prepare('SELECT classe FROM students WHERE school_id = ? AND matricule = ?').get(testSchoolId, 'MAT-AUTO-002');
+
+  // L'un doit être en 6EME 2 et l'autre en 6EME 1 (répartition équitable)
+  assert.strictEqual(autoSt1.classe, '6EME 2', 'Le premier élève sans classe doit être affecté à la classe la moins chargée (6EME 2)');
+  assert.strictEqual(autoSt2.classe, '6EME 1', 'Le deuxième élève sans classe doit équilibrer en 6EME 1');
+
+  // Vérifier la préservation de classe lors d'une mise à jour sans colonne classe
+  const updateWithoutClass = [
+    {
+      matricule: 'MAT-AUTO-001',
+      nomPrenom: 'ELEVE EQUILIBRE 1 MODIFIE',
+      sexe: 'M',
+      niveau: '6EME',
+      classe: '', // Absence de classe dans le fichier de mise à jour
+      dob: '2012-03-03'
+    }
+  ];
+
+  const updateRes = await makeRequest(baseUrl, {
+    path: '/api/students/import',
+    method: 'POST',
+    headers: { cookie: adminLogin.cookie }
+  }, {
+    schoolId: testSchoolId,
+    autoDistributeClasses: false,
+    students: updateWithoutClass
+  });
+
+  assert.strictEqual(updateRes.statusCode, 200);
+  assert.strictEqual(updateRes.json.summary.updated, 1);
+  const preservedSt1 = db.db.prepare('SELECT nom_prenom, classe FROM students WHERE school_id = ? AND matricule = ?').get(testSchoolId, 'MAT-AUTO-001');
+  assert.strictEqual(preservedSt1.nom_prenom, 'ELEVE EQUILIBRE 1 MODIFIE');
+  assert.strictEqual(preservedSt1.classe, '6EME 2', 'L\'élève existant doit conserver sa classe 6EME 2 même si le fichier ne spécifie pas de classe');
+
+  // 4. Vérifier les composants UI dans index.html
+  const fs = require('node:fs');
+  const path = require('node:path');
+  const indexHtml = fs.readFileSync(path.join(__dirname, '..', 'index.html'), 'utf8');
+
+  assert.ok(indexHtml.includes('id="import-auto-distribute-toggle"'), 'La case à cocher toggle doit être présente dans index.html');
+  assert.ok(indexHtml.includes('id="import-distribution-badge"'), 'Le badge de mode de distribution doit exister');
+  assert.ok(indexHtml.includes('id="import-distribution-help-text"'), 'Le texte d\'aide explicatif doit exister');
+  assert.ok(indexHtml.includes('id="import-distribution-mode-label"'), 'Le libellé du mode doit exister');
+  assert.ok(indexHtml.includes('onImportDistributionModeChanged'), 'La fonction onImportDistributionModeChanged doit être définie');
+  assert.ok(indexHtml.includes('updateImportPreview'), 'La fonction updateImportPreview doit être définie');
+});
+
 
 

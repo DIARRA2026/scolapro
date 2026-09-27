@@ -3033,6 +3033,38 @@
             <p class="text-xs text-slate-500 mt-1">Formats acceptés : .XLSX, .CSV (Séparateur point-virgule)</p>
           </div>
 
+          <!-- Option de répartition des classes -->
+          <div class="bg-slate-50 border border-slate-200 rounded-xl p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-xs">
+            <div class="flex items-start gap-3">
+              <div class="w-9 h-9 rounded-lg bg-indigo-50 border border-indigo-100 text-indigo-600 flex items-center justify-center shrink-0 mt-0.5">
+                <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
+                </svg>
+              </div>
+              <div>
+                <div class="flex items-center gap-2">
+                  <span class="text-xs font-bold text-slate-800 uppercase tracking-wide">Affectation des classes</span>
+                  <span id="import-distribution-badge" class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-100 text-amber-800 border border-amber-200">
+                    Mode manuel (« Non assigné »)
+                  </span>
+                </div>
+                <p id="import-distribution-help-text" class="text-xs text-slate-500 mt-0.5">
+                  Les élèves sans classe explicite dans le fichier resteront « Non assigné » pour une affectation manuelle ultérieure.
+                </p>
+              </div>
+            </div>
+
+            <div class="flex items-center gap-3 self-end sm:self-center shrink-0 bg-white px-3 py-2 rounded-lg border border-slate-200">
+              <label class="relative inline-flex items-center cursor-pointer">
+                <input type="checkbox" id="import-auto-distribute-toggle" class="sr-only peer" onchange="onImportDistributionModeChanged()">
+                <div class="w-11 h-6 bg-slate-300 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-indigo-600"></div>
+              </label>
+              <span id="import-distribution-mode-label" class="text-xs font-bold text-slate-700 select-none cursor-pointer" onclick="toggleImportDistributionCheckbox()">
+                Répartition auto
+              </span>
+            </div>
+          </div>
+
           <!-- Simulated preview table for imported rows -->
           <div id="import-preview-box" class="hidden space-y-3">
             <h4 class="font-bold text-xs uppercase text-slate-700">Aperçu des élèves détectés :</h4>
@@ -14161,6 +14193,132 @@
 
     let pendingImportedStudents = [];
 
+    function toggleImportDistributionCheckbox() {
+      const cb = document.getElementById('import-auto-distribute-toggle');
+      if (cb) {
+        cb.checked = !cb.checked;
+        onImportDistributionModeChanged();
+      }
+    }
+
+    function onImportDistributionModeChanged() {
+      const cb = document.getElementById('import-auto-distribute-toggle');
+      const isAuto = cb ? cb.checked : false;
+      const badge = document.getElementById('import-distribution-badge');
+      const help = document.getElementById('import-distribution-help-text');
+      const label = document.getElementById('import-distribution-mode-label');
+
+      if (isAuto) {
+        if (badge) {
+          badge.className = 'px-2 py-0.5 rounded-full text-[10px] font-bold bg-indigo-100 text-indigo-800 border border-indigo-200';
+          badge.textContent = 'Répartition automatique équilibrée';
+        }
+        if (help) {
+          help.textContent = 'Les élèves sans classe seront équitablement distribués entre les divisions actives existantes de leur niveau.';
+        }
+        if (label) {
+          label.className = 'text-xs font-bold text-indigo-700 select-none cursor-pointer';
+          label.textContent = 'Répartition auto active';
+        }
+      } else {
+        if (badge) {
+          badge.className = 'px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-100 text-amber-800 border border-amber-200';
+          badge.textContent = 'Mode manuel (« Non assigné »)';
+        }
+        if (help) {
+          help.textContent = 'Les élèves sans classe explicite dans le fichier resteront « Non assigné » pour une affectation manuelle ultérieure.';
+        }
+        if (label) {
+          label.className = 'text-xs font-bold text-slate-700 select-none cursor-pointer';
+          label.textContent = 'Répartition auto désactivée';
+        }
+      }
+
+      updateImportPreview();
+    }
+
+    function updateImportPreview() {
+      const tbody = document.getElementById('import-preview-tbody');
+      if (!tbody || !pendingImportedStudents || pendingImportedStudents.length === 0) return;
+
+      const cb = document.getElementById('import-auto-distribute-toggle');
+      const isAuto = cb ? cb.checked : false;
+
+      const activeUser = (typeof getActiveUser === 'function') ? getActiveUser() : appState.currentUser;
+      const targetSchoolId = (activeUser && activeUser.schoolId) 
+        ? activeUser.schoolId 
+        : (appState.currentSchoolId || (appState.schools && appState.schools[0] ? appState.schools[0].id : 1));
+
+      const activeClasses = (appState.classes || []).filter(c => 
+        (!c.status || c.status === 'ACTIF') && 
+        (!c.school_id || c.school_id === targetSchoolId || c.schoolId === targetSchoolId)
+      );
+
+      const classCountsByLevel = {};
+      activeClasses.forEach(c => {
+        const lvl = (c.level || '').toUpperCase().trim();
+        if (!classCountsByLevel[lvl]) classCountsByLevel[lvl] = [];
+        const curCount = (appState.students || []).filter(s => s.classe === c.name).length;
+        classCountsByLevel[lvl].push({ name: c.name, count: curCount });
+      });
+
+      function getSimulatedClass(lvl) {
+        const level = (lvl || '6EME').toUpperCase().trim();
+        const list = classCountsByLevel[level];
+        if (list && list.length > 0) {
+          list.sort((a, b) => a.count - b.count || a.name.localeCompare(b.name));
+          const chosen = list[0];
+          chosen.count++;
+          return chosen.name;
+        }
+        return `${level} 1`;
+      }
+
+      pendingImportedStudents.forEach(st => {
+        if (st.hasExplicitClass) {
+          st.classe = st.rawClasse;
+        } else if (isAuto) {
+          st.classe = getSimulatedClass(st.niveau);
+        } else {
+          st.classe = 'Non assigné';
+        }
+      });
+
+      tbody.innerHTML = '';
+      pendingImportedStudents.slice(0, 8).forEach(st => {
+        const tr = document.createElement('tr');
+        let classHtml = '';
+        if (st.classe === 'Non assigné') {
+          classHtml = '<span class="px-2 py-0.5 rounded text-[11px] font-bold bg-amber-50 text-amber-800 border border-amber-200">Non assigné</span>';
+        } else if (st.hasExplicitClass) {
+          classHtml = `<span class="font-bold text-slate-800">${esc(st.classe)}</span> <span class="text-[10px] text-slate-400 font-normal">(Fichier)</span>`;
+        } else {
+          classHtml = `<span class="font-bold text-indigo-700">${esc(st.classe)}</span> <span class="text-[10px] text-emerald-600 font-medium">(Auto)</span>`;
+        }
+
+        tr.innerHTML = `
+          <td class="p-2 font-bold">${esc(st.nomPrenom)}</td>
+          <td class="p-2 font-mono">${esc(st.matricule)}</td>
+          <td class="p-2 font-bold ${st.sexe === 'F' ? 'text-pink-600' : 'text-blue-600'}">${esc(st.sexe)}</td>
+          <td class="p-2 font-mono text-[11px]">${esc(st.dob || '—')}</td>
+          <td class="p-2"><span class="px-1.5 py-0.5 rounded text-[10px] font-bold ${st.statut === 'AFF' ? 'bg-emerald-100 text-emerald-800 border border-emerald-200' : 'bg-red-100 text-red-800 border border-red-200'}">${esc(st.statut)}</span></td>
+          <td class="p-2">${esc(st.niveau)}</td>
+          <td class="p-2">${classHtml}</td>
+        `;
+        tbody.appendChild(tr);
+      });
+
+      if (pendingImportedStudents.length > 8) {
+        const trMore = document.createElement('tr');
+        trMore.innerHTML = `
+          <td colspan="7" class="p-2 text-center text-slate-400 italic text-[11px] bg-slate-50/50">
+            ... et ${pendingImportedStudents.length - 8} autre(s) élève(s) détecté(s)
+          </td>
+        `;
+        tbody.appendChild(trMore);
+      }
+    }
+
     function handleFileImport(e) {
       const file = e.target.files && e.target.files[0];
       const previewBox = document.getElementById('import-preview-box');
@@ -14240,7 +14398,9 @@
             }
 
             const niveau = (idxNiveau >= 0 ? parts[idxNiveau].toUpperCase() : '6EME') || '6EME';
-            const classe = (idxClasse >= 0 ? parts[idxClasse].toUpperCase() : `${niveau} 1`) || `${niveau} 1`;
+            const rawClasse = (idxClasse >= 0 && parts[idxClasse]) ? parts[idxClasse].toUpperCase().trim() : '';
+            const hasExplicitClass = Boolean(rawClasse && rawClasse !== 'NON ASSIGNÉ' && rawClasse !== 'NON ASSIGNE');
+            const classe = hasExplicitClass ? rawClasse : 'Non assigné';
             
             // Statut AFF / NAFF (ou NON AFF / AFFECTÉ / NON AFFECTÉ)
             const rawStatut = (idxStatut >= 0 && parts[idxStatut] ? parts[idxStatut].toUpperCase().trim() : 'AFF');
@@ -14258,6 +14418,8 @@
               dob: dob,
               dateNaissance: dob,
               niveau: niveau,
+              rawClasse: rawClasse,
+              hasExplicitClass: hasExplicitClass,
               classe: classe,
               feeDue: feeDue,
               feePaid: 0,
@@ -14272,20 +14434,7 @@
             return;
           }
 
-          tbody.innerHTML = '';
-          pendingImportedStudents.slice(0, 5).forEach(st => {
-            const tr = document.createElement('tr');
-            tr.innerHTML = `
-              <td class="p-2 font-bold">${esc(st.nomPrenom)}</td>
-              <td class="p-2 font-mono">${esc(st.matricule)}</td>
-              <td class="p-2 font-bold ${st.sexe === 'F' ? 'text-pink-600' : 'text-blue-600'}">${esc(st.sexe)}</td>
-              <td class="p-2 font-mono text-[11px]">${esc(st.dob || '—')}</td>
-              <td class="p-2"><span class="px-1.5 py-0.5 rounded text-[10px] font-bold ${st.statut === 'AFF' ? 'bg-emerald-100 text-emerald-800 border border-emerald-200' : 'bg-red-100 text-red-800 border border-red-200'}">${esc(st.statut)}</span></td>
-              <td class="p-2">${esc(st.niveau)}</td>
-              <td class="p-2 font-semibold">${esc(st.classe)}</td>
-            `;
-            tbody.appendChild(tr);
-          });
+          updateImportPreview();
 
           previewBox.classList.remove('hidden');
           const confirmBtn = document.getElementById('btn-confirm-import');
@@ -14475,6 +14624,9 @@
       }
 
       const listToImport = [...pendingImportedStudents];
+      const autoDistributeToggle = document.getElementById('import-auto-distribute-toggle');
+      const autoDistributeClasses = autoDistributeToggle ? autoDistributeToggle.checked : false;
+
       const activeUser = (typeof getActiveUser === 'function') ? getActiveUser() : appState.currentUser;
       const targetSchoolId = (activeUser && activeUser.schoolId) 
         ? activeUser.schoolId 
@@ -14499,6 +14651,7 @@
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
               schoolId: targetSchoolId,
+              autoDistributeClasses: autoDistributeClasses,
               students: listToImport
             }),
             credentials: 'same-origin'
@@ -14522,10 +14675,37 @@
           const details = [];
           if (!appState.students) appState.students = [];
 
+          // Détecter les classes actives pour répartition locale si demandée
+          const activeClasses = (appState.classes || []).filter(c => 
+            (!c.status || c.status === 'ACTIF') && 
+            (!c.school_id || c.school_id === targetSchoolId || c.schoolId === targetSchoolId)
+          );
+          const classCountsByLevel = {};
+          activeClasses.forEach(c => {
+            const lvl = (c.level || '').toUpperCase().trim();
+            if (!classCountsByLevel[lvl]) classCountsByLevel[lvl] = [];
+            const curCount = (appState.students || []).filter(s => s.classe === c.name).length;
+            classCountsByLevel[lvl].push({ name: c.name, count: curCount });
+          });
+
+          function getFallbackClass(lvl) {
+            const level = (lvl || '6EME').toUpperCase().trim();
+            const list = classCountsByLevel[level];
+            if (list && list.length > 0) {
+              list.sort((a, b) => a.count - b.count || a.name.localeCompare(b.name));
+              const chosen = list[0];
+              chosen.count++;
+              return chosen.name;
+            }
+            return `${level} 1`;
+          }
+
           listToImport.forEach((item, idx) => {
             const mat = String(item.matricule || '').toUpperCase().trim();
             const nomPrenom = String(item.nomPrenom || '').trim();
             const dob = String(item.dob || '').trim();
+            const rawClasse = String(item.rawClasse || item.classe || '').trim();
+            const hasExplicitClass = Boolean(item.hasExplicitClass || (rawClasse && rawClasse.toUpperCase() !== 'NON ASSIGNÉ' && rawClasse.toUpperCase() !== 'NON ASSIGNE'));
 
             let existingIdx = -1;
             if (mat) {
@@ -14538,25 +14718,45 @@
               );
             }
 
+            let finalClasse = '';
             if (existingIdx >= 0) {
               const ex = appState.students[existingIdx];
+              if (hasExplicitClass) {
+                finalClasse = rawClasse;
+              } else if (ex.classe && ex.classe !== 'Non assigné') {
+                finalClasse = ex.classe;
+              } else if (autoDistributeClasses) {
+                finalClasse = getFallbackClass(item.niveau);
+              } else {
+                finalClasse = 'Non assigné';
+              }
+
               const changes = [];
               if (item.nomPrenom && item.nomPrenom !== ex.nomPrenom) changes.push(`nom: ${ex.nomPrenom} -> ${item.nomPrenom}`);
-              if (item.classe && item.classe !== ex.classe) changes.push(`classe: ${ex.classe} -> ${item.classe}`);
+              if (finalClasse && finalClasse !== ex.classe) changes.push(`classe: ${ex.classe} -> ${finalClasse}`);
               if (item.statut && item.statut !== ex.statut) changes.push(`statut: ${ex.statut} -> ${item.statut}`);
 
               if (changes.length > 0) {
-                appState.students[existingIdx] = { ...ex, ...item };
+                appState.students[existingIdx] = { ...ex, ...item, classe: finalClasse };
                 summary.updated++;
-                details.push({ row: idx + 1, matricule: ex.matricule || mat, nomPrenom: item.nomPrenom, classe: item.classe, status: 'updated', action: 'Informations mises à jour', changes });
+                details.push({ row: idx + 1, matricule: ex.matricule || mat, nomPrenom: item.nomPrenom, classe: finalClasse, status: 'updated', action: 'Informations mises à jour', changes });
               } else {
                 summary.ignored++;
-                details.push({ row: idx + 1, matricule: ex.matricule || mat, nomPrenom: item.nomPrenom, classe: item.classe, status: 'ignored', action: 'Élève déjà existant identique (doublon ignoré)' });
+                details.push({ row: idx + 1, matricule: ex.matricule || mat, nomPrenom: item.nomPrenom, classe: ex.classe, status: 'ignored', action: 'Élève déjà existant identique (doublon ignoré)' });
               }
             } else {
+              if (hasExplicitClass) {
+                finalClasse = rawClasse;
+              } else if (autoDistributeClasses) {
+                finalClasse = getFallbackClass(item.niveau);
+              } else {
+                finalClasse = 'Non assigné';
+              }
+
               const newStudent = {
                 id: Date.now() + idx,
                 ...item,
+                classe: finalClasse,
                 schoolId: targetSchoolId,
                 feePaid: 0,
                 feeDue: item.feeDue || 0,
@@ -14564,7 +14764,7 @@
               };
               appState.students.unshift(newStudent);
               summary.imported++;
-              details.push({ row: idx + 1, matricule: newStudent.matricule, nomPrenom: newStudent.nomPrenom, classe: newStudent.classe, status: 'imported', action: 'Nouvel élève inséré' });
+              details.push({ row: idx + 1, matricule: newStudent.matricule, nomPrenom: newStudent.nomPrenom, classe: finalClasse, status: 'imported', action: 'Nouvel élève inséré' });
             }
           });
 
