@@ -3051,10 +3051,31 @@ function recordPayment(user, data) {
       paidAt: new Date().toISOString()
     };
 
+    const payRow = db.prepare(`
+      SELECT p.*, s.nom_prenom, s.matricule, s.classe,
+             r.id AS receipt_id, r.receipt_number
+      FROM payments p
+      LEFT JOIN students s ON p.student_id = s.id
+      LEFT JOIN receipts r ON r.payment_id = p.id
+      WHERE p.id = ?
+    `).get(paymentId);
+    const formattedPayment = formatPayment(payRow);
+    if (formattedPayment) {
+      formattedPayment.receiptNumber = receiptNumber;
+      formattedPayment.receiptId = receiptId;
+    }
+
     return {
       student: getStudentById(studentId),
       cashDesks: getCashDesks(user),
-      payment: db.prepare('SELECT * FROM payments WHERE ref = ?').get(ref),
+      payment: {
+        ...payRow,
+        ...(formattedPayment || {}),
+        cash_desk: payRow.cash_desk,
+        cashDesk: payRow.cash_desk,
+        receiptNumber,
+        receiptId
+      },
       receipt: receiptData
     };
   });

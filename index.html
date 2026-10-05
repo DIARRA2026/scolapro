@@ -9137,6 +9137,72 @@
 
 
   <!-- ================================================================= -->
+  <!-- MODAL : ATTRIBUTION DE CLASSE                                      -->
+  <!-- ================================================================= -->
+  <div id="modal-assign-class" class="hidden fixed inset-0 bg-black/60 backdrop-blur-xs z-50 flex items-center justify-center p-3 sm:p-4">
+    <div class="bg-white rounded-2xl shadow-2xl max-w-md w-full border border-slate-200 overflow-hidden">
+
+      <!-- En-tête -->
+      <div class="bg-gradient-to-r from-indigo-600 to-indigo-700 px-5 py-4 flex items-center justify-between">
+        <div class="flex items-center gap-3">
+          <div class="w-9 h-9 rounded-xl bg-white/20 flex items-center justify-center text-white font-bold text-lg">🏫</div>
+          <div>
+            <h2 class="text-white font-bold text-base">Attribuer une classe</h2>
+            <p id="acm-student-name" class="text-indigo-200 text-xs mt-0.5">—</p>
+          </div>
+        </div>
+        <button onclick="closeAssignClassModal()" class="text-white/70 hover:text-white transition p-1 rounded-lg hover:bg-white/10">
+          <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+        </button>
+      </div>
+
+      <!-- Corps -->
+      <div class="p-5 space-y-4">
+        <input type="hidden" id="acm-student-id">
+
+        <!-- Niveau actuel (information) -->
+        <div class="flex items-center gap-2 bg-slate-50 border border-slate-200 rounded-lg px-3 py-2">
+          <span class="text-slate-500 text-xs">Niveau :</span>
+          <span id="acm-student-niveau" class="font-bold text-slate-800 text-xs">—</span>
+          <span class="text-slate-300 mx-1">|</span>
+          <span class="text-slate-500 text-xs">Classe actuelle :</span>
+          <span id="acm-current-class" class="font-bold text-amber-700 text-xs">Non assigné</span>
+        </div>
+
+        <!-- Filtre par niveau -->
+        <div>
+          <label class="block text-xs font-semibold text-slate-600 mb-1.5">Filtrer les classes par niveau :</label>
+          <select id="acm-niveau-filter" onchange="refreshAssignClassList()" class="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm text-slate-800 bg-white focus:outline-none focus:border-indigo-500">
+            <option value="">— Tous les niveaux —</option>
+          </select>
+        </div>
+
+        <!-- Liste des classes disponibles -->
+        <div>
+          <label class="block text-xs font-semibold text-slate-600 mb-1.5">
+            Choisir la classe :
+            <span id="acm-class-count" class="font-normal text-slate-400 ml-1"></span>
+          </label>
+          <div id="acm-class-list" class="grid grid-cols-2 gap-2 max-h-64 overflow-y-auto pr-1">
+            <!-- Injecté par refreshAssignClassList() -->
+          </div>
+          <p id="acm-empty-msg" class="hidden text-center text-slate-400 text-xs py-6">Aucune classe disponible pour ce niveau.</p>
+        </div>
+      </div>
+
+      <!-- Pied -->
+      <div class="px-5 pb-5 flex justify-end gap-2">
+        <button onclick="closeAssignClassModal()" class="px-4 py-2 border border-slate-300 text-slate-600 rounded-lg text-sm font-semibold hover:bg-slate-50 transition">
+          Annuler
+        </button>
+        <button id="acm-confirm-btn" onclick="confirmAssignClass()" disabled class="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 disabled:bg-slate-300 disabled:cursor-not-allowed text-white rounded-lg text-sm font-bold transition">
+          ✔ Confirmer l'attribution
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ================================================================= -->
   <!-- MODAL : FICHE DÉTAILLÉE ÉLÈVE                                     -->
   <!-- ================================================================= -->
   <div id="modal-student-detail" class="hidden fixed inset-0 bg-black/60 backdrop-blur-xs z-50 flex items-center justify-center p-3 sm:p-4 overflow-y-auto">
@@ -10056,6 +10122,9 @@
       // 3. WORKFLOW DES DÉPÔTS INTER-CAISSES
       cashDeposits: [],
 
+      // 3.bis HISTORIQUE DES PAIEMENTS & QUITTANCES (Hydraté dynamiquement depuis SQLite)
+      payments: [],
+
       // 4. PARAMÉTRAGES ÉCOLAGE
       feeInstallments: [
         { id: 1, tranche: '1re Tranche', name: 'Rentrée Scolaire', date: '30/09/2026', pct: 40, montantCollege: 48000, isObligatory: true },
@@ -10476,6 +10545,88 @@
     // ACCÈS DIRECT PAR CODE ET OUVERTURE DES INTERFACES N1 / N2 / N3
     // =================================================================
 
+    /**
+     * Réhydrate l'intégralité de l'état applicatif avec les données certifiées du backend
+     * et synchronise la persistance miroir locale (Offline / Reconnexion).
+     * @param {object} data Données reçues depuis /api/bootstrap
+     */
+    function rehydrateAppData(data) {
+      if (!data) return;
+
+      if (data.currentUser) {
+        appState.isAuthenticated = true;
+        appState.currentUser = data.currentUser;
+        appState.currentUserId = data.currentUser.id;
+        sessionStorage.setItem('scolapro_authenticated', 'true');
+        sessionStorage.setItem('scolapro_auth_user', JSON.stringify(data.currentUser));
+        if (data.currentUser.role === "concepteur") appState.currentTenantType = "GLOBAL";
+        else if (data.currentUser.foundationId && !data.currentUser.schoolId) appState.currentTenantType = "FOUNDATION";
+        else appState.currentTenantType = "SCHOOL";
+
+        const landingEl = document.getElementById("view-landing");
+        if (landingEl) landingEl.classList.add("hidden", "opacity-0", "pointer-events-none");
+        appState.landingActive = false;
+      }
+
+      if (Array.isArray(data.schools)) appState.schools = data.schools;
+      if (Array.isArray(data.foundations)) appState.foundations = data.foundations;
+      if (Array.isArray(data.students)) appState.students = data.students;
+      if (Array.isArray(data.classes)) appState.classes = data.classes;
+      if (Array.isArray(data.cashDesks)) appState.cashDesks = data.cashDesks;
+      if (Array.isArray(data.cashDeposits)) appState.cashDeposits = data.cashDeposits;
+      if (Array.isArray(data.payments)) appState.payments = data.payments;
+      if (Array.isArray(data.users)) appState.users = data.users;
+      if (Array.isArray(data.auditLogs)) appState.auditLogs = data.auditLogs;
+      if (Array.isArray(data.importBatches)) appState.importBatches = data.importBatches;
+
+      // Détermination du périmètre actif de l'établissement
+      const u = getActiveUser() || data.currentUser;
+      if (u && (u.schoolId || u.school_id)) {
+        appState.currentSchoolId = u.schoolId || u.school_id;
+      } else if (!appState.currentSchoolId && appState.schools && appState.schools.length > 0) {
+        appState.currentSchoolId = appState.schools[0].id;
+      }
+      if (u && (u.foundationId || u.foundation_id)) {
+        appState.currentFoundationId = u.foundationId || u.foundation_id;
+      }
+
+      // Persistance miroir locale dans localStorage pour résilience déconnexion/reconnexion
+      try {
+        if (Array.isArray(appState.payments) && appState.payments.length > 0) {
+          localStorage.setItem('scolapro_payments', JSON.stringify(appState.payments));
+        }
+        if (Array.isArray(appState.students) && appState.students.length > 0) {
+          localStorage.setItem('scolapro_students', JSON.stringify(appState.students));
+        }
+        if (Array.isArray(appState.cashDesks) && appState.cashDesks.length > 0) {
+          localStorage.setItem('scolapro_cashdesks', JSON.stringify(appState.cashDesks));
+        }
+      } catch (_) {}
+
+      // Réconciliation hors-ligne si paiements locaux sauvegardés
+      try {
+        if (!appState.payments || appState.payments.length === 0) {
+          const savedP = localStorage.getItem('scolapro_payments');
+          if (savedP) {
+            const parsedP = JSON.parse(savedP);
+            if (Array.isArray(parsedP) && parsedP.length > 0) appState.payments = parsedP;
+          }
+        }
+      } catch (_) {}
+
+      // Mise à jour de l'interface
+      if (typeof syncHeaderUserSelectors === 'function') syncHeaderUserSelectors();
+      if (typeof updateHeaderTenantContext === 'function') updateHeaderTenantContext();
+      if (typeof renderSidebarMenu === 'function') renderSidebarMenu();
+      if (typeof renderDashboardByRole === 'function') renderDashboardByRole();
+      if (typeof updateKPIs === 'function') updateKPIs();
+      if (typeof renderMainCashDesk === 'function') renderMainCashDesk();
+      if (typeof renderSecondaryCashDesk === 'function') renderSecondaryCashDesk();
+      if (typeof renderConsultJournal === 'function') renderConsultJournal();
+      if (typeof renderConsultStats === 'function') renderConsultStats();
+      if (typeof renderFinanceTable === 'function') renderFinanceTable();
+    }
+
     async function ensureDemoSession() {
       if (appState.isAuthenticated || sessionStorage.getItem('scolapro_authenticated') === 'true') {
         return true;
@@ -10497,17 +10648,9 @@
               const bResp = await fetch('/api/bootstrap', { credentials: 'same-origin' });
               if (bResp.ok) {
                 const bData = await bResp.json();
-                if (Array.isArray(bData.schools)) appState.schools = bData.schools;
-                if (Array.isArray(bData.foundations)) appState.foundations = bData.foundations;
-                if (Array.isArray(bData.students)) appState.students = bData.students;
-                if (Array.isArray(bData.classes)) appState.classes = bData.classes;
-                if (Array.isArray(bData.cashDesks)) appState.cashDesks = bData.cashDesks;
-                if (Array.isArray(bData.users)) appState.users = bData.users;
-                if (Array.isArray(bData.importBatches)) appState.importBatches = bData.importBatches;
+                rehydrateAppData(bData);
               }
             } catch (_) {}
-            if (typeof syncHeaderUserSelectors === 'function') syncHeaderUserSelectors();
-            if (typeof updateHeaderTenantContext === 'function') updateHeaderTenantContext();
           }
         }
       } catch (_) {
@@ -10515,6 +10658,7 @@
       }
       return true;
     }
+
 
     function openFoundationInterface(targetFoundationId) {
       const fId = targetFoundationId || appState.currentFoundationId || (appState.foundations && appState.foundations[0] ? appState.foundations[0].id : 1);
@@ -10991,10 +11135,19 @@
         `;
         return;
       }
-      const schoolStudents = (appState.students || []).filter(st => st.schoolId === school.id);
-      const schoolClasses = (appState.classes || []).filter(c => c.schoolId === school.id);
-      const schoolDesks = (appState.cashDesks || []).filter(c => (c.schoolId === school.id || c.school_id === school.id));
-      const totalCash = schoolDesks.reduce((sum, c) => sum + (c.solde !== undefined ? c.solde : (c.balance || 0)), 0);
+      const schoolStudents = (appState.students || []).filter(st => {
+        if (!st.schoolId && !st.school_id) return true;
+        return String(st.schoolId || st.school_id) === String(school.id);
+      });
+      const schoolClasses = (appState.classes || []).filter(c => {
+        if (!c.schoolId && !c.school_id) return true;
+        return String(c.schoolId || c.school_id) === String(school.id);
+      });
+      const schoolDesks = (appState.cashDesks || []).filter(c => {
+        if (!c.schoolId && !c.school_id) return true;
+        return String(c.schoolId || c.school_id) === String(school.id);
+      });
+      const totalCash = schoolDesks.reduce((sum, c) => sum + (c.solde !== undefined ? Number(c.solde) : (Number(c.balance) || 0)), 0);
 
       const countStudents = schoolStudents.length > 0 ? schoolStudents.length : (school.studentsCount || 0);
       const countClasses = schoolClasses.length > 0 ? schoolClasses.length : (school.classesCount || 0);
@@ -11002,8 +11155,8 @@
       // Calcul dynamique et réel du taux de recouvrement (sans fallback fictif)
       let recRate = 0;
       if (schoolStudents.length > 0) {
-        const totalDue = schoolStudents.reduce((sum, st) => sum + (st.feeDue || st.fee_due || 0), 0);
-        const totalPaid = schoolStudents.reduce((sum, st) => sum + (st.feePaid || st.fee_paid || 0), 0);
+        const totalDue = schoolStudents.reduce((sum, st) => sum + (Number(st.feeDue || st.fee_due) || 0), 0);
+        const totalPaid = schoolStudents.reduce((sum, st) => sum + (Number(st.feePaid || st.fee_paid) || 0), 0);
         recRate = totalDue > 0 ? Number(((totalPaid / totalDue) * 100).toFixed(1)) : 0;
       } else if (school.recoveryRate !== undefined && school.recoveryRate !== null) {
         recRate = Number(school.recoveryRate) || 0;
@@ -11827,8 +11980,8 @@
         }
       });
 
-      if (tabId === 'principale') renderMainCashDesk();
-      if (tabId === 'secondaire') renderSecondaryCashDesk();
+      if (tabId === 'principale') { renderMainCashDesk(); if (typeof refreshPaymentsFromServer === 'function') refreshPaymentsFromServer(); }
+      if (tabId === 'secondaire') { renderSecondaryCashDesk(); if (typeof refreshPaymentsFromServer === 'function') refreshPaymentsFromServer(); }
       if (tabId === 'deposits') renderDepositsWorkflow();
       if (tabId === 'config') renderCashDesksConfig();
       if (tabId === 'relances') renderCashRelances();
@@ -11882,7 +12035,7 @@
           const tr = document.createElement('tr');
           tr.className = "hover:bg-slate-50 transition border-b border-slate-100";
           tr.innerHTML = `
-            <td class="py-2 px-3 font-mono font-bold text-slate-700">${esc(p.receiptNumber || p.ref)}</td>
+            <td class="py-2 px-3 font-mono font-bold text-slate-700">${esc(p.receiptNumber || p.receipt_number || p.ref || '—')}</td>
             <td class="py-2 px-3"><span class="px-1.5 py-0.2 rounded text-[10px] font-bold ${p.cashDesk === 'PRINCIPALE' ? 'bg-emerald-100 text-emerald-800' : 'bg-sky-100 text-sky-800'}">${p.cashDesk === 'PRINCIPALE' ? 'Caisse Centrale' : p.cashDesk}</span></td>
             <td class="py-2 px-3 font-bold text-slate-800"><button onclick="openStudentDetailModal(${escJs(p.studentId)})" class="hover:text-indigo-700 hover:underline text-left transition">${esc(p.studentName || 'Élève #' + p.studentId)}</button></td>
             <td class="py-2 px-3 text-slate-600">${esc(p.studentClasse || p.classe || '—')}</td>
@@ -12043,18 +12196,18 @@
     }
 
     function renderSecondaryCashDesk() {
-      const c2 = (appState.cashDesks || []).find(c => c.id === 'CAISSE_2') || { balance: 0 };
-      const bal = c2.balance !== undefined ? c2.balance : (c2.solde || 0);
+      const c2 = (appState.cashDesks || []).find(c => c.id === 'CAISSE_2' || c.code === 'CAISSE_2' || c.type === 'SECONDAIRE') || { balance: 0 };
+      const bal = c2.balance !== undefined ? Number(c2.balance) : (Number(c2.solde) || 0);
       const balEl = document.getElementById('caisse2-balance');
       if (balEl) balEl.innerHTML = `${bal.toLocaleString()} <span class="text-xs font-normal">XOF</span>`;
 
-      const c2Payments = (appState.payments || []).filter(p => p.cashDesk === 'CAISSE_2');
+      const c2Payments = (appState.payments || []).filter(p => p.cashDesk === 'CAISSE_2' || p.cash_desk === 'CAISSE_2');
       const dayIncomeEl = document.getElementById('caisse2-day-income');
-      const dayTotal = c2Payments.reduce((sum, p) => sum + (p.amount || 0), 0);
+      const dayTotal = c2Payments.reduce((sum, p) => sum + (Number(p.amount) || 0), 0);
       if (dayIncomeEl) dayIncomeEl.innerHTML = `${dayTotal.toLocaleString()} <span class="text-xs font-normal">XOF</span>`;
 
       const pendingDepEl = document.getElementById('caisse2-pending-deposit');
-      const pendingDep = (appState.cashDeposits || []).filter(d => (d.source_id === 'CAISSE_2' || d.sourceId === 'CAISSE_2') && d.status === 'PENDING').reduce((sum, d) => sum + (d.amount || 0), 0);
+      const pendingDep = (appState.cashDeposits || []).filter(d => (d.source_id === 'CAISSE_2' || d.sourceId === 'CAISSE_2') && d.status === 'PENDING').reduce((sum, d) => sum + (Number(d.amount) || 0), 0);
       if (pendingDepEl) pendingDepEl.innerHTML = `${pendingDep.toLocaleString()} <span class="text-xs font-normal">XOF</span>`;
 
       const tbody = document.getElementById('caisse2-ops-tbody');
@@ -12070,14 +12223,14 @@
         const tr = document.createElement('tr');
         tr.className = "hover:bg-slate-50 border-b border-slate-100";
         tr.innerHTML = `
-          <td class="py-2 px-3 font-mono font-bold text-sky-900">${esc(p.receiptNumber || p.ref)}</td>
-          <td class="py-2 px-3 font-bold text-slate-800"><button onclick="openStudentDetailModal(${escJs(p.studentId)})" class="hover:text-indigo-700 hover:underline text-left transition">${esc(p.studentName || 'Élève #' + p.studentId)}</button></td>
+          <td class="py-2 px-3 font-mono font-bold text-sky-900">${esc(p.receiptNumber || p.receipt_number || p.ref || '—')}</td>
+          <td class="py-2 px-3 font-bold text-slate-800"><button onclick="openStudentDetailModal(${escJs(p.studentId || p.student_id)})" class="hover:text-indigo-700 hover:underline text-left transition">${esc(p.studentName || p.nom_prenom || 'Élève #' + (p.studentId || p.student_id))}</button></td>
           <td class="py-2 px-3 text-slate-600">${esc(p.studentClasse || p.classe || '—')}</td>
-          <td class="py-2 px-3 text-right font-mono font-black text-emerald-700">${(p.amount || 0).toLocaleString()} XOF</td>
-          <td class="py-2 px-3 text-center text-[10px] font-bold">${esc(p.paymentMethod || 'ESPECES')}</td>
+          <td class="py-2 px-3 text-right font-mono font-black text-emerald-700">${(Number(p.amount) || 0).toLocaleString()} XOF</td>
+          <td class="py-2 px-3 text-center text-[10px] font-bold">${esc(p.paymentMethod || p.method || 'ESPECES')}</td>
           <td class="py-2 px-3 text-center text-slate-400 font-mono text-[10px]">${p.createdAt ? p.createdAt.split(' ')[0] : 'Aujourd\'hui'}</td>
           <td class="py-2 px-3 text-center">
-            <button onclick="printReceipt(${escJs(p.studentId)})" class="text-indigo-600 hover:underline font-bold text-[10px]">Imprimer 📄</button>
+            <button onclick="printReceipt(${escJs(p.studentId || p.student_id)})" class="text-indigo-600 hover:underline font-bold text-[10px]">Imprimer 📄</button>
           </td>
         `;
         tbody.appendChild(tr);
@@ -13673,10 +13826,17 @@
         }
       });
 
-      if (tabId === 'journal') renderConsultJournal();
+      if (tabId === 'journal') {
+        renderConsultJournal();
+        renderConsultStats();
+        if (typeof refreshPaymentsFromServer === 'function') refreshPaymentsFromServer();
+      }
       if (tabId === 'impayes') renderImpayesTable();
       if (tabId === 'student') populateConsultStudentPicker();
-      if (tabId === 'stats') renderConsultStats();
+      if (tabId === 'stats') {
+        renderConsultStats();
+        if (typeof refreshPaymentsFromServer === 'function') refreshPaymentsFromServer();
+      }
       if (tabId === 'inscrits') renderInscritsScolariteTable();
     }
 
@@ -13738,12 +13898,12 @@
         tr.className = "hover:bg-slate-50 border-b border-slate-100";
         tr.innerHTML = `
           <td class="p-2.5 font-mono text-slate-500">${p.createdAt || new Date().toLocaleDateString('fr-FR')}</td>
-          <td class="p-2.5 font-mono font-bold text-slate-800">${esc(p.receiptNumber || p.ref || `RC-2026-${String(idx + 1).padStart(4, '0')}`)}</td>
-          <td class="p-2.5">${p.cashDesk === 'PRINCIPALE' ? 'Caisse Principale' : (p.cashDesk || 'Caisse Principale')}</td>
-          <td class="p-2.5 font-bold text-slate-800"><button onclick="openStudentDetailModal(${escJs(p.studentId)})" class="hover:text-indigo-700 hover:underline text-left transition">${esc(p.studentName || 'Élève #' + p.studentId)}</button></td>
-          <td class="p-2.5 text-slate-600">${esc(p.cashierName || 'Caissier')}</td>
-          <td class="p-2.5 text-right font-mono font-bold text-emerald-600">${(p.amount || 0).toLocaleString()} XOF</td>
-          <td class="p-2.5 text-center"><span class="px-2 py-0.5 bg-slate-100 rounded text-[10px] font-bold">${esc(p.paymentMethod || 'ESPECES')}</span></td>
+          <td class="p-2.5 font-mono font-bold text-slate-800">${esc(p.receiptNumber || p.receipt_number || p.ref || `RC-2026-${String(idx + 1).padStart(4, '0')}`)}</td>
+          <td class="p-2.5">${(p.cashDesk === 'PRINCIPALE' || p.cash_desk === 'PRINCIPALE') ? 'Caisse Principale' : (p.cashDesk || p.cash_desk || 'Caisse Principale')}</td>
+          <td class="p-2.5 font-bold text-slate-800"><button onclick="openStudentDetailModal(${escJs(p.studentId || p.student_id)})" class="hover:text-indigo-700 hover:underline text-left transition">${esc(p.studentName || p.nom_prenom || 'Élève #' + (p.studentId || p.student_id))}</button></td>
+          <td class="p-2.5 text-slate-600">${esc(p.cashierName || p.agent_name || 'Caissier')}</td>
+          <td class="p-2.5 text-right font-mono font-bold text-emerald-600">${(Number(p.amount) || 0).toLocaleString()} XOF</td>
+          <td class="p-2.5 text-center"><span class="px-2 py-0.5 bg-slate-100 rounded text-[10px] font-bold">${esc(p.paymentMethod || p.method || 'ESPECES')}</span></td>
         `;
         tbody.appendChild(tr);
       });
@@ -14128,7 +14288,15 @@
           <td class="py-2.5 px-3 text-center font-bold text-slate-600">${esc(st.red || '')}</td>
           <td class="py-2.5 px-3 text-center">${statutBadge}</td>
           <td class="py-2.5 px-3 text-center font-semibold text-slate-700">${esc(st.niveau)}</td>
-          <td class="py-2.5 px-4 text-center font-semibold text-slate-800">${esc(st.classe)}</td>
+          <td class="py-2.5 px-4 text-center">
+            ${(!st.classe || st.classe === 'Non assigné')
+              ? `<button onclick="openAssignClassModal(${escJs(st.id)})" class="px-2.5 py-1 rounded text-[11px] font-bold bg-amber-50 text-amber-700 border border-amber-300 hover:bg-amber-100 hover:border-amber-400 transition flex items-center gap-1 mx-auto" title="Cliquer pour attribuer une classe">
+                  <svg class="w-3 h-3 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M12 4v16m8-8H4"/></svg>
+                  Non assigné
+                </button>`
+              : `<button onclick="openAssignClassModal(${escJs(st.id)})" class="px-2.5 py-1 rounded text-[11px] font-bold bg-indigo-50 text-indigo-700 border border-indigo-200 hover:bg-indigo-100 transition mx-auto" title="Cliquer pour changer la classe">${esc(st.classe)}</button>`
+            }
+          </td>
           <td class="py-2.5 px-3 text-center">${typeof getStudentAIRiskBadge === 'function' ? getStudentAIRiskBadge(st) : '<span class="text-slate-400">-</span>'}</td>
           <td class="py-2.5 px-3 text-center">
             <div class="flex items-center justify-center gap-1">
@@ -16181,43 +16349,165 @@
       if (modal) modal.classList.remove('hidden');
     }
 
+    /**
+     * Applique un encaissement validé dans l'état applicatif,
+     * garantit la conservation du numéro officiel de quittance,
+     * met à jour les caisses et déclenche l'actualisation automatique du tableau de bord.
+     */
+    function applyPaymentSuccess(resJson, student, amount, method, ref, receiptData) {
+      if (!student) return;
+
+      // 1. Mettre à jour l'élève avec les données certifiées du backend
+      if (resJson && resJson.student) {
+        Object.assign(student, resJson.student);
+      } else {
+        student.feePaid = (student.feePaid || 0) + amount;
+      }
+
+      // 2. Mettre à jour les caisses (solde cashDesks)
+      if (resJson && Array.isArray(resJson.cashDesks)) {
+        appState.cashDesks = resJson.cashDesks;
+      } else {
+        const targetDeskId = student.cashDesk || 'PRINCIPALE';
+        const desk = (appState.cashDesks || []).find(d => d.id === targetDeskId || d.id === `S${student.schoolId}_PRINCIPALE`);
+        if (desk) {
+          desk.balance = (desk.balance || 0) + amount;
+          if (desk.physical !== undefined) desk.physical = (desk.physical || 0) + amount;
+        }
+      }
+
+      // 3. Récupérer le numéro officiel de quittance garanti
+      const officialReceiptNo = (receiptData && (receiptData.receiptNumber || receiptData.receipt_number)) ||
+        (resJson && resJson.payment && (resJson.payment.receiptNumber || resJson.payment.receipt_number)) ||
+        (resJson && resJson.receipt && (resJson.receipt.receiptNumber || resJson.receipt.receipt_number)) ||
+        null;
+      const officialReceiptId = (receiptData && receiptData.id) ||
+        (resJson && resJson.payment && (resJson.payment.receiptId || resJson.payment.receipt_id)) ||
+        (resJson && resJson.receipt && resJson.receipt.id) ||
+        null;
+      const officialRef = (resJson && resJson.payment && resJson.payment.ref) || ref || (receiptData && receiptData.ref);
+
+      const activeUser = getActiveUser() || {};
+      const newPaymentRecord = {
+        id: (resJson && resJson.payment && resJson.payment.id) || Date.now(),
+        schoolId: student.schoolId || appState.currentSchoolId || 1,
+        studentId: student.id,
+        studentName: student.nomPrenom,
+        studentMatricule: student.matricule,
+        studentClasse: student.classe,
+        amount: amount,
+        paymentMethod: method,
+        ref: officialRef,
+        receiptNumber: officialReceiptNo || officialRef,
+        receiptId: officialReceiptId,
+        cashierId: activeUser.id,
+        cashierName: `${activeUser.prenom || 'Caissier'} ${activeUser.nom || ''}`.trim(),
+        cashDesk: (resJson && resJson.payment && resJson.payment.cash_desk) || student.cashDesk || 'PRINCIPALE',
+        createdAt: new Date().toLocaleDateString('fr-FR')
+      };
+
+      if (!appState.payments) appState.payments = [];
+      appState.payments.unshift(newPaymentRecord);
+
+      // 4. Miroir de persistance locale localStorage pour résilience déconnexion/reconnexion
+      try {
+        localStorage.setItem('scolapro_payments', JSON.stringify(appState.payments));
+        localStorage.setItem('scolapro_students', JSON.stringify(appState.students));
+        localStorage.setItem('scolapro_cashdesks', JSON.stringify(appState.cashDesks));
+      } catch (_) {}
+
+      // 5. Mise à jour immédiate et automatique de TOUTES les vues et tableaux de bord
+      if (typeof renderDashboardByRole === 'function') renderDashboardByRole();
+      if (typeof updateKPIs === 'function') updateKPIs();
+      if (typeof renderMainCashDesk === 'function') renderMainCashDesk();
+      if (typeof renderSecondaryCashDesk === 'function') renderSecondaryCashDesk();
+      if (typeof renderConsultJournal === 'function') renderConsultJournal();
+      if (typeof renderConsultStats === 'function') renderConsultStats();
+      if (typeof renderFinanceTable === 'function') renderFinanceTable();
+    }
+
+    /**
+     * Rafraîchit les paiements depuis le backend pour garantir la cohérence en temps réel.
+     */
+    async function refreshPaymentsFromServer() {
+      try {
+        const sId = appState.currentSchoolId;
+        const url = sId ? `/api/payments?school_id=${encodeURIComponent(sId)}` : '/api/payments';
+        const resp = await fetch(url, { credentials: 'same-origin' });
+        if (resp.ok) {
+          const pays = await resp.json();
+          if (Array.isArray(pays)) {
+            appState.payments = pays;
+            try {
+              localStorage.setItem('scolapro_payments', JSON.stringify(pays));
+            } catch (_) {}
+            if (typeof renderMainCashDesk === 'function') renderMainCashDesk();
+            if (typeof renderSecondaryCashDesk === 'function') renderSecondaryCashDesk();
+            if (typeof renderConsultJournal === 'function') renderConsultJournal();
+            if (typeof renderConsultStats === 'function') renderConsultStats();
+          }
+        }
+      } catch (err) {
+        console.warn('[Payments Refresh] Mode local:', err.message);
+      }
+    }
+
     async function quickCollect(id, amount) {
       if (!hasPerm('payments.create')) {
         showToast("Action refusée : permission payments.create requise.");
         return;
       }
       const student = appState.students.find(s => s.id === id);
-      if (student) {
-        let receiptData = null;
-        try {
-          const resp = await fetch('/api/payments', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              studentId: id,
-              amount: amount,
-              paymentMethod: 'ESPECES',
-              ref: `RC-QCK-${Date.now().toString().slice(-6)}`
-            }),
-            credentials: 'same-origin'
-          });
-          if (resp.ok) {
-            const resJson = await resp.json();
-            receiptData = resJson.receipt;
-          }
-        } catch (err) {
-          console.warn('API payment failed:', err);
-        }
+      if (!student) return;
 
-        student.feePaid += amount;
-        auditAction('PAYMENT_COLLECT', 'Comptabilité', `Élève #${id}`, `${student.feePaid - amount}`, `${esc(student.feePaid)}`, 'SUCCÈS');
-        renderFinanceTable();
-        showToast(`Versement de ${amount.toLocaleString()} XOF encaissé pour ${esc(student.nomPrenom)} ! Quittance A4 Dual A5 générée.`);
-        if (receiptData) {
-          openPaymentReceiptModal(receiptData);
+      const amt = parseInt(amount, 10);
+      if (!amt || isNaN(amt) || amt <= 0) {
+        showToast("Montant de versement invalide.");
+        return;
+      }
+
+      const bal = Math.max(0, (student.feeDue || 0) - (student.feePaid || 0));
+      if (amt > bal) {
+        showToast(`Le montant excède le solde restant dû (${bal.toLocaleString()} XOF).`);
+        return;
+      }
+
+      let receiptData = null;
+      let resJson = null;
+      const quickRef = `RC-QCK-${Date.now().toString().slice(-6)}`;
+      try {
+        const resp = await fetch('/api/payments', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            studentId: id,
+            amount: amt,
+            paymentMethod: 'ESPECES',
+            ref: quickRef
+          }),
+          credentials: 'same-origin'
+        });
+        if (resp.ok) {
+          resJson = await resp.json();
+          receiptData = resJson.receipt;
         } else {
-          printReceipt(id);
+          const errData = await resp.json().catch(() => ({}));
+          showToast(`❌ Erreur enregistrement : ${errData.error || resp.statusText}`);
+          return;
         }
+      } catch (err) {
+        console.warn('API payment failed, mode hors-ligne:', err);
+      }
+
+      applyPaymentSuccess(resJson, student, amt, 'ESPECES', quickRef, receiptData);
+
+      auditAction('PAYMENT_COLLECT', 'Comptabilité', `Élève #${id}`, `${student.feePaid - amt}`, `${esc(student.feePaid)}`, 'SUCCÈS');
+      const recMsg = (receiptData && receiptData.receiptNumber) ? ` — Quittance N° ${receiptData.receiptNumber}` : '';
+      showToast(`Versement de ${amt.toLocaleString()} XOF encaissé pour ${esc(student.nomPrenom)}${recMsg} !`);
+      if (receiptData) {
+        openPaymentReceiptModal(receiptData);
+      } else {
+        printReceipt(id);
       }
     }
 
@@ -16230,7 +16520,7 @@
       if (methEl) methEl.selectedIndex = 0;
     }
 
-    function openPaymentModal() {
+    function openPaymentModal(selectedStudentId) {
       if (!hasPerm('payments.create')) {
         showToast("Action refusée : permission payments.create requise.");
         return;
@@ -16239,12 +16529,37 @@
       const picker = document.getElementById('modal-pay-student');
       picker.innerHTML = '';
       appState.students.forEach(st => {
-        const bal = st.feeDue - st.feePaid;
+        const bal = (st.feeDue || 0) - (st.feePaid || 0);
         const opt = document.createElement('option');
         opt.value = st.id;
         opt.innerText = `${esc(st.nomPrenom)} (Reste: ${bal.toLocaleString()} XOF)`;
         picker.appendChild(opt);
       });
+      if (selectedStudentId) {
+        picker.value = selectedStudentId;
+      }
+      const selId = parseInt(picker.value, 10);
+      const selSt = appState.students.find(s => s.id === selId);
+      if (selSt) {
+        const amtInput = document.getElementById('modal-pay-amount');
+        if (amtInput) {
+          const bal = Math.max(0, (selSt.feeDue || 0) - (selSt.feePaid || 0));
+          amtInput.max = bal;
+          if (bal > 0 && !amtInput.value) amtInput.value = bal;
+        }
+      }
+      picker.onchange = () => {
+        const cId = parseInt(picker.value, 10);
+        const cSt = appState.students.find(s => s.id === cId);
+        if (cSt) {
+          const amtInput = document.getElementById('modal-pay-amount');
+          if (amtInput) {
+            const bal = Math.max(0, (cSt.feeDue || 0) - (cSt.feePaid || 0));
+            amtInput.max = bal;
+            amtInput.value = bal;
+          }
+        }
+      };
       document.getElementById('payment-modal').classList.remove('hidden');
     }
 
@@ -16258,59 +16573,63 @@
         showToast("Action refusée : permission payments.create requise.");
         return;
       }
-      const id = parseInt(document.getElementById('modal-pay-student').value);
-      const amount = parseInt(document.getElementById('modal-pay-amount').value);
+      const id = parseInt(document.getElementById('modal-pay-student').value, 10);
+      const amount = parseInt(document.getElementById('modal-pay-amount').value, 10);
       const method = document.getElementById('modal-pay-method').value;
       const ref = document.getElementById('modal-pay-ref').value;
       const student = appState.students.find(s => s.id === id);
 
-      if (student && amount > 0) {
-        let receiptData = null;
-        try {
-          const resp = await fetch('/api/payments', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              studentId: id,
-              amount: amount,
-              paymentMethod: method,
-              ref: ref
-            }),
-            credentials: 'same-origin'
-          });
-          if (resp.ok) {
-            const resJson = await resp.json();
-            receiptData = resJson.receipt;
-          }
-        } catch (err) {
-          console.warn('API payment confirm failed:', err);
-        }
+      if (!student) {
+        showToast("Élève introuvable pour ce versement.");
+        return;
+      }
+      if (!amount || isNaN(amount) || amount <= 0) {
+        showToast("Veuillez saisir un montant valide supérieur à 0 XOF.");
+        return;
+      }
 
-        student.feePaid += amount;
-        if (!appState.payments) appState.payments = [];
-        appState.payments.unshift({
-          id: appState.payments.length + 1,
-          studentId: id,
-          studentName: student.nomPrenom,
-          studentMatricule: student.matricule,
-          studentClasse: student.classe,
-          amount: amount,
-          paymentMethod: method,
-          ref: ref,
-          cashierName: (getActiveUser().prenom + ' ' + getActiveUser().nom),
-          cashDesk: student.cashDesk || 'PRINCIPALE',
-          createdAt: new Date().toLocaleDateString('fr-FR')
+      const bal = Math.max(0, (student.feeDue || 0) - (student.feePaid || 0));
+      if (amount > bal) {
+        showToast(`Paiement refusé : le montant (${amount.toLocaleString()} XOF) excède le reste dû (${bal.toLocaleString()} XOF).`);
+        return;
+      }
+
+      let receiptData = null;
+      let resJson = null;
+      try {
+        const resp = await fetch('/api/payments', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            studentId: id,
+            amount: amount,
+            paymentMethod: method,
+            ref: ref
+          }),
+          credentials: 'same-origin'
         });
-        closePaymentModal();
-        renderFinanceTable();
-        renderMainCashDesk();
-        auditAction('PAYMENT_CONFIRM', 'Comptabilité', `Élève #${id}`, '', `${amount.toLocaleString()} XOF via ${method} (Ref: ${ref})`, 'SUCCÈS');
-        showToast(`Paiement de ${amount.toLocaleString()} XOF (${method} - Ref: ${ref}) validé pour ${esc(student.nomPrenom)} !`);
-        if (receiptData) {
-          openPaymentReceiptModal(receiptData);
+        if (resp.ok) {
+          resJson = await resp.json();
+          receiptData = resJson.receipt;
         } else {
-          printReceipt(id);
+          const errData = await resp.json().catch(() => ({}));
+          showToast(`❌ Erreur enregistrement : ${errData.error || resp.statusText}`);
+          return;
         }
+      } catch (err) {
+        console.warn('API payment confirm failed, mode hors-ligne:', err);
+      }
+
+      applyPaymentSuccess(resJson, student, amount, method, ref, receiptData);
+
+      closePaymentModal();
+      auditAction('PAYMENT_CONFIRM', 'Comptabilité', `Élève #${id}`, '', `${amount.toLocaleString()} XOF via ${method} (Ref: ${ref})`, 'SUCCÈS');
+      const recMsg = (receiptData && receiptData.receiptNumber) ? ` — Quittance N° ${receiptData.receiptNumber}` : '';
+      showToast(`Paiement de ${amount.toLocaleString()} XOF (${method}) validé pour ${esc(student.nomPrenom)}${recMsg} !`);
+      if (receiptData) {
+        openPaymentReceiptModal(receiptData);
+      } else {
+        printReceipt(id);
       }
     }
 
@@ -17224,18 +17543,12 @@
         sessionStorage.setItem('scolapro_authenticated', 'true');
         closeSecureLoginModal();
 
-        // Réhydratation complète des données avec session active
+        // Réhydratation complète des données avec session active (incluant paiements, caisses, etc.)
         try {
           const bootResp = await fetch('/api/bootstrap', { credentials: 'same-origin' });
           if (bootResp.ok) {
             const bootData = await bootResp.json();
-            if (Array.isArray(bootData.schools)) appState.schools = bootData.schools;
-            if (Array.isArray(bootData.foundations)) appState.foundations = bootData.foundations;
-            if (Array.isArray(bootData.students)) appState.students = bootData.students;
-            if (Array.isArray(bootData.classes)) appState.classes = bootData.classes;
-            if (Array.isArray(bootData.cashDesks)) appState.cashDesks = bootData.cashDesks;
-            if (Array.isArray(bootData.users)) appState.users = bootData.users;
-            if (Array.isArray(bootData.importBatches)) appState.importBatches = bootData.importBatches;
+            rehydrateAppData(bootData);
           }
         } catch (_) {}
 
@@ -20247,29 +20560,7 @@
         });
         if (resp.ok) {
           const data = await resp.json();
-          if (data.currentUser) {
-            appState.isAuthenticated = true;
-            appState.currentUser = data.currentUser;
-            appState.currentUserId = data.currentUser.id;
-            sessionStorage.setItem('scolapro_authenticated', 'true');
-            if (data.currentUser.role === "concepteur") appState.currentTenantType = "GLOBAL";
-            else if (data.currentUser.foundationId && !data.currentUser.schoolId) appState.currentTenantType = "FOUNDATION";
-            else appState.currentTenantType = "SCHOOL";
-
-            const landingEl = document.getElementById("view-landing");
-            if (landingEl) landingEl.classList.add("hidden", "opacity-0", "pointer-events-none");
-            appState.landingActive = false;
-          }
-          if (Array.isArray(data.students)) appState.students = data.students;
-          if (Array.isArray(data.schools)) appState.schools = data.schools;
-          if (Array.isArray(data.foundations)) appState.foundations = data.foundations;
-          if (Array.isArray(data.classes)) appState.classes = data.classes;
-          if (Array.isArray(data.cashDesks)) appState.cashDesks = data.cashDesks;
-          if (Array.isArray(data.cashDeposits)) appState.cashDeposits = data.cashDeposits;
-          if (Array.isArray(data.payments)) appState.payments = data.payments;
-          if (Array.isArray(data.users)) appState.users = data.users;
-          if (Array.isArray(data.auditLogs)) appState.auditLogs = data.auditLogs;
-          if (Array.isArray(data.importBatches)) appState.importBatches = data.importBatches;
+          rehydrateAppData(data);
         } else if (resp.status === 401) {
           appState.isAuthenticated = false;
           sessionStorage.removeItem('scolapro_authenticated');
@@ -24143,6 +24434,175 @@ document.addEventListener('keydown', function(e) {
 
     /** ID de l'élève courant dans la modale (pour le bouton "Enregistrer un paiement") */
     let _sdmCurrentStudentId = null;
+
+    // ─────────────────────────────────────────────────────────────────────────
+    // MODAL ATTRIBUTION DE CLASSE
+    // ─────────────────────────────────────────────────────────────────────────
+
+    /** Classe sélectionnée en attente de confirmation */
+    let _acmSelectedClass = null;
+
+    /**
+     * Ouvre la modale d'attribution de classe pour un élève donné.
+     * Affiche toutes les classes créées pour l'établissement et filtre par niveau.
+     * @param {number|string} studentId
+     */
+    function openAssignClassModal(studentId) {
+      const id = parseInt(studentId, 10);
+      const st = appState.students.find(s => s.id === id);
+      if (!st) { showToast('Élève introuvable.'); return; }
+
+      _acmSelectedClass = null;
+
+      // Peupler les infos élève dans le header
+      document.getElementById('acm-student-id').value = id;
+      document.getElementById('acm-student-name').textContent = st.nomPrenom || '—';
+      document.getElementById('acm-student-niveau').textContent = st.niveau || '—';
+      document.getElementById('acm-current-class').textContent = (st.classe && st.classe !== 'Non assigné') ? st.classe : 'Non assigné';
+
+      // Construire la liste des niveaux disponibles à partir des classes existantes
+      const schoolClasses = (appState.classes || []).filter(c => {
+        const sid = c.schoolId || c.school_id;
+        return !sid || sid === appState.currentSchoolId || sid === (appState.currentSchool && appState.currentSchool.id);
+      });
+
+      const niveaux = [...new Set(schoolClasses.map(c => c.level || c.niveau || (c.name || '').split(' ')[0]).filter(Boolean))].sort();
+      const niveauSel = document.getElementById('acm-niveau-filter');
+      niveauSel.innerHTML = '<option value="">— Tous les niveaux —</option>';
+      niveaux.forEach(n => {
+        const opt = document.createElement('option');
+        opt.value = n;
+        opt.textContent = n;
+        // Pré-sélectionner le niveau de l'élève si disponible
+        if (st.niveau && st.niveau.toUpperCase().startsWith(n.toUpperCase())) opt.selected = true;
+        niveauSel.appendChild(opt);
+      });
+
+      document.getElementById('acm-confirm-btn').disabled = true;
+      refreshAssignClassList();
+
+      document.getElementById('modal-assign-class').classList.remove('hidden');
+    }
+
+    /** Ferme la modale d'attribution de classe. */
+    function closeAssignClassModal() {
+      document.getElementById('modal-assign-class').classList.add('hidden');
+      _acmSelectedClass = null;
+    }
+
+    /** Rafraîchit la grille de classes en fonction du filtre de niveau. */
+    function refreshAssignClassList() {
+      const selectedNiveau = document.getElementById('acm-niveau-filter').value.trim().toUpperCase();
+      const container = document.getElementById('acm-class-list');
+      const emptyMsg = document.getElementById('acm-empty-msg');
+      const countEl = document.getElementById('acm-class-count');
+
+      const schoolClasses = (appState.classes || []).filter(c => {
+        const sid = c.schoolId || c.school_id;
+        return !sid || sid === appState.currentSchoolId || sid === (appState.currentSchool && appState.currentSchool.id);
+      });
+
+      const filtered = selectedNiveau
+        ? schoolClasses.filter(c => {
+            const lvl = (c.level || c.niveau || (c.name || '').split(' ')[0] || '').toUpperCase();
+            return lvl === selectedNiveau || (c.name || '').toUpperCase().startsWith(selectedNiveau);
+          })
+        : schoolClasses;
+
+      // Trier par nom
+      filtered.sort((a, b) => (a.name || '').localeCompare(b.name || ''));
+
+      container.innerHTML = '';
+      countEl.textContent = `(${filtered.length} classe${filtered.length > 1 ? 's' : ''})`;
+
+      if (filtered.length === 0) {
+        emptyMsg.classList.remove('hidden');
+        container.classList.add('hidden');
+        document.getElementById('acm-confirm-btn').disabled = true;
+        return;
+      }
+
+      emptyMsg.classList.add('hidden');
+      container.classList.remove('hidden');
+
+      filtered.forEach(c => {
+        const btn = document.createElement('button');
+        btn.type = 'button';
+        const className = c.name || `Classe #${c.id}`;
+        const isSelected = _acmSelectedClass === className;
+        btn.className = `w-full text-left px-3 py-2.5 rounded-lg border text-xs font-semibold transition ${
+          isSelected
+            ? 'bg-indigo-600 text-white border-indigo-600 shadow-sm'
+            : 'bg-white text-slate-700 border-slate-200 hover:bg-indigo-50 hover:border-indigo-300'
+        }`;
+        // Infos secondaires (effectif si dispo)
+        const effectif = typeof c.students === 'number' || typeof c.studentCount === 'number'
+          ? `<span class="block text-[10px] font-normal mt-0.5 ${isSelected ? 'text-indigo-200' : 'text-slate-400'}">${c.students ?? c.studentCount} élève(s)</span>`
+          : '';
+        btn.innerHTML = `${esc(className)}${effectif}`;
+        btn.onclick = () => {
+          _acmSelectedClass = className;
+          document.getElementById('acm-confirm-btn').disabled = false;
+          // Re-render pour mettre à jour la sélection visuelle
+          refreshAssignClassList();
+        };
+        container.appendChild(btn);
+      });
+    }
+
+    /**
+     * Confirme l'attribution de classe sélectionnée.
+     * Met à jour l'élève via PUT /api/students/:id puis rafraîchit le tableau.
+     */
+    async function confirmAssignClass() {
+      if (!_acmSelectedClass) return;
+
+      const id = parseInt(document.getElementById('acm-student-id').value, 10);
+      const st = appState.students.find(s => s.id === id);
+      if (!st) return;
+
+      const btn = document.getElementById('acm-confirm-btn');
+      btn.disabled = true;
+      btn.textContent = '⏳ Enregistrement…';
+
+      try {
+        const resp = await fetch(`/api/students/${id}`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            nomPrenom: st.nomPrenom,
+            matricule: st.matricule,
+            sexe: st.sexe,
+            statut: st.statut || 'NAFF',
+            red: st.red || '',
+            niveau: st.niveau,
+            classe: _acmSelectedClass
+          }),
+          credentials: 'same-origin'
+        });
+
+        if (!resp.ok) {
+          const err = await resp.json().catch(() => ({}));
+          showToast(`❌ Erreur : ${err.error || resp.statusText}`);
+          btn.disabled = false;
+          btn.textContent = '✔ Confirmer l\'attribution';
+          return;
+        }
+
+        // Mettre à jour appState localement
+        st.classe = _acmSelectedClass;
+        closeAssignClassModal();
+        renderStudentsTable();
+        updateKPIs();
+        auditAction('STUDENT_ASSIGN_CLASS', 'Inscription', `Élève #${id}`, 'Non assigné', _acmSelectedClass, 'SUCCÈS');
+        showToast(`✅ ${esc(st.nomPrenom)} affecté(e) à la classe ${esc(_acmSelectedClass)}`);
+      } catch (err) {
+        console.error('confirmAssignClass error:', err);
+        showToast('❌ Erreur réseau lors de l\'attribution.');
+        btn.disabled = false;
+        btn.textContent = '✔ Confirmer l\'attribution';
+      }
+    }
 
     /**
      * Ouvre la modale de détail élève et charge les données via l'API /api/students/:id.
