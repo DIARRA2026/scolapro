@@ -5301,25 +5301,92 @@
           </div>
         </div>
 
-        <!-- 8.3 SUBVIEW : COÛTS PAR NIVEAU -->
+        <!-- 8.3 SUBVIEW : COÛTS DE LA SCOLARITÉ (OPTIONS AFF & NAFF) -->
         <div id="subview-ecolage-costs" class="hidden bg-white rounded-lg shadow-sm border border-slate-200 p-5 space-y-4">
-          <div class="border-b border-slate-100 pb-3 flex justify-between items-center">
+          <div class="border-b border-slate-100 pb-3 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
             <div>
-              <h3 class="font-bold text-sm text-slate-800">Grille Tarifaire par Niveau d'Étude (XOF)</h3>
-              <p class="text-xs text-slate-500">Montants d'écolage applicables aux élèves du Collège et Lycée.</p>
+              <div class="flex items-center gap-2">
+                <span class="text-xl">💳</span>
+                <h3 class="font-bold text-sm text-slate-800">Coûts de la Scolarité — Grille Tarifaire (Options AFF &amp; NAFF)</h3>
+              </div>
+              <p class="text-xs text-slate-500 mt-0.5">Paramétrage officiel des montants d'écolage pour les élèves Affectés par l'État (AFF) et Non Affectés (NAFF).</p>
             </div>
-            <div class="flex items-center gap-2">
-              <button onclick="addNewCostLevelPrompt()" class="px-3 py-1.5 btn-navy text-white rounded text-xs font-bold shadow">
-                + Ajouter un Niveau
+            <div class="flex items-center gap-2 flex-wrap">
+              <button type="button" onclick="addNewCostLevelPrompt()" class="px-3 py-1.5 btn-navy text-white rounded text-xs font-bold shadow flex items-center gap-1.5 cursor-pointer">
+                <span>+</span> Ajouter un Niveau
               </button>
-              <button onclick="saveCostsByLevel()" class="px-3.5 py-1.5 bg-emerald-600 text-white rounded text-xs font-bold shadow">
-                Sauvegarder les Tarifs
+              <button type="button" onclick="saveCostsByLevel()" class="px-3.5 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded text-xs font-bold shadow flex items-center gap-1.5 transition cursor-pointer">
+                <span>💾</span> Sauvegarder les Tarifs
               </button>
             </div>
           </div>
 
-          <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4" id="ecolage-costs-grid">
+          <!-- BANDEAU SÉLECTEUR DES DEUX OPTIONS : AFF vs NAFF -->
+          <div class="bg-gradient-to-r from-slate-50 via-slate-100/70 to-slate-50 border border-slate-200 p-3.5 rounded-xl flex flex-col md:flex-row items-start md:items-center justify-between gap-3">
+            <div class="flex items-center gap-2 flex-wrap">
+              <span class="text-xs font-black uppercase tracking-wider text-slate-700 mr-1 flex items-center gap-1">
+                <span>⚙️</span> Options d'affichage :
+              </span>
+              <button type="button" id="btn-cost-opt-all" onclick="setCostOptionFilter('ALL')" class="px-3 py-1.5 rounded-lg text-xs font-bold transition shadow-xs bg-slate-900 text-white cursor-pointer">
+                <span>👁️</span> Vue Complète (AFF &amp; NAFF)
+              </button>
+              <button type="button" id="btn-cost-opt-aff" onclick="setCostOptionFilter('AFF')" class="px-3 py-1.5 rounded-lg text-xs font-bold transition shadow-xs bg-white text-emerald-800 border border-emerald-300 hover:bg-emerald-50 cursor-pointer flex items-center gap-1.5">
+                <span class="w-2.5 h-2.5 rounded-full bg-emerald-500 inline-block"></span>
+                <span>Option AFF (Affectés État)</span>
+              </button>
+              <button type="button" id="btn-cost-opt-naff" onclick="setCostOptionFilter('NAFF')" class="px-3 py-1.5 rounded-lg text-xs font-bold transition shadow-xs bg-white text-amber-800 border border-amber-300 hover:bg-amber-50 cursor-pointer flex items-center gap-1.5">
+                <span class="w-2.5 h-2.5 rounded-full bg-amber-500 inline-block"></span>
+                <span>Option NAFF (Non Affectés Privé)</span>
+              </button>
+            </div>
+
+            <!-- Résumé synthétique des deux options tarifaires -->
+            <div class="flex items-center gap-2 text-[11px] font-semibold text-slate-600 bg-white px-3 py-1.5 rounded-lg border border-slate-200 shadow-xs">
+              <span class="flex items-center gap-1 text-emerald-800">
+                <span class="w-2 h-2 rounded-full bg-emerald-500"></span>
+                <strong>AFF :</strong> Subventionné MENA
+              </span>
+              <span class="text-slate-300">|</span>
+              <span class="flex items-center gap-1 text-amber-800">
+                <span class="w-2 h-2 rounded-full bg-amber-500"></span>
+                <strong>NAFF :</strong> Plein tarif direct
+              </span>
+            </div>
+          </div>
+
+          <!-- GRILLE DES CARTES PAR NIVEAU ACADÉMIQUE -->
+          <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4" id="ecolage-costs-grid">
             <!-- Rendu dynamique -->
+          </div>
+
+          <!-- TABLEAU COMPARATIF DÉTAILLÉ AFF vs NAFF -->
+          <div class="mt-4 pt-4 border-t border-slate-200 space-y-2">
+            <div class="flex justify-between items-center">
+              <h4 class="text-xs font-bold uppercase tracking-wider text-slate-700 flex items-center gap-1.5">
+                <span>📊</span> Tableau Comparatif des Barèmes (Option AFF vs Option NAFF)
+              </h4>
+              <span class="text-[11px] text-slate-500 font-mono" id="costs-table-count">7 niveaux paramétrés</span>
+            </div>
+            <div class="overflow-x-auto border border-slate-200 rounded-lg shadow-xs">
+              <table class="w-full text-left text-xs">
+                <thead class="bg-table-header text-white font-bold uppercase text-[10px]">
+                  <tr>
+                    <th class="p-2.5">Niveau</th>
+                    <th class="p-2.5">Cycle</th>
+                    <th class="p-2.5 text-right bg-emerald-950/40 text-emerald-300">🟢 Option AFF (Frais État)</th>
+                    <th class="p-2.5 text-right bg-amber-950/40 text-amber-300">🟠 Option NAFF (Plein Tarif)</th>
+                    <th class="p-2.5 text-right">Frais Examen</th>
+                    <th class="p-2.5 text-right text-emerald-300 font-mono">Total Dû AFF</th>
+                    <th class="p-2.5 text-right text-amber-300 font-mono">Total Dû NAFF</th>
+                    <th class="p-2.5 text-right text-sky-300 font-mono">Prise en Charge État</th>
+                    <th class="p-2.5 text-center">Action</th>
+                  </tr>
+                </thead>
+                <tbody id="ecolage-costs-table-tbody" class="divide-y divide-slate-100 bg-white">
+                  <!-- Rendu dynamique -->
+                </tbody>
+              </table>
+            </div>
           </div>
         </div>
 
@@ -5798,10 +5865,11 @@
             </select>
           </div>
           <div>
-            <label class="block text-slate-700 font-semibold mb-1">Statut d'affectation</label>
-            <select id="m-statut" class="w-full border border-slate-300 rounded px-3 py-1.5 bg-white focus:outline-none">
-              <option value="AFF">Affecté par l'État (AFF)</option>
-              <option value="NON AFF">Non affecté (Privé direct)</option>
+            <label class="block text-slate-700 font-semibold mb-1">Statut d'affectation (Régime)</label>
+            <select id="m-statut" onchange="updateTuitionFeePreview();" class="w-full border border-slate-300 rounded px-3 py-1.5 bg-white focus:outline-none font-bold">
+              <option value="AFF">🟢 Affecté par l'État (AFF)</option>
+              <option value="NAFF">🟠 Non affecté - Privé direct (NAFF)</option>
+              <option value="NON AFF">Non affecté (NON AFF)</option>
             </select>
           </div>
         </div>
@@ -9604,12 +9672,39 @@
             </select>
           </div>
         </div>
-        <div>
-          <label class="block text-slate-700 font-semibold mb-1">Scolarité Annuelle de Base (XOF) <span class="text-red-500">*</span></label>
-          <input type="number" id="cl-base" min="0" step="5000" required placeholder="140000" class="w-full border border-slate-300 rounded-lg px-3 py-2 outline-none font-mono font-bold focus:ring-2 focus:ring-violet-600">
+        <!-- DEUX OPTIONS : AFF & NAFF -->
+        <div class="bg-slate-50 border border-slate-200 rounded-xl p-3.5 space-y-3">
+          <div class="flex items-center justify-between">
+            <span class="text-xs font-black uppercase tracking-wider text-slate-700 flex items-center gap-1.5">
+              <span>💳</span> Barème Scolarité : Deux Options
+            </span>
+            <span class="text-[10px] text-slate-500 font-semibold">AFF &amp; NAFF</span>
+          </div>
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <div class="bg-emerald-50/70 border border-emerald-200 p-2.5 rounded-lg">
+              <label class="block text-emerald-900 font-bold mb-1 flex items-center justify-between text-[11px]">
+                <span>🟢 Option AFF (Affecté)</span>
+                <span class="text-[9px] font-normal uppercase bg-emerald-100 text-emerald-800 px-1.5 py-0.2 rounded font-semibold">Taux État</span>
+              </label>
+              <input type="number" id="cl-base-aff" min="0" step="5000" required placeholder="45000" class="w-full border border-emerald-300 rounded px-2.5 py-1.5 outline-none font-mono font-bold text-emerald-950 bg-white focus:ring-2 focus:ring-emerald-500 text-xs">
+              <span class="text-[10px] text-emerald-700 block mt-1">Scolarité subventionnée MENA</span>
+            </div>
+            <div class="bg-amber-50/70 border border-amber-200 p-2.5 rounded-lg">
+              <label class="block text-amber-900 font-bold mb-1 flex items-center justify-between text-[11px]">
+                <span>🟠 Option NAFF (Non Affecté)</span>
+                <span class="text-[9px] font-normal uppercase bg-amber-100 text-amber-800 px-1.5 py-0.2 rounded font-semibold">Plein Tarif</span>
+              </label>
+              <input type="number" id="cl-base-naff" min="0" step="5000" required placeholder="120000" oninput="const b=document.getElementById('cl-base');if(b)b.value=this.value;" class="w-full border border-amber-300 rounded px-2.5 py-1.5 outline-none font-mono font-bold text-amber-950 bg-white focus:ring-2 focus:ring-amber-500 text-xs">
+              <span class="text-[10px] text-amber-700 block mt-1">Scolarité privé direct</span>
+            </div>
+          </div>
         </div>
+
+        <!-- Champ cl-base synchronisé pour rétrocompatibilité totale -->
+        <input type="hidden" id="cl-base" value="120000">
+
         <div>
-          <label class="block text-slate-700 font-semibold mb-1">Frais de Dossier & Examen d'État (XOF)</label>
+          <label class="block text-slate-700 font-semibold mb-1">Frais de Dossier &amp; Examen d'État (XOF)</label>
           <input type="number" id="cl-exam" min="0" step="1000" value="0" placeholder="10000" class="w-full border border-slate-300 rounded-lg px-3 py-2 outline-none font-mono font-bold focus:ring-2 focus:ring-violet-600">
         </div>
         <div class="pt-3 border-t border-slate-200 flex justify-end gap-2.5">
@@ -10140,14 +10235,15 @@
         { code: 'TRAN', name: 'Transport Scolaire (Ligne 1 & 2)', nature: 'Facultatif', recurring: true, amount: 35000, status: 'Actif' }
       ],
 
+      costsOptionTab: 'ALL', // 'ALL', 'AFF', 'NAFF'
       costsByLevel: [
-        { level: '6EME', cycle: 'Collège', base: 120000, exam: 0, total: 120000 },
-        { level: '5EME', cycle: 'Collège', base: 120000, exam: 0, total: 120000 },
-        { level: '4EME', cycle: 'Collège', base: 120000, exam: 0, total: 120000 },
-        { level: '3EME', cycle: 'Collège', base: 120000, exam: 10000, total: 130000 },
-        { level: '2NDE', cycle: 'Lycée', base: 130000, exam: 0, total: 130000 },
-        { level: '1ERE', cycle: 'Lycée', base: 130000, exam: 0, total: 130000 },
-        { level: 'TLE', cycle: 'Lycée', base: 140000, exam: 15000, total: 155000 }
+        { level: '6EME', cycle: 'Collège', baseAff: 45000, baseNaff: 120000, base: 120000, exam: 0, totalAff: 45000, totalNaff: 120000, total: 120000 },
+        { level: '5EME', cycle: 'Collège', baseAff: 45000, baseNaff: 120000, base: 120000, exam: 0, totalAff: 45000, totalNaff: 120000, total: 120000 },
+        { level: '4EME', cycle: 'Collège', baseAff: 45000, baseNaff: 120000, base: 120000, exam: 0, totalAff: 45000, totalNaff: 120000, total: 120000 },
+        { level: '3EME', cycle: 'Collège', baseAff: 50000, baseNaff: 120000, base: 120000, exam: 10000, totalAff: 60000, totalNaff: 130000, total: 130000 },
+        { level: '2NDE', cycle: 'Lycée', baseAff: 60000, baseNaff: 130000, base: 130000, exam: 0, totalAff: 60000, totalNaff: 130000, total: 130000 },
+        { level: '1ERE', cycle: 'Lycée', baseAff: 60000, baseNaff: 130000, base: 130000, exam: 0, totalAff: 60000, totalNaff: 130000, total: 130000 },
+        { level: 'TLE', cycle: 'Lycée', baseAff: 70000, baseNaff: 140000, base: 140000, exam: 15000, totalAff: 85000, totalNaff: 155000, total: 155000 }
       ],
 
       discountCases: [
@@ -10614,6 +10710,15 @@
         }
       } catch (_) {}
 
+      // Restauration de la grille tarifaire (Options AFF & NAFF) personnalisée
+      try {
+        const savedCosts = localStorage.getItem('scolapro_costs_by_level');
+        if (savedCosts) {
+          const parsedCosts = JSON.parse(savedCosts);
+          if (Array.isArray(parsedCosts) && parsedCosts.length > 0) appState.costsByLevel = parsedCosts;
+        }
+      } catch (_) {}
+
       // Mise à jour de l'interface
       if (typeof syncHeaderUserSelectors === 'function') syncHeaderUserSelectors();
       if (typeof updateHeaderTenantContext === 'function') updateHeaderTenantContext();
@@ -10625,6 +10730,7 @@
       if (typeof renderConsultJournal === 'function') renderConsultJournal();
       if (typeof renderConsultStats === 'function') renderConsultStats();
       if (typeof renderFinanceTable === 'function') renderFinanceTable();
+      if (typeof renderEcolageCosts === 'function') renderEcolageCosts();
     }
 
     async function ensureDemoSession() {
@@ -13519,45 +13625,195 @@
       openFeeTypeModal();
     }
 
-    function renderEcolageCosts() {
-      const container = document.getElementById('ecolage-costs-grid');
-      if (!container) return;
+    function setCostOptionFilter(option) {
+      appState.costsOptionTab = option || 'ALL'; // 'ALL', 'AFF', 'NAFF'
+      const btnAll = document.getElementById('btn-cost-opt-all');
+      const btnAff = document.getElementById('btn-cost-opt-aff');
+      const btnNaff = document.getElementById('btn-cost-opt-naff');
 
-      container.innerHTML = appState.costsByLevel.map((c, idx) => `
-        <div class="border border-slate-200 p-4 rounded-xl bg-slate-50 space-y-2 relative">
-          <div class="flex justify-between items-center">
-            <span class="font-extrabold text-sm text-slate-900">${esc(c.level)}</span>
-            <div class="flex items-center gap-1">
-              <span class="text-[10px] font-bold px-1.5 py-0.2 bg-slate-200 text-slate-700 rounded">${esc(c.cycle)}</span>
-              <button onclick="deleteCostLevel('${esc(c.level)}')" class="text-slate-400 hover:text-rose-600 text-xs p-0.5" title="Supprimer ce niveau">✕</button>
-            </div>
-          </div>
-          <div>
-            <label class="block text-[10px] text-slate-500 uppercase font-semibold">Montant Scolarité (XOF)</label>
-            <input type="number" id="cost-base-${idx}" value="${esc(c.base)}" onchange="updateCostLevelInMemory(${idx}, this.value)" class="w-full border border-slate-300 rounded px-2 py-1 font-mono font-bold text-sm bg-white">
-          </div>
-          <div class="text-[11px] text-slate-500 flex justify-between pt-1">
-            <span>Frais examen : <strong>${c.exam.toLocaleString()} XOF</strong></span>
-          </div>
-        </div>
-      `).join('');
+      if (btnAll && btnAff && btnNaff) {
+        if (appState.costsOptionTab === 'ALL') {
+          btnAll.className = 'px-3 py-1.5 rounded-lg text-xs font-bold transition shadow-xs bg-slate-900 text-white cursor-pointer';
+          btnAff.className = 'px-3 py-1.5 rounded-lg text-xs font-bold transition shadow-xs bg-white text-emerald-800 border border-emerald-300 hover:bg-emerald-50 cursor-pointer flex items-center gap-1.5';
+          btnNaff.className = 'px-3 py-1.5 rounded-lg text-xs font-bold transition shadow-xs bg-white text-amber-800 border border-amber-300 hover:bg-amber-50 cursor-pointer flex items-center gap-1.5';
+        } else if (appState.costsOptionTab === 'AFF') {
+          btnAll.className = 'px-3 py-1.5 rounded-lg text-xs font-bold transition shadow-xs bg-white text-slate-700 border border-slate-300 hover:bg-slate-50 cursor-pointer';
+          btnAff.className = 'px-3 py-1.5 rounded-lg text-xs font-bold transition shadow-xs bg-emerald-600 text-white shadow-md cursor-pointer flex items-center gap-1.5';
+          btnNaff.className = 'px-3 py-1.5 rounded-lg text-xs font-bold transition shadow-xs bg-white text-amber-800 border border-amber-300 hover:bg-amber-50 cursor-pointer flex items-center gap-1.5';
+        } else if (appState.costsOptionTab === 'NAFF') {
+          btnAll.className = 'px-3 py-1.5 rounded-lg text-xs font-bold transition shadow-xs bg-white text-slate-700 border border-slate-300 hover:bg-slate-50 cursor-pointer';
+          btnAff.className = 'px-3 py-1.5 rounded-lg text-xs font-bold transition shadow-xs bg-white text-emerald-800 border border-emerald-300 hover:bg-emerald-50 cursor-pointer flex items-center gap-1.5';
+          btnNaff.className = 'px-3 py-1.5 rounded-lg text-xs font-bold transition shadow-xs bg-amber-600 text-white shadow-md cursor-pointer flex items-center gap-1.5';
+        }
+      }
+      renderEcolageCosts();
     }
 
-    function updateCostLevelInMemory(idx, val) {
-      if (appState.costsByLevel[idx]) {
-        appState.costsByLevel[idx].base = parseInt(val, 10) || 0;
+    function renderEcolageCosts() {
+      const container = document.getElementById('ecolage-costs-grid');
+      const tableBody = document.getElementById('ecolage-costs-table-tbody');
+      const tableCount = document.getElementById('costs-table-count');
+      if (!container) return;
+
+      const currentFilter = appState.costsOptionTab || 'ALL';
+
+      // 1. Normalisation et sécurisation des données
+      appState.costsByLevel.forEach(c => {
+        if (c.baseAff === undefined || c.baseAff === null) {
+          c.baseAff = Math.round((c.base || 120000) * 0.4);
+        }
+        if (c.baseNaff === undefined || c.baseNaff === null) {
+          c.baseNaff = c.base || 120000;
+        }
+        c.base = c.baseNaff;
+        c.exam = Number(c.exam) || 0;
+        c.totalAff = (Number(c.baseAff) || 0) + c.exam;
+        c.totalNaff = (Number(c.baseNaff) || 0) + c.exam;
+        c.total = c.totalNaff;
+      });
+
+      if (tableCount) {
+        tableCount.textContent = `${appState.costsByLevel.length} niveau(x) paramétré(s)`;
       }
+
+      // 2. Rendu des Cartes par Niveau avec les DEUX OPTIONS : AFF & NAFF
+      container.innerHTML = appState.costsByLevel.map((c, idx) => {
+        const isAffOnly = currentFilter === 'AFF';
+        const isNaffOnly = currentFilter === 'NAFF';
+
+        return `
+          <div class="border border-slate-200 p-4 rounded-xl bg-white space-y-3 relative shadow-xs hover:border-slate-300 transition">
+            <div class="flex justify-between items-center border-b border-slate-100 pb-2">
+              <div class="flex items-center gap-2">
+                <span class="w-8 h-8 rounded-lg bg-indigo-50 text-indigo-700 flex items-center justify-center font-black text-xs">
+                  ${esc(c.level.slice(0, 3))}
+                </span>
+                <div>
+                  <h4 class="font-extrabold text-sm text-slate-900 leading-tight">${esc(c.level)}</h4>
+                  <span class="text-[10px] text-slate-400 font-semibold">${esc(c.cycle || 'Général')}</span>
+                </div>
+              </div>
+              <div class="flex items-center gap-1">
+                <button type="button" onclick="editCostLevel('${esc(c.level)}')" class="p-1 text-slate-400 hover:text-indigo-600 rounded transition cursor-pointer" title="Modifier ce barème">✏️</button>
+                <button type="button" onclick="deleteCostLevel('${esc(c.level)}')" class="p-1 text-slate-400 hover:text-rose-600 rounded transition cursor-pointer" title="Supprimer ce niveau">✕</button>
+              </div>
+            </div>
+
+            <!-- OPTION 1 : AFF (Affectés État) -->
+            <div class="p-2.5 rounded-lg border transition ${isNaffOnly ? 'opacity-40 bg-slate-50 border-slate-200' : 'bg-emerald-50/60 border-emerald-200 shadow-xs'}">
+              <div class="flex justify-between items-center mb-1">
+                <span class="text-[10.5px] font-black text-emerald-900 flex items-center gap-1">
+                  <span class="w-2 h-2 rounded-full bg-emerald-500"></span>
+                  Option AFF (Affecté)
+                </span>
+                <span class="text-[9px] uppercase font-bold text-emerald-700 bg-emerald-100/80 px-1.5 py-0.2 rounded font-semibold">Taux État</span>
+              </div>
+              <div class="flex items-center gap-1.5">
+                <input type="number" id="cost-base-aff-${idx}" value="${c.baseAff}" step="1000" min="0" onchange="updateCostLevelInMemory(${idx}, 'aff', this.value)" class="w-full border border-emerald-300 rounded px-2 py-1 font-mono font-bold text-xs bg-white text-emerald-950 focus:ring-1 focus:ring-emerald-500 outline-none">
+                <span class="text-[11px] font-bold text-emerald-800">XOF</span>
+              </div>
+              <div class="flex justify-between items-center text-[10px] text-emerald-800 pt-1 mt-0.5 border-t border-emerald-200/60">
+                <span>Total Dû AFF :</span>
+                <strong id="card-total-aff-${idx}" class="font-mono">${c.totalAff.toLocaleString('fr-FR')} XOF</strong>
+              </div>
+            </div>
+
+            <!-- OPTION 2 : NAFF (Non Affectés Privé) -->
+            <div class="p-2.5 rounded-lg border transition ${isAffOnly ? 'opacity-40 bg-slate-50 border-slate-200' : 'bg-amber-50/60 border-amber-200 shadow-xs'}">
+              <div class="flex justify-between items-center mb-1">
+                <span class="text-[10.5px] font-black text-amber-900 flex items-center gap-1">
+                  <span class="w-2 h-2 rounded-full bg-amber-500"></span>
+                  Option NAFF (Non Affecté)
+                </span>
+                <span class="text-[9px] uppercase font-bold text-amber-700 bg-amber-100/80 px-1.5 py-0.2 rounded font-semibold">Plein Tarif</span>
+              </div>
+              <div class="flex items-center gap-1.5">
+                <input type="number" id="cost-base-naff-${idx}" value="${c.baseNaff}" step="1000" min="0" onchange="updateCostLevelInMemory(${idx}, 'naff', this.value)" class="w-full border border-amber-300 rounded px-2 py-1 font-mono font-bold text-xs bg-white text-amber-950 focus:ring-1 focus:ring-amber-500 outline-none">
+                <span class="text-[11px] font-bold text-amber-800">XOF</span>
+              </div>
+              <div class="flex justify-between items-center text-[10px] text-amber-800 pt-1 mt-0.5 border-t border-amber-200/60">
+                <span>Total Dû NAFF :</span>
+                <strong id="card-total-naff-${idx}" class="font-mono">${c.totalNaff.toLocaleString('fr-FR')} XOF</strong>
+              </div>
+            </div>
+
+            <!-- Champ rétrocompatibilité pour cost-base-${idx} -->
+            <input type="hidden" id="cost-base-${idx}" value="${c.baseNaff}">
+
+            <!-- Frais d'examen / droits annexes -->
+            <div class="text-[11px] text-slate-500 flex justify-between items-center pt-1 border-t border-slate-100">
+              <span class="text-[10px]">Droits d'examen / Dossier :</span>
+              <strong class="font-mono text-slate-700">${(c.exam || 0).toLocaleString('fr-FR')} XOF</strong>
+            </div>
+          </div>
+        `;
+      }).join('');
+
+      // 3. Rendu du Tableau Synthétique Comparatif AFF vs NAFF
+      if (tableBody) {
+        if (appState.costsByLevel.length === 0) {
+          tableBody.innerHTML = `<tr><td colspan="9" class="p-6 text-center text-slate-400 italic">Aucun niveau d'étude enregistré. Cliquez sur "+ Ajouter un Niveau" pour configurer votre premier barème.</td></tr>`;
+        } else {
+          tableBody.innerHTML = appState.costsByLevel.map(c => {
+            const priseEnCharge = Math.max(0, (c.baseNaff || 0) - (c.baseAff || 0));
+            return `
+              <tr class="hover:bg-slate-50 transition border-b border-slate-100">
+                <td class="p-2.5 font-bold font-mono text-slate-900">${esc(c.level)}</td>
+                <td class="p-2.5 text-slate-600">${esc(c.cycle || 'Collège')}</td>
+                <td class="p-2.5 text-right font-mono font-black text-emerald-700 bg-emerald-50/40">${(c.baseAff || 0).toLocaleString('fr-FR')} XOF</td>
+                <td class="p-2.5 text-right font-mono font-black text-amber-700 bg-amber-50/40">${(c.baseNaff || 0).toLocaleString('fr-FR')} XOF</td>
+                <td class="p-2.5 text-right font-mono text-slate-600">${(c.exam || 0).toLocaleString('fr-FR')} XOF</td>
+                <td class="p-2.5 text-right font-mono font-black text-emerald-800 bg-emerald-100/50">${(c.totalAff || 0).toLocaleString('fr-FR')} XOF</td>
+                <td class="p-2.5 text-right font-mono font-black text-amber-800 bg-amber-100/50">${(c.totalNaff || 0).toLocaleString('fr-FR')} XOF</td>
+                <td class="p-2.5 text-right font-mono text-sky-700 font-bold bg-sky-50/50">+${priseEnCharge.toLocaleString('fr-FR')} XOF</td>
+                <td class="p-2.5 text-center space-x-1 whitespace-nowrap">
+                  <button type="button" onclick="editCostLevel('${esc(c.level)}')" class="px-2 py-1 bg-indigo-50 hover:bg-indigo-100 text-indigo-700 rounded text-[10px] font-bold transition cursor-pointer">✏️ Modifier</button>
+                  <button type="button" onclick="deleteCostLevel('${esc(c.level)}')" class="px-2 py-1 bg-rose-50 hover:bg-rose-100 text-rose-700 rounded text-[10px] font-bold transition cursor-pointer">🗑️</button>
+                </td>
+              </tr>
+            `;
+          }).join('');
+        }
+      }
+    }
+
+    function updateCostLevelInMemory(idx, type, val) {
+      if (!appState.costsByLevel[idx]) return;
+      const num = parseInt(val, 10) || 0;
+      if (type === 'aff') {
+        appState.costsByLevel[idx].baseAff = num;
+      } else if (type === 'naff') {
+        appState.costsByLevel[idx].baseNaff = num;
+        appState.costsByLevel[idx].base = num;
+        const syncInp = document.getElementById(`cost-base-${idx}`);
+        if (syncInp) syncInp.value = num;
+      } else {
+        appState.costsByLevel[idx].base = num;
+        appState.costsByLevel[idx].baseNaff = num;
+      }
+      appState.costsByLevel[idx].totalAff = (appState.costsByLevel[idx].baseAff || 0) + (appState.costsByLevel[idx].exam || 0);
+      appState.costsByLevel[idx].totalNaff = (appState.costsByLevel[idx].baseNaff || 0) + (appState.costsByLevel[idx].exam || 0);
+      appState.costsByLevel[idx].total = appState.costsByLevel[idx].totalNaff;
+
+      const totalAffEl = document.getElementById(`card-total-aff-${idx}`);
+      if (totalAffEl) totalAffEl.textContent = `${appState.costsByLevel[idx].totalAff.toLocaleString('fr-FR')} XOF`;
+      const totalNaffEl = document.getElementById(`card-total-naff-${idx}`);
+      if (totalNaffEl) totalNaffEl.textContent = `${appState.costsByLevel[idx].totalNaff.toLocaleString('fr-FR')} XOF`;
     }
 
     function resetCostLevelForm() {
       const form = document.querySelector('#modal-cost-level form');
       if (form && typeof form.reset === 'function') form.reset();
       const lvl = document.getElementById('cl-level');
-      if (lvl) lvl.value = '';
+      if (lvl) { lvl.value = ''; lvl.removeAttribute('readonly'); }
       const cyc = document.getElementById('cl-cycle');
       if (cyc) cyc.value = 'Premier Cycle';
+      const baseAff = document.getElementById('cl-base-aff');
+      if (baseAff) baseAff.value = '45000';
+      const baseNaff = document.getElementById('cl-base-naff');
+      if (baseNaff) baseNaff.value = '120000';
       const base = document.getElementById('cl-base');
-      if (base) base.value = '0';
+      if (base) base.value = '120000';
       const exam = document.getElementById('cl-exam');
       if (exam) exam.value = '0';
     }
@@ -13567,6 +13823,24 @@
       if (!m) return;
       resetCostLevelForm();
       m.classList.remove('hidden');
+    }
+
+    function editCostLevel(lvl) {
+      const item = appState.costsByLevel.find(c => c.level === lvl);
+      if (!item) return;
+      openCostLevelModal();
+      const lvlEl = document.getElementById('cl-level');
+      if (lvlEl) lvlEl.value = item.level;
+      const cycEl = document.getElementById('cl-cycle');
+      if (cycEl) cycEl.value = item.cycle || 'Premier Cycle';
+      const affEl = document.getElementById('cl-base-aff');
+      if (affEl) affEl.value = item.baseAff !== undefined ? item.baseAff : Math.round((item.base || 120000) * 0.4);
+      const naffEl = document.getElementById('cl-base-naff');
+      if (naffEl) naffEl.value = item.baseNaff !== undefined ? item.baseNaff : (item.base || 120000);
+      const baseEl = document.getElementById('cl-base');
+      if (baseEl) baseEl.value = item.baseNaff !== undefined ? item.baseNaff : (item.base || 120000);
+      const examEl = document.getElementById('cl-exam');
+      if (examEl) examEl.value = item.exam || 0;
     }
 
     function closeCostLevelModal() {
@@ -13579,28 +13853,48 @@
       event.preventDefault();
       const lvl = document.getElementById('cl-level')?.value.trim().toUpperCase();
       const cycle = document.getElementById('cl-cycle')?.value;
-      const base = parseInt(document.getElementById('cl-base')?.value, 10) || 120000;
+      const rawAff = document.getElementById('cl-base-aff')?.value;
+      const rawNaff = document.getElementById('cl-base-naff')?.value;
+      const rawBase = document.getElementById('cl-base')?.value;
+
+      const baseNaff = parseInt(rawNaff, 10) || parseInt(rawBase, 10) || 120000;
+      const baseAff = parseInt(rawAff, 10) || Math.round(baseNaff * 0.4);
       const exam = parseInt(document.getElementById('cl-exam')?.value, 10) || 0;
       if (!lvl) return;
 
       const existing = appState.costsByLevel.find(c => c.level === lvl);
       if (existing) {
         existing.cycle = cycle;
-        existing.base = base;
+        existing.baseAff = baseAff;
+        existing.baseNaff = baseNaff;
+        existing.base = baseNaff;
         existing.exam = exam;
-        showToast(`Niveau ${lvl} actualisé !`);
+        existing.totalAff = baseAff + exam;
+        existing.totalNaff = baseNaff + exam;
+        existing.total = baseNaff + exam;
+        showToast(`Niveau ${lvl} actualisé (AFF: ${baseAff.toLocaleString()} XOF | NAFF: ${baseNaff.toLocaleString()} XOF) !`);
       } else {
         appState.costsByLevel.push({
           level: lvl,
           cycle: cycle,
-          base: base,
-          exam: exam
+          baseAff: baseAff,
+          baseNaff: baseNaff,
+          base: baseNaff,
+          exam: exam,
+          totalAff: baseAff + exam,
+          totalNaff: baseNaff + exam,
+          total: baseNaff + exam
         });
-        showToast(`Niveau ${lvl} ajouté à la grille tarifaire !`);
+        showToast(`Niveau ${lvl} ajouté (Option AFF: ${baseAff.toLocaleString()} XOF / Option NAFF: ${baseNaff.toLocaleString()} XOF) !`);
       }
+
+      try {
+        localStorage.setItem('scolapro_costs_by_level', JSON.stringify(appState.costsByLevel));
+      } catch (_) {}
+
       closeCostLevelModal();
       renderEcolageCosts();
-      auditAction('ECOLAGE_COST_LEVEL_ADD', 'Écolage', lvl, '', `${base} XOF`, 'SUCCÈS');
+      auditAction('ECOLAGE_COST_LEVEL_ADD', 'Écolage', lvl, '', `AFF: ${baseAff} XOF | NAFF: ${baseNaff} XOF`, 'SUCCÈS');
     }
 
     function addNewCostLevelPrompt() {
@@ -13613,6 +13907,9 @@
       if (!confirm(`Confirmez-vous la suppression du niveau tarifaire "${lvl}" ?`)) return;
 
       appState.costsByLevel.splice(idx, 1);
+      try {
+        localStorage.setItem('scolapro_costs_by_level', JSON.stringify(appState.costsByLevel));
+      } catch (_) {}
       renderEcolageCosts();
       auditAction('ECOLAGE_COST_LEVEL_DELETE', 'Écolage', lvl, '', 'SUPPRIMÉ', 'SUCCÈS');
       showToast(`Niveau ${lvl} retiré de la grille tarifaire.`);
@@ -13621,11 +13918,22 @@
     function saveCostsByLevel() {
       // Synchroniser tous les champs avec appState
       appState.costsByLevel.forEach((c, idx) => {
+        const inpAff = document.getElementById(`cost-base-aff-${idx}`);
+        if (inpAff) c.baseAff = parseInt(inpAff.value, 10) || c.baseAff;
+        const inpNaff = document.getElementById(`cost-base-naff-${idx}`);
+        if (inpNaff) c.baseNaff = parseInt(inpNaff.value, 10) || c.baseNaff;
         const inp = document.getElementById(`cost-base-${idx}`);
-        if (inp) c.base = parseInt(inp.value, 10) || c.base;
+        if (inp) c.base = parseInt(inp.value, 10) || c.baseNaff || c.base;
+        c.totalAff = (c.baseAff || 0) + (c.exam || 0);
+        c.totalNaff = (c.baseNaff || 0) + (c.exam || 0);
+        c.total = c.totalNaff;
       });
-      auditAction('ECOLAGE_COSTS_UPDATE', 'Écolage', 'Grille Tarifaire', '', 'Nouveaux coûts par niveau appliqués', 'SUCCÈS');
-      showToast("Grille tarifaire par niveau sauvegardée avec succès !");
+      try {
+        localStorage.setItem('scolapro_costs_by_level', JSON.stringify(appState.costsByLevel));
+      } catch (_) {}
+      renderEcolageCosts();
+      auditAction('ECOLAGE_COSTS_UPDATE', 'Écolage', 'Grille Tarifaire', '', 'Nouveaux coûts par niveau appliqués (Options AFF & NAFF)', 'SUCCÈS');
+      showToast("Grille tarifaire (Options AFF & NAFF) sauvegardée avec succès !");
     }
 
     function renderEcolageReductions() {
@@ -14543,15 +14851,31 @@
     }
 
     function updateTuitionFeePreview(niveau) {
+      if (!niveau) niveau = document.getElementById('m-niveau')?.value || '4EME';
+      const statut = document.getElementById('m-statut')?.value || 'AFF';
+      const isAff = String(statut).toUpperCase().includes('AFF') && !String(statut).toUpperCase().includes('NON') && !String(statut).toUpperCase().includes('NAFF');
       const levelCost = (appState.costsByLevel || []).find(c => c.level === niveau);
-      const computedFeeDue = levelCost ? (levelCost.total || (levelCost.base + (levelCost.exam || 0))) : 120000;
+
+      let baseAmount = isAff ? 45000 : 120000;
+      let examAmount = 0;
+      if (levelCost) {
+        examAmount = Number(levelCost.exam) || 0;
+        if (isAff) {
+          baseAmount = levelCost.baseAff !== undefined ? Number(levelCost.baseAff) : Math.round((Number(levelCost.base) || 120000) * 0.4);
+        } else {
+          baseAmount = levelCost.baseNaff !== undefined ? Number(levelCost.baseNaff) : (Number(levelCost.base) || 120000);
+        }
+      }
+      const computedFeeDue = baseAmount + examAmount;
       const input = document.getElementById('m-feedue');
       if (input) {
         input.value = computedFeeDue;
       }
       const hint = document.getElementById('m-feedue-hint');
-      if (hint && levelCost) {
-        hint.textContent = `Barème ${esc(levelCost.level)} (${esc(levelCost.cycle)}) : Base ${levelCost.base.toLocaleString()} XOF + Examen ${levelCost.exam.toLocaleString()} XOF.`;
+      if (hint) {
+        const cycleName = levelCost ? `(${esc(levelCost.cycle)})` : '';
+        const optName = isAff ? '🟢 Option AFF (Affecté État)' : '🟠 Option NAFF (Non Affecté Privé)';
+        hint.textContent = `Barème ${esc(niveau)} ${cycleName} — ${optName} : Base ${baseAmount.toLocaleString('fr-FR')} XOF + Examen ${examAmount.toLocaleString('fr-FR')} XOF = Total ${computedFeeDue.toLocaleString('fr-FR')} XOF.`;
       }
     }
 
@@ -14575,8 +14899,14 @@
       const feeInput = document.getElementById('m-feedue');
       let feeDue = feeInput ? parseInt(feeInput.value, 10) : 0;
       if (!feeDue || feeDue <= 0) {
+        const isAff = String(statut).toUpperCase().includes('AFF') && !String(statut).toUpperCase().includes('NON') && !String(statut).toUpperCase().includes('NAFF');
         const levelCost = (appState.costsByLevel || []).find(c => c.level === niveau);
-        feeDue = levelCost ? (levelCost.total || (levelCost.base + (levelCost.exam || 0))) : 120000;
+        if (levelCost) {
+          const base = isAff ? (levelCost.baseAff !== undefined ? Number(levelCost.baseAff) : Math.round((Number(levelCost.base) || 120000) * 0.4)) : (levelCost.baseNaff !== undefined ? Number(levelCost.baseNaff) : (Number(levelCost.base) || 120000));
+          feeDue = base + (Number(levelCost.exam) || 0);
+        } else {
+          feeDue = isAff ? 45000 : 120000;
+        }
       }
 
       let newStudent = {
