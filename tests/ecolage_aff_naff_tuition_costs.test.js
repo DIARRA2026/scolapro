@@ -125,6 +125,21 @@ describe('SUITE : Deux Options Tarifaires (AFF & NAFF) sur la Page Coût de la S
       assert.ok(fnBody.includes('baseAff'), 'updateTuitionFeePreview doit appliquer baseAff');
       assert.ok(fnBody.includes('baseNaff'), 'updateTuitionFeePreview doit appliquer baseNaff');
     });
+
+    test('JS-08: renderEcolageCosts et updateCostLevelInMemory gèrent les frais d\'examen (cost-exam-)', () => {
+      assert.ok(htmlContent.includes('cost-exam-'), 'renderEcolageCosts doit générer un input pour cost-exam-');
+      const start = htmlContent.indexOf('function updateCostLevelInMemory(');
+      const end = htmlContent.indexOf('function resetCostLevelForm()', start);
+      const fnBody = htmlContent.slice(start, end);
+      assert.ok(fnBody.includes("'exam'"), "updateCostLevelInMemory doit gérer le type 'exam'");
+    });
+
+    test('JS-09: saveCostsByLevel enregistre les droits d\'examen modifiés', () => {
+      const start = htmlContent.indexOf('function saveCostsByLevel()');
+      const end = htmlContent.indexOf('function renderEcolageReductions()', start);
+      const fnBody = htmlContent.slice(start, end);
+      assert.ok(fnBody.includes('cost-exam-'), 'saveCostsByLevel doit lire cost-exam-');
+    });
   });
 
   // ───────────────────────────────────────────────────────────────────────────
@@ -149,6 +164,13 @@ describe('SUITE : Deux Options Tarifaires (AFF & NAFF) sur la Page Coût de la S
 
       assert.ok(body.includes('scolapro_costs_by_level'), 'rehydrateAppData doit restaurer scolapro_costs_by_level');
       assert.ok(body.includes('renderEcolageCosts()'), 'rehydrateAppData doit appeler renderEcolageCosts');
+    });
+
+    test('DATA-03: inscription.html est aligné avec les options AFF et NAFF', () => {
+      const inscPath = path.join(__dirname, '..', 'inscription.html');
+      const inscContent = fs.readFileSync(inscPath, 'utf8');
+      assert.ok(inscContent.includes('value="AFF"'), 'inscription.html doit contenir AFF');
+      assert.ok(inscContent.includes('value="NAFF"'), 'inscription.html doit contenir NAFF');
     });
   });
 });
