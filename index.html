@@ -2375,8 +2375,8 @@
           </div>
         </div>
 
-        <!-- 4 Cartes KPIs Consolidés du Groupe (100% Full-Stack & Cliquables) -->
-        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+        <!-- 5 Cartes KPIs Consolidés du Groupe (100% Full-Stack & Cliquables) -->
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
           <!-- KPI 1 : Écoles Affiliées (Cliquable pour aller à la liste) -->
           <div onclick="scrollToFoundationSection('found-schools-grid')" class="bg-white p-4 sm:p-5 rounded-2xl border border-slate-200 hover:border-blue-400 shadow-xs hover:shadow-md transition cursor-pointer group flex items-center justify-between">
             <div>
@@ -2415,7 +2415,19 @@
             </div>
           </div>
 
-          <!-- KPI 4 : Trésorerie Consolidée (100% Réelle) -->
+          <!-- KPI 4 : Montant Global Payé (Réseau) -->
+          <div class="bg-white p-4 sm:p-5 rounded-2xl border border-slate-200 shadow-xs flex items-center justify-between">
+            <div>
+              <span class="text-[10.5px] font-bold text-slate-500 uppercase tracking-wider">Montant Global Payé</span>
+              <p id="kpi-found-paid-total" class="text-2xl sm:text-3xl font-black text-emerald-700 mt-1">0 <span class="text-xs font-normal">XOF</span></p>
+              <p class="text-xs text-emerald-700 font-semibold mt-0.5">Scolarités encaissées réseau</p>
+            </div>
+            <div class="w-12 h-12 rounded-2xl bg-emerald-50 text-emerald-700 border border-emerald-100 flex items-center justify-center text-2xl font-black">
+              💳
+            </div>
+          </div>
+
+          <!-- KPI 5 : Trésorerie Consolidée (100% Réelle) -->
           <div class="bg-white p-4 sm:p-5 rounded-2xl border border-slate-200 shadow-xs flex items-center justify-between">
             <div>
               <span class="text-[10.5px] font-bold text-slate-500 uppercase tracking-wider">Trésorerie Consolidée</span>
@@ -2472,6 +2484,7 @@
                   <th class="py-3 px-3 text-center">Ville</th>
                   <th class="py-3 px-3.5 text-right">Effectif Élèves</th>
                   <th class="py-3 px-3 text-center">Classes</th>
+                  <th class="py-3 px-3.5 text-right">Montant Global Payé</th>
                   <th class="py-3 px-3.5 text-right">Trésorerie Caisses</th>
                   <th class="py-3 px-3.5 text-right">Taux Recouvrement</th>
                   <th class="py-3 px-3 text-center">Statut</th>
@@ -11273,12 +11286,23 @@
       const countStudents = schoolStudents.length > 0 ? schoolStudents.length : (school.studentsCount || 0);
       const countClasses = schoolClasses.length > 0 ? schoolClasses.length : (school.classesCount || 0);
 
-      // Calcul dynamique et réel du taux de recouvrement (sans fallback fictif)
-      let recRate = 0;
+      // Calcul dynamique et réel du montant global payé et du taux de recouvrement
+      let schoolTotalDue = 0;
+      let schoolTotalPaid = 0;
       if (schoolStudents.length > 0) {
-        const totalDue = schoolStudents.reduce((sum, st) => sum + (Number(st.feeDue || st.fee_due) || 0), 0);
-        const totalPaid = schoolStudents.reduce((sum, st) => sum + (Number(st.feePaid || st.fee_paid) || 0), 0);
-        recRate = totalDue > 0 ? Number(((totalPaid / totalDue) * 100).toFixed(1)) : 0;
+        schoolTotalDue = schoolStudents.reduce((sum, st) => sum + (Number(st.feeDue || st.fee_due) || 0), 0);
+        schoolTotalPaid = schoolStudents.reduce((sum, st) => sum + (Number(st.feePaid || st.fee_paid) || 0), 0);
+      }
+      if (schoolTotalPaid === 0 && school.totalPaid) {
+        schoolTotalPaid = Number(school.totalPaid) || 0;
+      }
+      if (schoolTotalDue === 0 && school.totalDue) {
+        schoolTotalDue = Number(school.totalDue) || 0;
+      }
+      const schoolRemainingDue = Math.max(0, schoolTotalDue - schoolTotalPaid);
+      let recRate = 0;
+      if (schoolTotalDue > 0) {
+        recRate = Number(((schoolTotalPaid / schoolTotalDue) * 100).toFixed(1));
       } else if (school.recoveryRate !== undefined && school.recoveryRate !== null) {
         recRate = Number(school.recoveryRate) || 0;
       }
@@ -11333,8 +11357,8 @@
             </div>
           </div>
 
-          <!-- 4 Cartes Métriques Certifiées de l'Établissement -->
-          <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+          <!-- 5 Cartes Métriques Certifiées de l'Établissement -->
+          <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
             <div onclick="navigateTo('inscription')" class="bg-white border border-slate-200 hover:border-blue-400 p-4 sm:p-5 rounded-2xl shadow-xs hover:shadow-md transition cursor-pointer group flex items-center justify-between">
               <div>
                 <span class="text-[10.5px] uppercase font-bold text-slate-500 tracking-wider">Effectif Scolarisé</span>
@@ -11345,6 +11369,19 @@
               </div>
               <div class="w-12 h-12 rounded-2xl bg-blue-50 text-blue-700 flex items-center justify-center text-2xl group-hover:scale-105 transition">
                 🎓
+              </div>
+            </div>
+
+            <div onclick="navigateTo('finance')" class="bg-white border border-slate-200 hover:border-emerald-400 p-4 sm:p-5 rounded-2xl shadow-xs hover:shadow-md transition cursor-pointer group flex items-center justify-between">
+              <div>
+                <span class="text-[10.5px] uppercase font-bold text-slate-500 tracking-wider">Montant Global Payé</span>
+                <p class="text-2xl sm:text-3xl font-black text-emerald-700 mt-1">${schoolTotalPaid.toLocaleString('fr-FR')} <span class="text-xs font-normal">XOF</span></p>
+                <p class="text-xs text-emerald-700 font-semibold mt-0.5 flex items-center gap-1">
+                  <span>💳</span> Scolarités encaissées &rarr;
+                </p>
+              </div>
+              <div class="w-12 h-12 rounded-2xl bg-emerald-50 text-emerald-700 flex items-center justify-center text-2xl group-hover:scale-105 transition">
+                💳
               </div>
             </div>
 
@@ -11366,7 +11403,7 @@
                 <span class="text-[10.5px] uppercase font-bold text-slate-500 tracking-wider">Taux de Recouvrement</span>
                 <p class="text-2xl sm:text-3xl font-black text-amber-600 mt-1">${recRate}%</p>
                 <p class="text-xs text-amber-700 font-semibold mt-0.5 flex items-center gap-1">
-                  <span>💳</span> Écolage & Droits &rarr;
+                  <span>📈</span> Écolage & Droits &rarr;
                 </p>
               </div>
               <div class="w-12 h-12 rounded-2xl bg-amber-50 text-amber-700 flex items-center justify-center text-2xl group-hover:scale-105 transition">
@@ -11379,7 +11416,7 @@
                 <span class="text-[10.5px] uppercase font-bold text-slate-500 tracking-wider">Moyenne Générale</span>
                 <p class="text-2xl sm:text-3xl font-black text-purple-700 mt-1">${genAvg} <span class="text-xs font-normal">/ 20</span></p>
                 <p class="text-xs text-purple-700 font-semibold mt-0.5 flex items-center gap-1">
-                  <span>📊</span> Trimestre 1 Actif &rarr;
+                  <span>🏆</span> Trimestre 1 Actif &rarr;
                 </p>
               </div>
               <div class="w-12 h-12 rounded-2xl bg-purple-50 text-purple-700 flex items-center justify-center text-2xl group-hover:scale-105 transition">
@@ -11440,7 +11477,7 @@
       // 2. Vue Administrateur Local (Proviseur / Admin d'établissement)
       if (user.role === 'admin') {
         container.innerHTML = `
-          <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+          <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
             <div class="bg-white border border-slate-200 p-4 rounded-xl shadow-sm">
               <span class="text-xs uppercase font-bold text-slate-500">Utilisateurs Actifs</span>
               <p class="text-2xl font-black text-purple-700 mt-1">${appState.users.filter(u => u.status === 'ACTIF').length} / ${appState.users.length}</p>
@@ -11450,6 +11487,11 @@
               <span class="text-xs uppercase font-bold text-slate-500">Effectif Élèves</span>
               <p class="text-2xl font-black text-slate-800 mt-1">${countStudents.toLocaleString('fr-FR')}</p>
               <p class="text-[11px] text-emerald-600 font-semibold">${countClasses} classes actives</p>
+            </div>
+            <div class="bg-white border border-slate-200 p-4 rounded-xl shadow-sm">
+              <span class="text-xs uppercase font-bold text-slate-500">Montant Global Payé</span>
+              <p class="text-2xl font-black text-emerald-700 mt-1">${schoolTotalPaid.toLocaleString('fr-FR')} <span class="text-xs font-normal">XOF</span></p>
+              <p class="text-[11px] text-emerald-700 font-semibold">Scolarités encaissées</p>
             </div>
             <div class="bg-white border border-slate-200 p-4 rounded-xl shadow-sm">
               <span class="text-xs uppercase font-bold text-slate-500">Montants en Caisse</span>
@@ -11467,7 +11509,7 @@
               <h4 class="font-bold text-sm text-slate-800 flex items-center gap-2">
                 <span>🛡️</span> Supervision & Activités Récentes (Journal d'Audit Système)
               </h4>
-              <button onclick="navigateTo('admin')" class="text-xs text-purple-700 font-bold hover:underline">Gérer l'Administration &rarr;</button>
+              <button onclick="navigateTo('admin')" class="text-xs text-purple-700 font-bold hover:underline cursor-pointer">Gérer l'Administration &rarr;</button>
             </div>
             <div class="text-xs text-slate-600 space-y-2">
               ${(appState.auditLogs || []).slice(0, 3).map(l => `
@@ -11484,14 +11526,195 @@
         return;
       }
 
+      // 2.5. Vue Comptable / Économe (Encaissements & Trésorerie)
+      if (user.role === 'comptable') {
+        const schoolPayments = (appState.payments || []).filter(p => {
+          if (!p.schoolId && !p.school_id) return true;
+          return String(p.schoolId || p.school_id) === String(school.id);
+        });
+        const recentPayments = schoolPayments.slice(0, 6);
+
+        container.innerHTML = `
+          <!-- Bannière Header Comptable -->
+          <div class="bg-gradient-to-r from-emerald-900 via-teal-900 to-slate-900 rounded-2xl p-5 text-white border border-emerald-500/30 shadow-xl space-y-4">
+            <div class="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
+              <div class="flex items-center gap-3.5">
+                <div class="w-14 h-14 rounded-2xl bg-emerald-500/20 border border-emerald-400/40 p-0.5 shadow-lg flex-shrink-0 flex items-center justify-center text-3xl">
+                  💳
+                </div>
+                <div>
+                  <div class="flex items-center gap-2 flex-wrap">
+                    <span class="px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider bg-emerald-400 text-slate-950 shadow-xs border border-emerald-300">📊 Espace Comptabilité &amp; Encaissements</span>
+                    <span class="px-2 py-0.5 rounded bg-white/10 text-emerald-200 font-mono text-[10px] font-bold">${esc(school.code)}</span>
+                  </div>
+                  <h2 class="text-xl sm:text-2xl font-black text-white tracking-tight mt-1">${esc(school.name)}</h2>
+                  <p class="text-xs text-emerald-100/80 flex items-center gap-2 mt-0.5">
+                    <span>Gestionnaire : <strong>${esc(user.prenom)} ${esc(user.nom)}</strong></span> &bull; <span>Session Comptable Ouverte</span>
+                  </p>
+                </div>
+              </div>
+              <div class="flex items-center gap-2 w-full md:w-auto justify-end flex-wrap">
+                <button onclick="openPaymentModal()" class="px-4 py-2.5 bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-400 hover:to-teal-400 text-slate-950 font-black rounded-xl text-xs transition shadow-lg flex items-center gap-2 cursor-pointer border border-emerald-300">
+                  <span>➕</span>
+                  <span>Encaisser un Paiement</span>
+                </button>
+                <button onclick="navigateTo('caisses')" class="px-3.5 py-2.5 bg-white/10 hover:bg-white/20 text-white font-bold rounded-xl text-xs transition border border-white/20 flex items-center gap-1.5 cursor-pointer">
+                  <span>💰</span>
+                  <span>Guichets Caisses</span>
+                </button>
+                <button onclick="navigateTo('consultations')" class="px-3.5 py-2.5 bg-white/10 hover:bg-white/20 text-white font-bold rounded-xl text-xs transition border border-white/20 flex items-center gap-1.5 cursor-pointer">
+                  <span>📜</span>
+                  <span>Journal de Caisse</span>
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <!-- 4 Cartes Métriques Financières & Encaissements -->
+          <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+            <!-- Carte 1 : Montant Global Payé -->
+            <div class="bg-white border border-slate-200 p-4 sm:p-5 rounded-2xl shadow-xs flex items-center justify-between">
+              <div>
+                <span class="text-[10.5px] uppercase font-bold text-slate-500 tracking-wider">Montant Global Payé</span>
+                <p id="kpi-school-paid-total" class="text-2xl sm:text-3xl font-black text-emerald-700 mt-1">${schoolTotalPaid.toLocaleString('fr-FR')} <span class="text-xs font-normal">XOF</span></p>
+                <p class="text-xs text-emerald-700 font-semibold mt-0.5 flex items-center gap-1">
+                  <span>✓</span> Scolarités perçues
+                </p>
+              </div>
+              <div class="w-12 h-12 rounded-2xl bg-emerald-50 text-emerald-700 flex items-center justify-center text-2xl font-black">
+                💳
+              </div>
+            </div>
+
+            <!-- Carte 2 : Reste Global à Recouvrer -->
+            <div class="bg-white border border-slate-200 p-4 sm:p-5 rounded-2xl shadow-xs flex items-center justify-between">
+              <div>
+                <span class="text-[10.5px] uppercase font-bold text-slate-500 tracking-wider">Reste à Recouvrer</span>
+                <p class="text-2xl sm:text-3xl font-black text-rose-600 mt-1">${schoolRemainingDue.toLocaleString('fr-FR')} <span class="text-xs font-normal">XOF</span></p>
+                <p class="text-xs text-rose-600 font-semibold mt-0.5 flex items-center gap-1">
+                  <span>⏳</span> Solde restant dû
+                </p>
+              </div>
+              <div class="w-12 h-12 rounded-2xl bg-rose-50 text-rose-700 flex items-center justify-center text-2xl font-black">
+                ⌛
+              </div>
+            </div>
+
+            <!-- Carte 3 : Trésorerie des Caisses -->
+            <div onclick="navigateTo('caisses')" class="bg-white border border-slate-200 hover:border-emerald-400 p-4 sm:p-5 rounded-2xl shadow-xs hover:shadow-md transition cursor-pointer flex items-center justify-between">
+              <div>
+                <span class="text-[10.5px] uppercase font-bold text-slate-500 tracking-wider">Trésorerie des Caisses</span>
+                <p class="text-2xl sm:text-3xl font-black text-slate-900 mt-1">${totalCash.toLocaleString('fr-FR')} <span class="text-xs font-normal">XOF</span></p>
+                <p class="text-xs text-slate-500 font-semibold mt-0.5 flex items-center gap-1">
+                  <span>💰</span> ${schoolDesks.length} guichet(s) actif(s) &rarr;
+                </p>
+              </div>
+              <div class="w-12 h-12 rounded-2xl bg-indigo-50 text-indigo-700 flex items-center justify-center text-2xl font-black">
+                💵
+              </div>
+            </div>
+
+            <!-- Carte 4 : Taux de Recouvrement -->
+            <div onclick="navigateTo('ecolage')" class="bg-white border border-slate-200 hover:border-amber-400 p-4 sm:p-5 rounded-2xl shadow-xs hover:shadow-md transition cursor-pointer flex items-center justify-between">
+              <div>
+                <span class="text-[10.5px] uppercase font-bold text-slate-500 tracking-wider">Taux de Recouvrement</span>
+                <p class="text-2xl sm:text-3xl font-black text-amber-600 mt-1">${recRate}%</p>
+                <div class="w-full bg-slate-100 h-1.5 rounded-full mt-2 overflow-hidden">
+                  <div class="bg-amber-500 h-full rounded-full" style="width: ${Math.min(100, Math.max(5, recRate))}%;"></div>
+                </div>
+              </div>
+              <div class="w-12 h-12 rounded-2xl bg-amber-50 text-amber-700 flex items-center justify-center text-2xl font-black">
+                📈
+              </div>
+            </div>
+          </div>
+
+          <!-- Section Liste des Derniers Paiements Enregistrés -->
+          <div class="bg-white border border-slate-200 rounded-2xl shadow-xs p-5 space-y-4">
+            <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 border-b border-slate-100 pb-3">
+              <div>
+                <h3 class="font-black text-base text-slate-800 flex items-center gap-2">
+                  <span>🧾</span> Derniers Encaissements Enregistrés (Liste des Paiements)
+                </h3>
+                <p class="text-xs text-slate-500">Mise à jour en temps réel dès validation en caisse ou par la comptabilité.</p>
+              </div>
+              <div class="flex items-center gap-2">
+                <button onclick="openPaymentModal()" class="px-3 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg text-xs font-black shadow transition flex items-center gap-1 cursor-pointer">
+                  <span>➕</span>
+                  <span>Nouvel Encaissement</span>
+                </button>
+                <button onclick="navigateTo('consultations')" class="px-3 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg text-xs font-bold transition flex items-center gap-1 cursor-pointer">
+                  <span>Journal Complet &rarr;</span>
+                </button>
+              </div>
+            </div>
+
+            <div class="overflow-x-auto rounded-xl border border-slate-200">
+              <table class="w-full text-left text-xs">
+                <thead class="bg-slate-50 text-slate-700 font-bold uppercase text-[10px] border-b border-slate-200">
+                  <tr>
+                    <th class="py-2.5 px-3">Quittance N°</th>
+                    <th class="py-2.5 px-3">Date</th>
+                    <th class="py-2.5 px-3">Élève</th>
+                    <th class="py-2.5 px-3 text-center">Classe</th>
+                    <th class="py-2.5 px-3 text-center">Guichet</th>
+                    <th class="py-2.5 px-3 text-center">Mode</th>
+                    <th class="py-2.5 px-3 text-right">Montant Encaissé</th>
+                    <th class="py-2.5 px-3 text-center">Reçu</th>
+                  </tr>
+                </thead>
+                <tbody class="divide-y divide-slate-100">
+                  ${recentPayments.length === 0 ? `
+                    <tr>
+                      <td colspan="8" class="p-8 text-center text-slate-400">
+                        <div class="flex flex-col items-center justify-center space-y-2">
+                          <span class="text-3xl">🧾</span>
+                          <p class="font-bold text-slate-700 text-sm">Aucun encaissement enregistré pour l'instant</p>
+                          <p class="text-xs text-slate-400">Dès qu'un paiement est validé, il apparaît ici immédiatement.</p>
+                          <button onclick="openPaymentModal()" class="mt-2 px-3 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg text-xs font-bold shadow transition cursor-pointer">
+                            + Effectuer le premier encaissement
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  ` : recentPayments.map(p => `
+                    <tr class="hover:bg-slate-50/60 transition">
+                      <td class="py-2.5 px-3 font-mono font-bold text-slate-900">${esc(p.receiptNumber || p.receipt_number || p.ref || '—')}</td>
+                      <td class="py-2.5 px-3 text-slate-500 font-mono text-[11px]">${p.createdAt ? p.createdAt.split(' ')[0] : 'Aujourd\'hui'}</td>
+                      <td class="py-2.5 px-3 font-bold text-slate-800">${esc(p.studentName || 'Élève #' + p.studentId)}</td>
+                      <td class="py-2.5 px-3 text-center text-slate-600">${esc(p.studentClasse || p.classe || '—')}</td>
+                      <td class="py-2.5 px-3 text-center"><span class="px-2 py-0.5 rounded text-[10px] font-bold ${p.cashDesk === 'PRINCIPALE' ? 'bg-emerald-100 text-emerald-800' : 'bg-sky-100 text-sky-800'}">${p.cashDesk === 'PRINCIPALE' ? 'Centrale' : esc(p.cashDesk || 'Centrale')}</span></td>
+                      <td class="py-2.5 px-3 text-center"><span class="px-2 py-0.5 bg-slate-100 rounded text-[10px] font-bold">${esc(p.paymentMethod || 'ESPECES')}</span></td>
+                      <td class="py-2.5 px-3 text-right font-mono font-black text-emerald-700">${(Number(p.amount) || 0).toLocaleString('fr-FR')} XOF</td>
+                      <td class="py-2.5 px-3 text-center">
+                        <button onclick="printReceipt(${escJs(p.receiptId || p.receipt_id || p.id)})" class="px-2 py-1 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded text-[10px] font-bold transition inline-flex items-center gap-1 cursor-pointer" title="Imprimer Quittance">
+                          <span>🖨️</span>
+                          <span>Quittance</span>
+                        </button>
+                      </td>
+                    </tr>
+                  `).join('')}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        `;
+        return;
+      }
+
       if (user.role === 'caisse_principale') {
         const pending = (appState.cashDeposits || []).filter(d => d.status === 'PENDING').length;
         container.innerHTML = `
-          <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+          <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
             <div class="bg-white border border-slate-200 p-4 rounded-xl shadow-sm">
               <span class="text-xs uppercase font-bold text-slate-500">Solde Caisse Principale</span>
               <p class="text-2xl font-black text-slate-800 mt-1">${totalCash.toLocaleString('fr-FR')} <span class="text-xs font-normal">XOF</span></p>
               <p class="text-[11px] text-emerald-600 font-semibold">Session Ouverte ✓</p>
+            </div>
+            <div class="bg-white border border-slate-200 p-4 rounded-xl shadow-sm">
+              <span class="text-xs uppercase font-bold text-slate-500">Montant Global Payé</span>
+              <p class="text-2xl font-black text-emerald-700 mt-1">${schoolTotalPaid.toLocaleString('fr-FR')} <span class="text-xs font-normal">XOF</span></p>
+              <p class="text-[11px] text-emerald-700 font-semibold">Scolarités perçues</p>
             </div>
             <div class="bg-white border border-slate-200 p-4 rounded-xl shadow-sm">
               <span class="text-xs uppercase font-bold text-slate-500">Dépôts Secondaires en Attente</span>
@@ -11509,7 +11732,7 @@
               <h4 class="font-bold text-sm text-amber-900">Validation Requise : Dépôts</h4>
               <p class="text-xs text-amber-700">${pending} dépôt(s) en attente de votre accord.</p>
             </div>
-            <button onclick="navigateTo('caisses')" class="px-4 py-2 bg-amber-600 hover:bg-amber-700 text-white font-bold rounded-lg text-xs shadow">
+            <button onclick="navigateTo('caisses')" class="px-4 py-2 bg-amber-600 hover:bg-amber-700 text-white font-bold rounded-lg text-xs shadow cursor-pointer">
               Consulter les Dépôts &rarr;
             </button>
           </div>
@@ -11545,10 +11768,10 @@
             </div>
           </div>
           <div class="flex gap-2 pt-2">
-            <button onclick="navigateTo('caisses')" class="px-4 py-2 bg-emerald-600 hover:bg-emerald-500 text-white font-bold rounded-lg text-xs shadow">
+            <button onclick="navigateTo('caisses')" class="px-4 py-2 bg-emerald-600 hover:bg-emerald-500 text-white font-bold rounded-lg text-xs shadow cursor-pointer">
               Ouvrir le Guichet & Encaisser
             </button>
-            <button onclick="openSecondaryDepositModal()" class="px-4 py-2 bg-amber-500 hover:bg-amber-600 text-white font-bold rounded-lg text-xs shadow">
+            <button onclick="openSecondaryDepositModal()" class="px-4 py-2 bg-amber-500 hover:bg-amber-600 text-white font-bold rounded-lg text-xs shadow cursor-pointer">
               Transmettre un Dépôt à la Caisse Principale
             </button>
           </div>
@@ -11581,7 +11804,7 @@
             </div>
           </div>
           <div class="pt-2">
-            <button onclick="navigateTo('consultations')" class="px-4 py-2 bg-sky-700 hover:bg-sky-800 text-white font-bold rounded-lg text-xs shadow">
+            <button onclick="navigateTo('consultations')" class="px-4 py-2 bg-sky-700 hover:bg-sky-800 text-white font-bold rounded-lg text-xs shadow cursor-pointer">
               Consulter le Journal de Caisse & Impayés &rarr;
             </button>
           </div>
@@ -11591,11 +11814,16 @@
 
       // Vue par défaut D.E / Éducateur / CF
       container.innerHTML = `
-        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
           <div class="bg-white border border-slate-200 p-4 rounded-xl shadow-sm">
             <span class="text-xs uppercase font-bold text-slate-500">Effectif Élèves</span>
             <p class="text-2xl font-black text-slate-800 mt-1">${countStudents.toLocaleString('fr-FR')}</p>
             <p class="text-[11px] text-emerald-600 font-semibold">${countClasses} classes</p>
+          </div>
+          <div class="bg-white border border-slate-200 p-4 rounded-xl shadow-sm">
+            <span class="text-xs uppercase font-bold text-slate-500">Montant Global Payé</span>
+            <p class="text-2xl font-black text-emerald-700 mt-1">${schoolTotalPaid.toLocaleString('fr-FR')} <span class="text-xs font-normal">XOF</span></p>
+            <p class="text-[11px] text-emerald-700 font-semibold">Scolarités perçues</p>
           </div>
           <div class="bg-white border border-slate-200 p-4 rounded-xl shadow-sm">
             <span class="text-xs uppercase font-bold text-slate-500">Taux Recouvrement</span>
@@ -11622,6 +11850,7 @@
         </div>
       `;
     }
+
 
     // =================================================================
     // MODULE ADMINISTRATION & AUDIT
@@ -16768,8 +16997,17 @@
         localStorage.setItem('scolapro_cashdesks', JSON.stringify(appState.cashDesks));
       } catch (_) {}
 
+      // 4.5. Mettre à jour les indicateurs temps réel de l'établissement (totalPaid et totalCash)
+      const targetSchoolId = student.schoolId || appState.currentSchoolId;
+      const targetSchool = (appState.schools || []).find(s => s.id === targetSchoolId);
+      if (targetSchool) {
+        targetSchool.totalPaid = (targetSchool.totalPaid || 0) + amount;
+        targetSchool.totalCash = (targetSchool.totalCash || 0) + amount;
+      }
+
       // 5. Mise à jour immédiate et automatique de TOUTES les vues et tableaux de bord
       if (typeof renderDashboardByRole === 'function') renderDashboardByRole();
+      if (typeof renderFoundationDashboard === 'function') renderFoundationDashboard();
       if (typeof updateKPIs === 'function') updateKPIs();
       if (typeof renderMainCashDesk === 'function') renderMainCashDesk();
       if (typeof renderSecondaryCashDesk === 'function') renderSecondaryCashDesk();
@@ -19738,13 +19976,19 @@
         totalFoundCash = affiliated.reduce((sum, s) => sum + (s.totalCash || 0), 0);
       }
 
-      // 5. Taux de recouvrement réel
+      // 5. Taux de recouvrement réel et montant global payé
       let totalTuitionDue = 0;
       let totalTuitionPaid = 0;
       affiliatedStudents.forEach(st => {
         totalTuitionDue += Number(st.fee_total !== undefined ? st.fee_total : (st.feeTotal || 0));
         totalTuitionPaid += Number(st.fee_paid !== undefined ? st.fee_paid : (st.feePaid || 0));
       });
+      if (totalTuitionPaid === 0 && affiliated.some(s => (s.totalPaid || 0) > 0)) {
+        totalTuitionPaid = affiliated.reduce((sum, s) => sum + (s.totalPaid || 0), 0);
+      }
+      if (totalTuitionDue === 0 && affiliated.some(s => (s.totalDue || 0) > 0)) {
+        totalTuitionDue = affiliated.reduce((sum, s) => sum + (s.totalDue || 0), 0);
+      }
       let avgRecovery = totalTuitionDue > 0 
         ? ((totalTuitionPaid / totalTuitionDue) * 100).toFixed(1) 
         : '0.0';
@@ -19763,7 +20007,7 @@
       const sidebarSchoolsLabel = document.getElementById('sidebar-found-schools-label');
       if (sidebarSchoolsLabel) sidebarSchoolsLabel.textContent = `Établissements Affiliés (${totalSchools})`;
 
-      // Mise à jour des 4 KPI Cards
+      // Mise à jour des 5 KPI Cards
       const kpiSchools = document.getElementById('kpi-found-schools-count');
       if (kpiSchools) kpiSchools.textContent = totalSchools;
 
@@ -19772,6 +20016,9 @@
 
       const kpiClasses = document.getElementById('kpi-found-classes-count');
       if (kpiClasses) kpiClasses.textContent = totalClasses;
+
+      const kpiPaid = document.getElementById('kpi-found-paid-total');
+      if (kpiPaid) kpiPaid.innerHTML = `${totalTuitionPaid.toLocaleString('fr-FR')} <span class="text-xs font-normal">XOF</span>`;
 
       const kpiCash = document.getElementById('kpi-found-cash-total');
       if (kpiCash) kpiCash.innerHTML = `${totalFoundCash.toLocaleString('fr-FR')} <span class="text-xs font-normal">XOF</span>`;
@@ -19932,6 +20179,7 @@
               <td class="py-3 px-3 text-center text-slate-600 font-medium">${esc(s.city || 'Abidjan')}</td>
               <td class="py-3 px-3.5 text-right font-mono font-bold text-slate-800">${stCount.toLocaleString('fr-FR')}</td>
               <td class="py-3 px-3 text-center font-mono font-bold text-purple-700">${clCount}</td>
+              <td class="py-3 px-3.5 text-right font-mono font-black text-emerald-700">${(s.totalPaid !== undefined ? Number(s.totalPaid) : sPaid).toLocaleString('fr-FR')} XOF</td>
               <td class="py-3 px-3.5 text-right font-mono font-black text-emerald-700">${cashBal.toLocaleString('fr-FR')} XOF</td>
               <td class="py-3 px-3.5 text-right font-mono font-bold text-blue-900">${recRate}%</td>
               <td class="py-3 px-3 text-center"><span class="px-2 py-0.5 bg-emerald-100 text-emerald-800 rounded-full text-[10px] font-bold">ACTIF</span></td>
@@ -19969,6 +20217,10 @@
             if (kpiSchools) kpiSchools.textContent = cons.totalSchools;
             if (kpiStudents) kpiStudents.textContent = (cons.totalStudents || totalStudents).toLocaleString('fr-FR');
             if (kpiClasses) kpiClasses.textContent = cons.totalClasses || totalClasses;
+            if (kpiPaid) {
+              const pVal = cons.totalPaid !== undefined ? cons.totalPaid : (apiData.stats && apiData.stats.totalPaid !== undefined ? apiData.stats.totalPaid : totalTuitionPaid);
+              kpiPaid.innerHTML = `${Number(pVal || 0).toLocaleString('fr-FR')} <span class="text-xs font-normal">XOF</span>`;
+            }
             if (kpiCash && cons.totalCashConsolidated !== undefined) {
               kpiCash.innerHTML = `${cons.totalCashConsolidated.toLocaleString('fr-FR')} <span class="text-xs font-normal">XOF</span>`;
             }

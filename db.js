@@ -1639,6 +1639,8 @@ function formatFoundation(row, affiliatedSchools = []) {
     classesCount,
     cashDesksCount,
     totalCash,
+    totalPaid,
+    totalDue,
     recoveryRate,
     isActive: row.is_active !== undefined ? !!row.is_active : (row.isActive !== undefined ? !!row.isActive : true),
     createdAt: row.created_at || row.createdAt || '01/09/2026'
@@ -4290,6 +4292,8 @@ function getFoundationConsolidatedData(user, foundationId) {
       totalSchools: schools.length,
       totalStudents,
       totalClasses,
+      totalPaid,
+      totalDue,
       totalCashConsolidated: totalCashBalance,
       averageRecoveryRate: avgRecoveryRate
     }
