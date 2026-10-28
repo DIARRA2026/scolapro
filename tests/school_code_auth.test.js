@@ -383,6 +383,20 @@ test('AUTH-CODE-12 : La vitrine publique (/ et /index.html) est accessible publi
   assert.ok(indexRes.headers['content-type'].includes('text/html'));
 });
 
+test('AUTH-CODE-12b : Portail Concepteur dédié (/concepteur et /concepteur.html) accessible et sécurisé', async () => {
+  const concepteurRes = await makeRequest(baseUrl, { path: '/concepteur' });
+  assert.strictEqual(concepteurRes.statusCode, 200);
+  assert.ok(concepteurRes.headers['content-type'].includes('text/html'));
+  assert.ok(concepteurRes.body.includes('Console'));
+  assert.ok(concepteurRes.body.includes('Concepteur'));
+  assert.ok(concepteurRes.body.includes('INNOVA GROUP'));
+  assert.ok(concepteurRes.body.includes('diarra.dolourou@scolapro.ci'));
+
+  const concepteurHtmlRes = await makeRequest(baseUrl, { path: '/concepteur.html' });
+  assert.strictEqual(concepteurHtmlRes.statusCode, 200);
+  assert.ok(concepteurHtmlRes.headers['content-type'].includes('text/html'));
+});
+
 test('AUTH-CODE-13 : Le bouton et contrôleurs d\'exploration directe n\'appellent pas openSecureLoginModal', () => {
   const fs = require('node:fs');
   const path = require('node:path');

@@ -418,6 +418,18 @@ const server = http.createServer(async (req, res) => {
     }
   }
 
+  // 6b. Portail dédié Concepteur (Accès Souverain Isolé)
+  if (reqPath === '/concepteur.html' || reqPath === '/concepteur') {
+    const concepteurPath = path.join(PUBLIC_DIR, 'concepteur.html');
+    if (fs.existsSync(concepteurPath)) {
+      res.writeHead(200, {
+        'Content-Type': 'text/html; charset=utf-8',
+        ...securityHeaders(true, isProduction)
+      });
+      return fs.createReadStream(concepteurPath).pipe(res);
+    }
+  }
+
   // 6b. Vitrine Publique Principale (Landing Page SPA : / et /index.html)
   if (reqPath === '/' || reqPath === '/index.html') {
     const indexPath = path.join(PUBLIC_DIR, 'index.html');

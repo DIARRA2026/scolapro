@@ -18602,7 +18602,7 @@
     }
 
     // Accès souverain à la Console Concepteur
-    function enterAsConcepteur() {
+    function enterAsConcepteur(initialSubTab) {
       const landing = document.getElementById('view-landing');
       if (landing) {
         landing.classList.add('opacity-0', 'pointer-events-none');
@@ -18613,20 +18613,21 @@
       appState.landingActive = false;
       dismissLoadingScreen();
 
-      if (typeof ensureDemoSession === 'function') {
-        ensureDemoSession().then(() => {
-          openConcepteurInterface();
-          navigateTo('superadmin');
-          if (typeof renderSuperAdminDashboard === 'function') {
-            renderSuperAdminDashboard();
-          }
-        });
-      } else {
+      const activate = () => {
         openConcepteurInterface();
         navigateTo('superadmin');
         if (typeof renderSuperAdminDashboard === 'function') {
           renderSuperAdminDashboard();
         }
+        if (initialSubTab && typeof setSuperAdminSubTab === 'function') {
+          setSuperAdminSubTab(initialSubTab);
+        }
+      };
+
+      if (typeof ensureDemoSession === 'function') {
+        ensureDemoSession().then(activate);
+      } else {
+        activate();
       }
       showToast('🛡️ Bienvenue dans la Console Concepteur & Supervision Globale (INNOVA GROUP).');
     }
@@ -21494,47 +21495,53 @@
     }
 
     // Initialisation au chargement
-    window.addEventListener('DOMContentLoaded', async () => {
-      // Détection automatique du lien direct réservé au Concepteur du logiciel
-      // Supporte les URLs dédiées : /#concepteur, /?concepteur, /concepteur
-      function checkDirectConcepteurAccess() {
-        try {
-          const urlParams = new URLSearchParams(window.location.search);
-          const path = (window.location.pathname || '').toLowerCase();
-          const hash = (window.location.hash || '').toLowerCase();
-          
-          const isConcepteurDirectLink = 
-            urlParams.has('concepteur') || 
-            urlParams.get('role') === 'concepteur' || 
-            urlParams.get('access') === 'concepteur' ||
-            hash === '#concepteur' || 
-            hash === '#admin-concepteur' ||
-            hash === '#superadmin' ||
-            path === '/concepteur' ||
-            path.startsWith('/concepteur');
+    
+    // Détection automatique du lien direct réservé au Concepteur du logiciel
+    // Supporte les URLs dédiées : /#concepteur, /?concepteur, /concepteur
+    function checkDirectConcepteurAccess() {
+      try {
+        const urlParams = new URLSearchParams(window.location.search);
+        const path = (window.location.pathname || '').toLowerCase();
+        const hash = (window.location.hash || '').toLowerCase();
+        
+        const isConcepteurDirectLink = 
+          urlParams.has('concepteur') || 
+          urlParams.get('role') === 'concepteur' || 
+          urlParams.get('access') === 'concepteur' ||
+          hash === '#concepteur' || 
+          hash === '#admin-concepteur' ||
+          hash === '#superadmin' ||
+          hash.startsWith('#concepteur-') ||
+          path === '/concepteur' ||
+          path.startsWith('/concepteur');
 
-          if (isConcepteurDirectLink) {
-            setTimeout(() => {
-              if (typeof enterAsConcepteur === 'function') {
-                enterAsConcepteur();
-              }
-            }, 300);
-          }
-        } catch (_) {}
-      }
-      checkDirectConcepteurAccess();
-      window.addEventListener('hashchange', checkDirectConcepteurAccess);
-
-      // Raccourci clavier réservé au Concepteur du logiciel : Alt + C
-      document.addEventListener('keydown', (e) => {
-        if ((e.altKey && (e.key === 'c' || e.key === 'C')) || 
-            (e.ctrlKey && e.altKey && (e.key === 'c' || e.key === 'C'))) {
-          e.preventDefault();
-          if (typeof enterAsConcepteur === 'function') {
-            enterAsConcepteur();
-          }
+        if (isConcepteurDirectLink) {
+          const requestedSubTab = urlParams.get('tab') || urlParams.get('subtab') || 
+            (hash.startsWith('#concepteur-') ? hash.replace('#concepteur-', '') : null);
+          setTimeout(() => {
+            if (typeof enterAsConcepteur === 'function') {
+              enterAsConcepteur(requestedSubTab);
+            }
+          }, 300);
         }
-      });
+      } catch (_) {}
+    }
+    window.addEventListener('hashchange', checkDirectConcepteurAccess);
+
+    // Raccourci clavier réservé au Concepteur du logiciel : Alt + C
+    document.addEventListener('keydown', (e) => {
+      if ((e.altKey && (e.key === 'c' || e.key === 'C')) || 
+          (e.ctrlKey && e.altKey && (e.key === 'c' || e.key === 'C'))) {
+        e.preventDefault();
+        if (typeof enterAsConcepteur === 'function') {
+          enterAsConcepteur();
+        }
+      }
+    });
+
+    // Initialisation au chargement
+    window.addEventListener('DOMContentLoaded', async () => {
+      checkDirectConcepteurAccess();
 
       // 1. Charger la persistance locale de secours (localStorage)
       const storedFoundations = getStoredEntities('foundations');

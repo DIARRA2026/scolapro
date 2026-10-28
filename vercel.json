@@ -1,6 +1,7 @@
 {
   "version": 2,
   "routes": [
+    { "src": "/concepteur", "dest": "/concepteur.html" },
     { "handle": "filesystem" },
     { "src": "/(.*)", "dest": "/index.html" }
   ]
