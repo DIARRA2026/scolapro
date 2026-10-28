@@ -401,10 +401,6 @@
 
         <!-- Accès Concepteur & Footer Mobile -->
         <div class="pt-2 text-[10px] text-slate-400 flex items-center justify-between border-t border-white/5">
-          <button onclick="closeLandingMobileMenu(); enterAsConcepteur();" class="hover:text-amber-400 transition flex items-center gap-1.5 cursor-pointer">
-            <span>🛡️</span>
-            <span>Console Concepteur</span>
-          </button>
           <span class="text-amber-400/70">© 2026 INNOVA GROUP</span>
         </div>
 
@@ -460,12 +456,6 @@
             <span>🚀</span>
             <span>Explorer le Logiciel en Direct</span>
           </button>
-
-          <!-- CTA 3 : Console Concepteur Système & Supervision Globale -->
-          <button onclick="enterAsConcepteur()" class="w-full sm:w-auto px-6 py-4 rounded-2xl bg-gradient-to-r from-red-950 via-[#230408] to-red-900 hover:from-red-900 hover:to-red-800 border-2 border-yellow-400/60 hover:border-yellow-300 text-yellow-300 font-black text-sm uppercase tracking-wider transition flex items-center justify-center gap-2.5 cursor-pointer shadow-xl shadow-yellow-500/10">
-            <span class="text-base">🛡️</span>
-            <span>Console Concepteur (Supervision)</span>
-          </button>
         </div>
 
         <!-- Garanties Clés / Puces de confiance -->
@@ -486,87 +476,63 @@
 
         
         <!-- =========================================================== -->
-        <!-- SÉLECTEUR RAPIDE DES 3 COMPARTIMENTS OPÉRATIONNELS (N1, N2, N3) -->
+        <!-- SÉLECTEUR RAPIDE DES COMPARTIMENTS MÉTIER (Établissement & Fondation) -->
         <!-- =========================================================== -->
         <div id="landing-compartments-selector" class="max-w-5xl mx-auto my-10 p-5 sm:p-7 rounded-3xl bg-gradient-to-r from-black/85 via-[#1d040a]/90 to-black/85 border-2 border-amber-500/40 shadow-2xl backdrop-blur-xl">
           <div class="text-center space-y-2 mb-6">
             <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-amber-500/20 border border-yellow-400/40 text-yellow-300 text-xs font-mono font-bold uppercase tracking-widest">
-              <span>🏛️ ARCHITECTURE EN 3 COMPARTIMENTS SOUVERAINS</span>
+              <span>🏛️ ARCHITECTURE ADAPTÉE À VOTRE STRUCTURE</span>
             </div>
-            <h2 class="text-xl sm:text-2xl font-black text-white tracking-tight">Choisissez votre Compartiment de Travail</h2>
-            <p class="text-xs text-slate-200 max-w-xl mx-auto">Chaque niveau dispose de son périmètre d'isolation étanche, de ses droits d'accès et de sa vue métier dédiée.</p>
+            <h2 class="text-xl sm:text-2xl font-black text-white tracking-tight">Choisissez votre Espace de Travail</h2>
+            <p class="text-xs text-slate-200 max-w-xl mx-auto">Chaque profil dispose de son périmètre d'isolation étanche, de ses droits d'accès et de sa vue métier dédiée.</p>
           </div>
 
-          <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6 max-w-4xl mx-auto">
             
-            <!-- CARTE NIVEAU 1 -->
-            <a href="javascript:void(0)" onclick="enterAsConcepteur();" class="p-5 rounded-2xl bg-[#1b0509] border-2 border-amber-500/40 hover:border-yellow-400 text-left transition transform hover:-translate-y-1 hover:shadow-2xl hover:shadow-yellow-500/20 group flex flex-col justify-between block cursor-pointer">
+            <!-- OPTION 1 : Établissement Scolaire Autonome -->
+            <a href="javascript:void(0)" onclick="openSchoolInterface();" class="p-5 sm:p-6 rounded-2xl bg-[#1f1008] border-2 border-orange-500/40 hover:border-orange-400 text-left transition transform hover:-translate-y-1 hover:shadow-2xl hover:shadow-orange-500/20 group flex flex-col justify-between block cursor-pointer">
               <div class="space-y-3">
                 <div class="flex items-center justify-between">
-                  <span class="px-2 py-0.5 rounded-full bg-yellow-400 text-slate-950 font-black text-[10px] uppercase tracking-wider">NIVEAU 1</span>
-                  <span class="text-[11px] text-emerald-400 font-mono font-bold flex items-center gap-1"><span class="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></span> SOUVERAIN</span>
+                  <span class="px-2.5 py-0.5 rounded-full bg-amber-500 text-slate-950 font-black text-[10px] uppercase tracking-wider">MODE ÉCOLE</span>
+                  <span class="text-[11px] text-amber-300 font-mono font-bold">ÉTABLISSEMENT AUTONOME</span>
                 </div>
                 <div class="flex items-center gap-3">
-                  <div class="w-11 h-11 rounded-xl bg-gradient-to-tr from-amber-500 to-yellow-300 flex items-center justify-center text-xl text-slate-950 font-black shadow-md">🛡️</div>
+                  <div class="w-12 h-12 rounded-xl bg-gradient-to-tr from-amber-500 to-orange-400 flex items-center justify-center text-2xl text-slate-950 font-black shadow-md">🏫</div>
                   <div>
-                    <h3 class="font-black text-white text-sm group-hover:text-yellow-300 transition">Concepteur SaaS & Super Admin</h3>
-                    <p class="text-[10.5px] text-yellow-300/80 font-mono">Mission Control (INNOVA GROUP)</p>
+                    <h3 class="font-black text-white text-base group-hover:text-orange-300 transition">Établissement Scolaire Indépendant</h3>
+                    <p class="text-xs text-amber-200/90 font-mono">Direction, Pédagogie &amp; Caisse</p>
                   </div>
                 </div>
-                <p class="text-xs text-slate-300 leading-relaxed">
-                  Vue globale sur toutes les fondations, toutes les écoles, gestion des abonnements, incidents et impersonation.
-                </p>
-              </div>
-              <div class="pt-4 mt-3 border-t border-white/10 flex items-center justify-between text-xs font-bold text-yellow-400 group-hover:text-white">
-                <span>Accéder au Dashboard Concepteur</span>
-                <span>➔</span>
-              </div>
-            </a>
-
-            <!-- CARTE NIVEAU 2 -->
-            <a href="javascript:void(0)" onclick="openFoundationInterface();" class="p-5 rounded-2xl bg-[#0a1631] border-2 border-blue-500/40 hover:border-blue-400 text-left transition transform hover:-translate-y-1 hover:shadow-2xl hover:shadow-blue-500/20 group flex flex-col justify-between block cursor-pointer">
-              <div class="space-y-3">
-                <div class="flex items-center justify-between">
-                  <span class="px-2 py-0.5 rounded-full bg-blue-500 text-white font-black text-[10px] uppercase tracking-wider">NIVEAU 2</span>
-                  <span class="text-[11px] text-blue-300 font-mono font-bold">RÉSEAU SCOLAIRE</span>
-                </div>
-                <div class="flex items-center gap-3">
-                  <div class="w-11 h-11 rounded-xl bg-gradient-to-tr from-blue-500 to-indigo-400 flex items-center justify-center text-xl text-white font-black shadow-md">🏛️</div>
-                  <div>
-                    <h3 class="font-black text-white text-sm group-hover:text-blue-300 transition">Portail Réseau & Fondation</h3>
-                    <p class="text-[10.5px] text-blue-200/80 font-mono">Conseil d'Administration</p>
-                  </div>
-                </div>
-                <p class="text-xs text-blue-100/70 leading-relaxed">
-                  Vue consolidée sur l'ensemble des établissements et des réseaux scolaires affiliés.
-                </p>
-              </div>
-              <div class="pt-4 mt-3 border-t border-white/10 flex items-center justify-between text-xs font-bold text-blue-300 group-hover:text-white">
-                <span>Accéder au Portail Fondation</span>
-                <span>➔</span>
-              </div>
-            </a>
-
-            <!-- CARTE NIVEAU 3 -->
-            <a href="javascript:void(0)" onclick="openSchoolInterface();" class="p-5 rounded-2xl bg-[#1f1008] border-2 border-orange-500/40 hover:border-orange-400 text-left transition transform hover:-translate-y-1 hover:shadow-2xl hover:shadow-orange-500/20 group flex flex-col justify-between block cursor-pointer">
-              <div class="space-y-3">
-                <div class="flex items-center justify-between">
-                  <span class="px-2 py-0.5 rounded-full bg-amber-500 text-slate-950 font-black text-[10px] uppercase tracking-wider">NIVEAU 3</span>
-                  <span class="text-[11px] text-amber-300 font-mono font-bold">ÉTABLISSEMENT</span>
-                </div>
-                <div class="flex items-center gap-3">
-                  <div class="w-11 h-11 rounded-xl bg-gradient-to-tr from-amber-500 to-orange-400 flex items-center justify-center text-xl text-slate-950 font-black shadow-md">🏫</div>
-                  <div>
-                    <h3 class="font-black text-white text-sm group-hover:text-orange-300 transition">Établissement Scolaire</h3>
-                    <p class="text-[10.5px] text-amber-200/80 font-mono">Direction d'Établissement</p>
-                  </div>
-                </div>
-                <p class="text-xs text-rose-100/70 leading-relaxed">
-                  Gestion complète de l'école : élèves, inscriptions, caisses, comptabilité, pédagogie et enseignants.
+                <p class="text-xs sm:text-sm text-slate-200 leading-relaxed">
+                  Gestion intégrale de votre école : élèves, inscriptions, caisses, comptabilité, emplois du temps automatiques et suivi des enseignants.
                 </p>
               </div>
               <div class="pt-4 mt-3 border-t border-white/10 flex items-center justify-between text-xs font-bold text-amber-300 group-hover:text-white">
                 <span>Accéder au Dashboard École</span>
+                <span>➔</span>
+              </div>
+            </a>
+
+            <!-- OPTION 2 : Portail Réseau & Fondation -->
+            <a href="javascript:void(0)" onclick="openFoundationInterface();" class="p-5 sm:p-6 rounded-2xl bg-[#0a1631] border-2 border-blue-500/40 hover:border-blue-400 text-left transition transform hover:-translate-y-1 hover:shadow-2xl hover:shadow-blue-500/20 group flex flex-col justify-between block cursor-pointer">
+              <div class="space-y-3">
+                <div class="flex items-center justify-between">
+                  <span class="px-2.5 py-0.5 rounded-full bg-blue-500 text-white font-black text-[10px] uppercase tracking-wider">MODE RÉSEAU</span>
+                  <span class="text-[11px] text-blue-300 font-mono font-bold">CONSOLIDATION GROUPE</span>
+                </div>
+                <div class="flex items-center gap-3">
+                  <div class="w-12 h-12 rounded-xl bg-gradient-to-tr from-blue-500 to-indigo-400 flex items-center justify-center text-2xl text-white font-black shadow-md">🏛️</div>
+                  <div>
+                    <h3 class="font-black text-white text-base group-hover:text-blue-300 transition">Portail Réseau Scolaire &amp; Fondation Mère</h3>
+                    <p class="text-xs text-blue-200/90 font-mono">Conseil d'Administration &amp; Tutelle</p>
+                  </div>
+                </div>
+                <p class="text-xs sm:text-sm text-slate-200 leading-relaxed">
+                  Supervision consolidée en direct sur l'ensemble de vos campus et écoles affiliées (KPIs trésorerie, effectifs, comparatifs).
+                </p>
+              </div>
+              <div class="pt-4 mt-3 border-t border-white/10 flex items-center justify-between text-xs font-bold text-blue-300 group-hover:text-white">
+                <span>Accéder au Portail Fondation</span>
                 <span>➔</span>
               </div>
             </a>
@@ -21529,6 +21495,47 @@
 
     // Initialisation au chargement
     window.addEventListener('DOMContentLoaded', async () => {
+      // Détection automatique du lien direct réservé au Concepteur du logiciel
+      // Supporte les URLs dédiées : /#concepteur, /?concepteur, /concepteur
+      function checkDirectConcepteurAccess() {
+        try {
+          const urlParams = new URLSearchParams(window.location.search);
+          const path = (window.location.pathname || '').toLowerCase();
+          const hash = (window.location.hash || '').toLowerCase();
+          
+          const isConcepteurDirectLink = 
+            urlParams.has('concepteur') || 
+            urlParams.get('role') === 'concepteur' || 
+            urlParams.get('access') === 'concepteur' ||
+            hash === '#concepteur' || 
+            hash === '#admin-concepteur' ||
+            hash === '#superadmin' ||
+            path === '/concepteur' ||
+            path.startsWith('/concepteur');
+
+          if (isConcepteurDirectLink) {
+            setTimeout(() => {
+              if (typeof enterAsConcepteur === 'function') {
+                enterAsConcepteur();
+              }
+            }, 300);
+          }
+        } catch (_) {}
+      }
+      checkDirectConcepteurAccess();
+      window.addEventListener('hashchange', checkDirectConcepteurAccess);
+
+      // Raccourci clavier réservé au Concepteur du logiciel : Alt + C
+      document.addEventListener('keydown', (e) => {
+        if ((e.altKey && (e.key === 'c' || e.key === 'C')) || 
+            (e.ctrlKey && e.altKey && (e.key === 'c' || e.key === 'C'))) {
+          e.preventDefault();
+          if (typeof enterAsConcepteur === 'function') {
+            enterAsConcepteur();
+          }
+        }
+      });
+
       // 1. Charger la persistance locale de secours (localStorage)
       const storedFoundations = getStoredEntities('foundations');
       const storedSchools = getStoredEntities('schools');
