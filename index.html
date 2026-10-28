@@ -9626,7 +9626,7 @@
         </div>
         <div>
           <label class="block text-slate-700 font-semibold mb-1">Montant Indicatif Collège (XOF)</label>
-          <input type="number" id="inst-amt-college" min="0" step="1000" placeholder="48000" class="w-full border border-slate-300 rounded-lg px-3 py-2 outline-none font-mono font-bold focus:ring-2 focus:ring-indigo-600">
+          <input type="number" id="inst-amt-college" min="0" step="1000" placeholder="0" class="w-full border border-slate-300 rounded-lg px-3 py-2 outline-none font-mono font-bold focus:ring-2 focus:ring-indigo-600">
         </div>
         <div class="flex items-center gap-2 pt-1">
           <input type="checkbox" id="inst-obligatory" class="rounded border-slate-300 text-indigo-600">
@@ -9680,7 +9680,7 @@
         </div>
         <div>
           <label class="block text-slate-700 font-semibold mb-1">Montant Forfaitaire (XOF) <span class="text-red-500">*</span></label>
-          <input type="number" id="ft-amount" min="0" step="500" required placeholder="5000" class="w-full border border-slate-300 rounded-lg px-3 py-2 outline-none font-mono font-bold focus:ring-2 focus:ring-sky-600">
+          <input type="number" id="ft-amount" min="0" step="500" required placeholder="0" class="w-full border border-slate-300 rounded-lg px-3 py-2 outline-none font-mono font-bold focus:ring-2 focus:ring-sky-600">
         </div>
         <div class="flex items-center gap-2 pt-1">
           <input type="checkbox" id="ft-recurring" checked class="rounded border-slate-300 text-sky-600">
@@ -10279,19 +10279,9 @@
       payments: [],
 
       // 4. PARAMÉTRAGES ÉCOLAGE
-      feeInstallments: [
-        { id: 1, tranche: '1re Tranche', name: 'Rentrée Scolaire', date: '30/09/2026', pct: 40, montantCollege: 48000, isObligatory: true },
-        { id: 2, tranche: '2e Tranche', name: 'Deuxième Trimestre', date: '30/12/2026', pct: 35, montantCollege: 42000, isObligatory: true },
-        { id: 3, tranche: '3e Tranche', name: 'Solde Annuel', date: '28/02/2027', pct: 25, montantCollege: 30000, isObligatory: true }
-      ],
+      feeInstallments: [],
 
-      feeTypes: [
-        { code: 'SCOL', name: 'Frais Généraux de Scolarité', nature: 'Obligatoire', recurring: true, amount: 120000, status: 'Actif' },
-        { code: 'INSC', name: 'Droit d\'Inscription Administrative', nature: 'Obligatoire', recurring: false, amount: 25000, status: 'Actif' },
-        { code: 'EXAM', name: 'Frais de Dossier d\'Examen (BEPC/BAC)', nature: 'Obligatoire', recurring: false, amount: 10000, status: 'Actif' },
-        { code: 'CANT', name: 'Restauration Scolaire (Cantine T1)', nature: 'Facultatif', recurring: true, amount: 45000, status: 'Actif' },
-        { code: 'TRAN', name: 'Transport Scolaire (Ligne 1 & 2)', nature: 'Facultatif', recurring: true, amount: 35000, status: 'Actif' }
-      ],
+      feeTypes: [],
 
       costsOptionTab: 'ALL', // 'ALL', 'AFF', 'NAFF'
       costsByLevel: [
@@ -10304,11 +10294,7 @@
         { level: 'TLE', cycle: 'Lycée', baseAff: 0, baseNaff: 0, base: 0, exam: 0, totalAff: 0, totalNaff: 0, total: 0 }
       ],
 
-      discountCases: [
-        { code: 'BOURSE_ETAT', label: 'Bourse Nationale de l\'État (MENA)', type: 'Pourcentage', value: '20%', appliesTo: 'Affectés État', status: 'Actif' },
-        { code: 'ENFANT_PERS', label: 'Enfant du Personnel Enseignant', type: 'Pourcentage', value: '50%', appliesTo: 'Tous', status: 'Actif' },
-        { code: 'FRATRIE_3', label: 'Tarif Fratrie (3 enfants et plus)', type: 'Montant fixe', value: '25 000 XOF', appliesTo: 'Tous', status: 'Actif' }
-      ],
+      discountCases: [],
 
       // 5. JOURNAL D'AUDIT (Hydraté dynamiquement depuis SQLite)
       auditLogs: [],
@@ -10733,16 +10719,16 @@
       if (Array.isArray(data.auditLogs)) appState.auditLogs = data.auditLogs;
       if (Array.isArray(data.importBatches)) appState.importBatches = data.importBatches;
       if (data.ecolageConfig) {
-        if (Array.isArray(data.ecolageConfig.costsByLevel) && data.ecolageConfig.costsByLevel.length > 0) {
+        if (Array.isArray(data.ecolageConfig.costsByLevel)) {
           appState.costsByLevel = data.ecolageConfig.costsByLevel;
         }
-        if (Array.isArray(data.ecolageConfig.feeInstallments) && data.ecolageConfig.feeInstallments.length > 0) {
+        if (Array.isArray(data.ecolageConfig.feeInstallments)) {
           appState.feeInstallments = data.ecolageConfig.feeInstallments;
         }
-        if (Array.isArray(data.ecolageConfig.feeTypes) && data.ecolageConfig.feeTypes.length > 0) {
+        if (Array.isArray(data.ecolageConfig.feeTypes)) {
           appState.feeTypes = data.ecolageConfig.feeTypes;
         }
-        if (Array.isArray(data.ecolageConfig.discountCases) && data.ecolageConfig.discountCases.length > 0) {
+        if (Array.isArray(data.ecolageConfig.discountCases)) {
           appState.discountCases = data.ecolageConfig.discountCases;
         }
       }
@@ -13690,19 +13676,19 @@
       try {
         const res = await fetch(`/api/school/ecolage?school_id=${sId}`).then(r => r.json());
         if (res && res.success) {
-          if (Array.isArray(res.costsByLevel) && res.costsByLevel.length > 0) {
+          if (Array.isArray(res.costsByLevel)) {
             appState.costsByLevel = res.costsByLevel;
             renderEcolageCosts();
           }
-          if (Array.isArray(res.feeInstallments) && res.feeInstallments.length > 0) {
+          if (Array.isArray(res.feeInstallments)) {
             appState.feeInstallments = res.feeInstallments;
             renderEcolageSchedule();
           }
-          if (Array.isArray(res.feeTypes) && res.feeTypes.length > 0) {
+          if (Array.isArray(res.feeTypes)) {
             appState.feeTypes = res.feeTypes;
             renderEcolageFees();
           }
-          if (Array.isArray(res.discountCases) && res.discountCases.length > 0) {
+          if (Array.isArray(res.discountCases)) {
             appState.discountCases = res.discountCases;
             renderEcolageReductions();
           }
@@ -13745,11 +13731,22 @@
       if (!tbody) return;
       tbody.innerHTML = '';
 
+      if (!appState.feeInstallments || appState.feeInstallments.length === 0) {
+        tbody.innerHTML = `
+          <tr>
+            <td colspan="7" class="p-8 text-center text-slate-400 italic">
+              Aucune tranche de règlement configurée pour cet établissement. Cliquez sur <span class="font-bold text-indigo-700">+ Ajouter une Tranche</span> pour définir votre calendrier de paiement.
+            </td>
+          </tr>
+        `;
+        return;
+      }
+
       // Calculer le montant de référence collège à partir de la grille réelle
-      const refCollege = (appState.costsByLevel && appState.costsByLevel[0]) ? (appState.costsByLevel[0].baseNaff || 120000) : 120000;
+      const refCollege = (appState.costsByLevel && appState.costsByLevel[0]) ? (appState.costsByLevel[0].baseNaff || 0) : 0;
 
       appState.feeInstallments.forEach(inst => {
-        const computedAmount = inst.montantCollege || Math.round(refCollege * ((inst.pct || 10) / 100));
+        const computedAmount = inst.montantCollege || (refCollege > 0 ? Math.round(refCollege * ((inst.pct || 10) / 100)) : 0);
         const tr = document.createElement('tr');
         tr.className = "hover:bg-slate-50 border-b border-slate-100";
         tr.innerHTML = `
@@ -13877,6 +13874,17 @@
       if (!tbody) return;
       tbody.innerHTML = '';
 
+      if (!appState.feeTypes || appState.feeTypes.length === 0) {
+        tbody.innerHTML = `
+          <tr>
+            <td colspan="7" class="p-8 text-center text-slate-400 italic">
+              Aucun type de frais dans le catalogue pour cet établissement. Cliquez sur <span class="font-bold text-sky-700">+ Créer un Type de Frais</span> pour ajouter une rubrique de facturation.
+            </td>
+          </tr>
+        `;
+        return;
+      }
+
       appState.feeTypes.forEach(f => {
         const tr = document.createElement('tr');
         tr.className = "hover:bg-slate-50 border-b border-slate-100";
@@ -13885,7 +13893,7 @@
           <td class="p-2.5 font-semibold text-slate-800">${esc(f.name)}</td>
           <td class="p-2.5 text-center"><span class="px-2 py-0.5 rounded font-bold text-[10px] ${f.nature === 'Obligatoire' ? 'bg-red-100 text-red-700' : 'bg-sky-100 text-sky-700'}">${esc(f.nature)}</span></td>
           <td class="p-2.5 text-center">${f.recurring ? 'Oui (Annuel)' : 'Paiement Unique'}</td>
-          <td class="p-2.5 text-right font-mono font-bold">${f.amount.toLocaleString()} XOF</td>
+          <td class="p-2.5 text-right font-mono font-bold">${(f.amount || 0).toLocaleString('fr-FR')} XOF</td>
           <td class="p-2.5 text-center"><span class="text-emerald-600 font-bold">Actif ✓</span></td>
           <td class="p-2.5 text-center space-x-1 whitespace-nowrap">
             <button onclick="editFeeType('${esc(f.code)}')" class="p-1 text-slate-600 hover:text-blue-600" title="Modifier le type de frais">✏️</button>
@@ -13901,7 +13909,7 @@
       if (form && typeof form.reset === 'function') form.reset();
       const codeInp = document.getElementById('ft-code');
       if (codeInp) {
-        codeInp.value = 'FRAIS_' + ((appState.feeTypes || []).length + 1);
+        codeInp.value = '';
         codeInp.readOnly = false;
       }
       const nameEl = document.getElementById('ft-name');
@@ -14393,6 +14401,17 @@
       if (!tbody) return;
       tbody.innerHTML = '';
 
+      if (!appState.discountCases || appState.discountCases.length === 0) {
+        tbody.innerHTML = `
+          <tr>
+            <td colspan="7" class="p-8 text-center text-slate-400 italic">
+              Aucun cas de réduction ou bourse configuré pour cet établissement. Cliquez sur <span class="font-bold text-purple-700">+ Nouveau Cas de Réduction</span> pour en créer un.
+            </td>
+          </tr>
+        `;
+        return;
+      }
+
       appState.discountCases.forEach(d => {
         const tr = document.createElement('tr');
         tr.className = "hover:bg-slate-50 border-b border-slate-100";
@@ -14537,38 +14556,34 @@
       const isSolde = balance === 0 && totalFee > 0;
 
       // Calcul dynamique des tranches individuelles pour cet élève réel
-      const installments = (appState.feeInstallments && appState.feeInstallments.length > 0) 
-        ? appState.feeInstallments 
-        : [
-            { tranche: '1re Tranche', name: 'Rentrée', date: '30/09/2026', pct: 40 },
-            { tranche: '2e Tranche', name: 'Deuxième Trimestre', date: '30/12/2026', pct: 35 },
-            { tranche: '3e Tranche', name: 'Solde Annuel', date: '28/02/2027', pct: 25 }
-          ];
+      const installments = (appState.feeInstallments && appState.feeInstallments.length > 0) ? appState.feeInstallments : [];
 
       let runningTarget = 0;
-      const rowsHtml = installments.map(inst => {
-        const instAmount = Math.round(totalFee * ((inst.pct || 0) / 100));
-        runningTarget += instAmount;
-        let badge = '';
-        if (paidFee >= runningTarget && totalFee > 0) {
-          badge = '<span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-100 text-emerald-800">Réglé ✓</span>';
-        } else if (paidFee > (runningTarget - instAmount) && paidFee < runningTarget) {
-          badge = '<span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-100 text-amber-800">Partiel</span>';
-        } else {
-          badge = '<span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-slate-100 text-slate-600">En attente</span>';
-        }
+      const rowsHtml = (installments.length === 0)
+        ? `<tr><td colspan="6" class="p-6 text-center text-slate-400 italic">Aucun échéancier général de règlement configuré pour l'établissement. Veuillez d'abord ajouter les tranches de paiement dans l'onglet "1. Échéancier Général".</td></tr>`
+        : installments.map(inst => {
+            const instAmount = Math.round(totalFee * ((inst.pct || 0) / 100));
+            runningTarget += instAmount;
+            let badge = '';
+            if (paidFee >= runningTarget && totalFee > 0) {
+              badge = '<span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-100 text-emerald-800">Réglé ✓</span>';
+            } else if (paidFee > (runningTarget - instAmount) && paidFee < runningTarget) {
+              badge = '<span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-100 text-amber-800">Partiel</span>';
+            } else {
+              badge = '<span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-slate-100 text-slate-600">En attente</span>';
+            }
 
-        return `
-          <tr class="hover:bg-slate-50 transition border-b border-slate-100">
-            <td class="p-2.5 font-bold text-slate-800">${esc(inst.tranche)}</td>
-            <td class="p-2.5 text-slate-600">${esc(inst.name)}</td>
-            <td class="p-2.5 font-mono text-slate-700 font-bold">${esc(inst.date)}</td>
-            <td class="p-2.5 text-right font-bold text-purple-700">${esc(inst.pct)}%</td>
-            <td class="p-2.5 text-right font-mono font-bold text-slate-900">${instAmount.toLocaleString('fr-FR')} XOF</td>
-            <td class="p-2.5 text-center">${badge}</td>
-          </tr>
-        `;
-      }).join('');
+            return `
+              <tr class="hover:bg-slate-50 transition border-b border-slate-100">
+                <td class="p-2.5 font-bold text-slate-800">${esc(inst.tranche)}</td>
+                <td class="p-2.5 text-slate-600">${esc(inst.name)}</td>
+                <td class="p-2.5 font-mono text-slate-700 font-bold">${esc(inst.date)}</td>
+                <td class="p-2.5 text-right font-bold text-purple-700">${esc(inst.pct)}%</td>
+                <td class="p-2.5 text-right font-mono font-bold text-slate-900">${instAmount.toLocaleString('fr-FR')} XOF</td>
+                <td class="p-2.5 text-center">${badge}</td>
+              </tr>
+            `;
+          }).join('');
 
       box.innerHTML = `
         <div class="border border-slate-200 rounded-xl p-4 bg-white space-y-4 shadow-xs">

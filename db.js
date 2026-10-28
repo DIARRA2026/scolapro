@@ -4298,37 +4298,14 @@ function getSchoolEcolageConfig(user, schoolId) {
     ];
   }
 
-  // 2. Échéancier général
-  let feeInstallments = map['ecolage_fee_installments'] || null;
-  if (!feeInstallments || !Array.isArray(feeInstallments) || feeInstallments.length === 0) {
-    const refAmount = costsByLevel[0] ? (costsByLevel[0].baseNaff || 0) : 120000;
-    feeInstallments = [
-      { id: 1, tranche: '1re Tranche', name: 'Rentrée Scolaire', date: '30/09/2026', pct: 40, montantCollege: Math.round(refAmount * 0.4), isObligatory: true },
-      { id: 2, tranche: '2e Tranche', name: 'Deuxième Trimestre', date: '30/12/2026', pct: 35, montantCollege: Math.round(refAmount * 0.35), isObligatory: true },
-      { id: 3, tranche: '3e Tranche', name: 'Solde Annuel', date: '28/02/2027', pct: 25, montantCollege: Math.round(refAmount * 0.25), isObligatory: true }
-    ];
-  }
+  // 2. Échéancier général (vierge par défaut, défini par l'école)
+  let feeInstallments = map['ecolage_fee_installments'] || [];
 
-  // 3. Catalogue des types de frais
-  let feeTypes = map['ecolage_fee_types'] || null;
-  if (!feeTypes || !Array.isArray(feeTypes) || feeTypes.length === 0) {
-    const refAmount = costsByLevel[0] ? (costsByLevel[0].baseNaff || 0) : 120000;
-    feeTypes = [
-      { code: 'SCOL', name: 'Frais Généraux de Scolarité', nature: 'Obligatoire', recurring: true, amount: refAmount, status: 'Actif' },
-      { code: 'INSC', name: 'Droit d\'Inscription Administrative', nature: 'Obligatoire', recurring: false, amount: 25000, status: 'Actif' },
-      { code: 'EXAM', name: 'Frais de Dossier d\'Examen (BEPC/BAC)', nature: 'Obligatoire', recurring: false, amount: 10000, status: 'Actif' }
-    ];
-  }
+  // 3. Catalogue des types de frais (vierge par défaut, défini par l'école)
+  let feeTypes = map['ecolage_fee_types'] || [];
 
-  // 4. Cas de réduction
-  let discountCases = map['ecolage_discount_cases'] || null;
-  if (!discountCases || !Array.isArray(discountCases) || discountCases.length === 0) {
-    discountCases = [
-      { code: 'BOURSE_ETAT', label: "Bourse Nationale de l'État (MENA)", type: 'Pourcentage', value: '20%', appliesTo: 'Affectés État', status: 'Actif' },
-      { code: 'ENFANT_PERS', label: 'Enfant du Personnel Enseignant', type: 'Pourcentage', value: '50%', appliesTo: 'Tous', status: 'Actif' },
-      { code: 'FRATRIE_3', label: 'Tarif Fratrie (3 enfants et plus)', type: 'Montant Fixe', value: '25 000 XOF', appliesTo: 'Non-Affectés Privé', status: 'Actif' }
-    ];
-  }
+  // 4. Cas de réduction (vierge par défaut, défini par l'école)
+  let discountCases = map['ecolage_discount_cases'] || [];
 
   return {
     schoolId,

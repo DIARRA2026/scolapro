@@ -73,4 +73,10 @@ describe('SUITE : Module Écolage Fullstack & Élimination des Données Fictives
     assert.ok(dbContent.includes('ecolageConfig:'), 'getBootstrapData doit inclure ecolageConfig');
     assert.ok(indexContent.includes('if (data.ecolageConfig)'), 'rehydrateAppData doit hydrater data.ecolageConfig');
   });
+
+  test('FULLSTACK-08: feeInstallments, feeTypes et discountCases sont vierges par défaut sans fausses données', () => {
+    assert.ok(indexContent.includes('feeInstallments: []'), 'feeInstallments doit être initialisé à un tableau vide');
+    assert.ok(indexContent.includes('feeTypes: []'), 'feeTypes doit être initialisé à un tableau vide');
+    assert.ok(indexContent.includes('discountCases: []'), 'discountCases doit être initialisé à un tableau vide');
+  });
 });
