@@ -13966,7 +13966,15 @@
       const currentFilter = appState.costsOptionTab || 'ALL';
 
       // 1. Normalisation et sécurisation des données
+      // Les classes de 6ème, 5ème, 4ème, 2nde et 1ère n'ont aucun droit d'examen d'État
+      // Seules les classes d'examen officiel (3ème BEPC, Terminale BAC, CM2 CEPE) ont des frais d'examen
       appState.costsByLevel.forEach(c => {
+        const isExam = ['3EME', '3È', 'TLE', 'TERMINALE', 'CM2'].some(k => (c.level || '').toUpperCase().includes(k));
+        if (!isExam) {
+          c.exam = 0;
+        } else {
+          c.exam = Number(c.exam) || 0;
+        }
         if (c.baseAff === undefined || c.baseAff === null) {
           c.baseAff = Math.round((c.base || 120000) * 0.4);
         }
@@ -13974,7 +13982,6 @@
           c.baseNaff = c.base || 120000;
         }
         c.base = c.baseNaff;
-        c.exam = Number(c.exam) || 0;
         c.totalAff = (Number(c.baseAff) || 0) + c.exam;
         c.totalNaff = (Number(c.baseNaff) || 0) + c.exam;
         c.total = c.totalNaff;
@@ -13993,7 +14000,7 @@
         const priseEnCharge = Math.max(0, (c.baseNaff || 0) - (c.baseAff || 0));
         const shortLevel = esc(c.level.slice(0, 4));
         const cycleName = esc(c.cycle || 'Secondaire');
-        const isExamClass = (c.exam > 0) || ['3EME', '3È', 'TLE', 'TERMINALE', 'CM2'].some(k => (c.level || '').toUpperCase().includes(k));
+        const isExamClass = ['3EME', '3È', 'TLE', 'TERMINALE', 'CM2'].some(k => (c.level || '').toUpperCase().includes(k));
 
         let badgeStyle = 'bg-sky-50 text-sky-700 border-sky-200/80';
         if (cycleName.toLowerCase().includes('second') || cycleName.toLowerCase().includes('lycée')) {
@@ -14080,17 +14087,22 @@
               </div>
             </div>
 
-            <!-- Pied de carte : Droits examen / dossier -->
-            <div class="pt-2.5 border-t border-slate-100 flex items-center justify-between gap-2">
-              <label for="cost-exam-${idx}" class="text-xs font-semibold text-slate-600 flex items-center gap-1.5 whitespace-nowrap cursor-pointer">
-                <span>📝</span>
-                <span>Frais d'examen / dossier :</span>
-              </label>
-              <div class="relative w-28 shrink-0">
-                <input type="number" id="cost-exam-${idx}" value="${c.exam || 0}" step="1000" min="0" oninput="updateCostLevelInMemory(${idx}, 'exam', this.value)" onchange="updateCostLevelInMemory(${idx}, 'exam', this.value)" class="w-full text-right bg-slate-50 hover:bg-white focus:bg-white border border-slate-200 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 rounded-lg pl-2 pr-9 py-1 font-mono font-bold text-xs text-slate-800 outline-none transition">
-                <span class="absolute right-2 top-1/2 -translate-y-1/2 text-[10px] font-bold text-slate-400 pointer-events-none">XOF</span>
+            <!-- Frais d'examen : Uniquement pour les classes d'examen officiel (3ème BEPC et Terminale BAC) -->
+            ${isExamClass ? `
+              <div class="pt-2.5 border-t border-slate-100 flex items-center justify-between gap-2">
+                <label for="cost-exam-${idx}" class="text-xs font-semibold text-slate-600 flex items-center gap-1.5 whitespace-nowrap cursor-pointer">
+                  <span>📝</span>
+                  <span>Frais d'examen d'État :</span>
+                </label>
+                <div class="relative w-28 shrink-0">
+                  <input type="number" id="cost-exam-${idx}" value="${c.exam || 0}" step="1000" min="0" oninput="updateCostLevelInMemory(${idx}, 'exam', this.value)" onchange="updateCostLevelInMemory(${idx}, 'exam', this.value)" class="w-full text-right bg-slate-50 hover:bg-white focus:bg-white border border-slate-200 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 rounded-lg pl-2 pr-9 py-1 font-mono font-bold text-xs text-slate-800 outline-none transition">
+                  <span class="absolute right-2 top-1/2 -translate-y-1/2 text-[10px] font-bold text-slate-400 pointer-events-none">XOF</span>
+                </div>
               </div>
-            </div>
+            ` : `
+              <!-- Classes sans examen (6ème, 5ème, 4ème, 2nde, 1ère) : suppression visuelle de la ligne et préservation technique -->
+              <input type="hidden" id="cost-exam-${idx}" value="0">
+            `}
           </div>
         `;
       }).join('');
@@ -14102,13 +14114,15 @@
         } else {
           tableBody.innerHTML = appState.costsByLevel.map(c => {
             const priseEnCharge = Math.max(0, (c.baseNaff || 0) - (c.baseAff || 0));
+            const isExam = ['3EME', '3È', 'TLE', 'TERMINALE', 'CM2'].some(k => (c.level || '').toUpperCase().includes(k));
+            const examText = isExam ? `${(c.exam || 0).toLocaleString('fr-FR')} XOF` : '—';
             return `
               <tr class="hover:bg-slate-50 transition border-b border-slate-100">
                 <td class="p-3.5 font-black font-mono text-slate-900 whitespace-nowrap">${esc(c.level)}</td>
                 <td class="p-3.5 text-slate-600 whitespace-nowrap">${esc(c.cycle || 'Général')}</td>
                 <td class="p-3.5 text-right font-mono font-black text-emerald-700 bg-emerald-50/40 whitespace-nowrap">${(c.baseAff || 0).toLocaleString('fr-FR')} XOF</td>
                 <td class="p-3.5 text-right font-mono font-black text-amber-700 bg-amber-50/40 whitespace-nowrap">${(c.baseNaff || 0).toLocaleString('fr-FR')} XOF</td>
-                <td class="p-3.5 text-right font-mono text-slate-600 whitespace-nowrap">${(c.exam || 0).toLocaleString('fr-FR')} XOF</td>
+                <td class="p-3.5 text-right font-mono text-slate-600 whitespace-nowrap">${examText}</td>
                 <td class="p-3.5 text-right font-mono font-black text-emerald-800 bg-emerald-100/50 whitespace-nowrap">${(c.totalAff || 0).toLocaleString('fr-FR')} XOF</td>
                 <td class="p-3.5 text-right font-mono font-black text-amber-800 bg-amber-100/50 whitespace-nowrap">${(c.totalNaff || 0).toLocaleString('fr-FR')} XOF</td>
                 <td class="p-3.5 text-right font-mono text-sky-700 font-bold bg-sky-50/60 whitespace-nowrap">+${priseEnCharge.toLocaleString('fr-FR')} XOF</td>
