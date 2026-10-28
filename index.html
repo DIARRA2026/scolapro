@@ -5315,84 +5315,129 @@
         </div>
 
         <!-- 8.3 SUBVIEW : COÛTS DE LA SCOLARITÉ (OPTIONS AFF & NAFF) -->
-        <div id="subview-ecolage-costs" class="hidden bg-white rounded-lg shadow-sm border border-slate-200 p-5 space-y-4">
-          <div class="border-b border-slate-100 pb-3 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
-            <div>
-              <div class="flex items-center gap-2">
-                <span class="text-xl">💳</span>
-                <h3 class="font-bold text-sm text-slate-800">Coûts de la Scolarité — Grille Tarifaire (Options AFF &amp; NAFF)</h3>
+        <div id="subview-ecolage-costs" class="hidden bg-slate-50/60 rounded-2xl border border-slate-200/90 p-4 sm:p-6 space-y-5 pb-28 sm:pb-32 shadow-xs">
+          <!-- 1. En-tête Principal Moderne & Actions -->
+          <div class="bg-white rounded-2xl p-4 sm:p-5 border border-slate-200/80 shadow-xs flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+            <div class="flex items-start sm:items-center gap-3">
+              <div class="w-11 h-11 rounded-2xl bg-gradient-to-br from-indigo-500 to-indigo-700 text-white flex items-center justify-center text-xl shadow-sm shrink-0">
+                💳
               </div>
-              <p class="text-xs text-slate-500 mt-0.5">Paramétrage officiel des montants d'écolage pour les élèves Affectés par l'État (AFF) et Non Affectés (NAFF).</p>
+              <div>
+                <div class="flex items-center gap-2 flex-wrap">
+                  <h3 class="font-extrabold text-base text-slate-900 tracking-tight">Coûts de la Scolarité — Grille Tarifaire</h3>
+                  <span class="px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider bg-indigo-50 text-indigo-700 border border-indigo-200/60">Options AFF &amp; NAFF</span>
+                </div>
+                <p class="text-xs text-slate-500 mt-0.5">Paramétrage officiel des montants d'écolage et frais de dossier par niveau pour élèves Affectés par l'État (AFF) et Non Affectés (NAFF).</p>
+              </div>
             </div>
-            <div class="flex items-center gap-2 flex-wrap">
-              <button type="button" onclick="addNewCostLevelPrompt()" class="px-3 py-1.5 btn-navy text-white rounded text-xs font-bold shadow flex items-center gap-1.5 cursor-pointer">
-                <span>+</span> Ajouter un Niveau
+            <div class="flex items-center gap-2.5 w-full md:w-auto shrink-0 justify-end">
+              <button type="button" onclick="addNewCostLevelPrompt()" class="flex-1 md:flex-initial px-3.5 py-2 btn-navy text-white rounded-xl text-xs font-bold shadow-xs hover:shadow transition flex items-center justify-center gap-1.5 cursor-pointer">
+                <span class="text-sm font-black leading-none">+</span>
+                <span>Ajouter un Niveau</span>
               </button>
-              <button type="button" onclick="saveCostsByLevel()" class="px-3.5 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded text-xs font-bold shadow flex items-center gap-1.5 transition cursor-pointer">
-                <span>💾</span> Sauvegarder les Tarifs
+              <button type="button" onclick="saveCostsByLevel()" class="flex-1 md:flex-initial px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-bold shadow-xs hover:shadow transition flex items-center justify-center gap-1.5 cursor-pointer">
+                <span>💾</span>
+                <span>Sauvegarder les Tarifs</span>
               </button>
             </div>
           </div>
 
-          <!-- BANDEAU SÉLECTEUR DES DEUX OPTIONS : AFF vs NAFF -->
-          <div class="bg-gradient-to-r from-slate-50 via-slate-100/70 to-slate-50 border border-slate-200 p-3.5 rounded-xl flex flex-col md:flex-row items-start md:items-center justify-between gap-3">
-            <div class="flex items-center gap-2 flex-wrap">
-              <span class="text-xs font-black uppercase tracking-wider text-slate-700 mr-1 flex items-center gap-1">
+          <!-- 2. Synthèse Express (4 Mini-KPIs Métier) -->
+          <div class="grid grid-cols-2 lg:grid-cols-4 gap-3">
+            <div class="bg-white rounded-xl p-3 border border-slate-200/80 shadow-2xs flex items-center gap-3">
+              <div class="w-8 h-8 rounded-lg bg-indigo-50 text-indigo-600 flex items-center justify-center font-black text-xs shrink-0">🎓</div>
+              <div class="min-w-0">
+                <span class="text-[10px] uppercase font-bold text-slate-400 block tracking-wider truncate">Niveaux Actifs</span>
+                <strong id="kpi-costs-count" class="text-sm font-black text-slate-900 font-mono">0 niveau</strong>
+              </div>
+            </div>
+            <div class="bg-white rounded-xl p-3 border border-slate-200/80 shadow-2xs flex items-center gap-3">
+              <div class="w-8 h-8 rounded-lg bg-emerald-50 text-emerald-600 flex items-center justify-center font-black text-xs shrink-0">🟢</div>
+              <div class="min-w-0">
+                <span class="text-[10px] uppercase font-bold text-slate-400 block tracking-wider truncate">Moyenne Option AFF</span>
+                <strong id="kpi-costs-avg-aff" class="text-sm font-black text-emerald-700 font-mono">-- XOF</strong>
+              </div>
+            </div>
+            <div class="bg-white rounded-xl p-3 border border-slate-200/80 shadow-2xs flex items-center gap-3">
+              <div class="w-8 h-8 rounded-lg bg-amber-50 text-amber-600 flex items-center justify-center font-black text-xs shrink-0">🟠</div>
+              <div class="min-w-0">
+                <span class="text-[10px] uppercase font-bold text-slate-400 block tracking-wider truncate">Moyenne Option NAFF</span>
+                <strong id="kpi-costs-avg-naff" class="text-sm font-black text-amber-700 font-mono">-- XOF</strong>
+              </div>
+            </div>
+            <div class="bg-white rounded-xl p-3 border border-slate-200/80 shadow-2xs flex items-center gap-3">
+              <div class="w-8 h-8 rounded-lg bg-sky-50 text-sky-600 flex items-center justify-center font-black text-xs shrink-0">🏛️</div>
+              <div class="min-w-0">
+                <span class="text-[10px] uppercase font-bold text-slate-400 block tracking-wider truncate">Prise en Charge Moy.</span>
+                <strong id="kpi-costs-avg-subvention" class="text-sm font-black text-sky-700 font-mono">-- XOF</strong>
+              </div>
+            </div>
+          </div>
+
+          <!-- 3. Barre de Filtrage & Légende (Segmented Control Responsive) -->
+          <div class="bg-white border border-slate-200/80 p-3 sm:p-3.5 rounded-2xl shadow-xs flex flex-col md:flex-row items-stretch md:items-center justify-between gap-3">
+            <div class="flex items-center gap-2 overflow-x-auto pb-1 md:pb-0">
+              <span class="text-[11px] font-black uppercase tracking-wider text-slate-500 mr-1 flex items-center gap-1 shrink-0">
                 <span>⚙️</span> Options d'affichage :
               </span>
-              <button type="button" id="btn-cost-opt-all" onclick="setCostOptionFilter('ALL')" class="px-3 py-1.5 rounded-lg text-xs font-bold transition shadow-xs bg-slate-900 text-white cursor-pointer">
-                <span>👁️</span> Vue Complète (AFF &amp; NAFF)
-              </button>
-              <button type="button" id="btn-cost-opt-aff" onclick="setCostOptionFilter('AFF')" class="px-3 py-1.5 rounded-lg text-xs font-bold transition shadow-xs bg-white text-emerald-800 border border-emerald-300 hover:bg-emerald-50 cursor-pointer flex items-center gap-1.5">
-                <span class="w-2.5 h-2.5 rounded-full bg-emerald-500 inline-block"></span>
-                <span>Option AFF (Affectés État)</span>
-              </button>
-              <button type="button" id="btn-cost-opt-naff" onclick="setCostOptionFilter('NAFF')" class="px-3 py-1.5 rounded-lg text-xs font-bold transition shadow-xs bg-white text-amber-800 border border-amber-300 hover:bg-amber-50 cursor-pointer flex items-center gap-1.5">
-                <span class="w-2.5 h-2.5 rounded-full bg-amber-500 inline-block"></span>
-                <span>Option NAFF (Non Affectés Privé)</span>
-              </button>
+              <div class="inline-flex p-1 bg-slate-100 rounded-xl gap-1 shrink-0">
+                <button type="button" id="btn-cost-opt-all" onclick="setCostOptionFilter('ALL')" class="px-3.5 py-1.5 rounded-lg text-xs font-black transition shadow-xs bg-slate-900 text-white cursor-pointer whitespace-nowrap">
+                  <span>👁️</span> Vue Complète (AFF &amp; NAFF)
+                </button>
+                <button type="button" id="btn-cost-opt-aff" onclick="setCostOptionFilter('AFF')" class="px-3.5 py-1.5 rounded-lg text-xs font-bold transition shadow-xs bg-white text-emerald-800 border border-emerald-300 hover:bg-emerald-50 cursor-pointer flex items-center gap-1.5 whitespace-nowrap">
+                  <span class="w-2.5 h-2.5 rounded-full bg-emerald-500 inline-block"></span>
+                  <span>Option AFF (Affectés État)</span>
+                </button>
+                <button type="button" id="btn-cost-opt-naff" onclick="setCostOptionFilter('NAFF')" class="px-3.5 py-1.5 rounded-lg text-xs font-bold transition shadow-xs bg-white text-amber-800 border border-amber-300 hover:bg-amber-50 cursor-pointer flex items-center gap-1.5 whitespace-nowrap">
+                  <span class="w-2.5 h-2.5 rounded-full bg-amber-500 inline-block"></span>
+                  <span>Option NAFF (Non Affectés Privé)</span>
+                </button>
+              </div>
             </div>
 
             <!-- Résumé synthétique des deux options tarifaires -->
-            <div class="flex items-center gap-2 text-[11px] font-semibold text-slate-600 bg-white px-3 py-1.5 rounded-lg border border-slate-200 shadow-xs">
-              <span class="flex items-center gap-1 text-emerald-800">
+            <div class="flex items-center gap-2.5 text-[11px] font-semibold text-slate-600 bg-slate-50 px-3 py-1.5 rounded-xl border border-slate-200/70 shrink-0 self-start md:self-auto">
+              <span class="inline-flex items-center gap-1.5 text-emerald-800 font-bold whitespace-nowrap">
                 <span class="w-2 h-2 rounded-full bg-emerald-500"></span>
-                <strong>AFF :</strong> Subventionné MENA
+                AFF : <span class="font-normal text-slate-600">Subventionné MENA</span>
               </span>
-              <span class="text-slate-300">|</span>
-              <span class="flex items-center gap-1 text-amber-800">
+              <span class="text-slate-300 font-light">|</span>
+              <span class="inline-flex items-center gap-1.5 text-amber-800 font-bold whitespace-nowrap">
                 <span class="w-2 h-2 rounded-full bg-amber-500"></span>
-                <strong>NAFF :</strong> Plein tarif direct
+                NAFF : <span class="font-normal text-slate-600">Plein tarif direct</span>
               </span>
             </div>
           </div>
 
-          <!-- GRILLE DES CARTES PAR NIVEAU ACADÉMIQUE -->
-          <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4" id="ecolage-costs-grid">
+          <!-- 4. Grille Responsive des Cartes par Niveau -->
+          <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-4 gap-4 sm:gap-5" id="ecolage-costs-grid">
             <!-- Rendu dynamique -->
           </div>
 
-          <!-- TABLEAU COMPARATIF DÉTAILLÉ AFF vs NAFF -->
-          <div class="mt-4 pt-4 border-t border-slate-200 space-y-2">
-            <div class="flex justify-between items-center">
-              <h4 class="text-xs font-bold uppercase tracking-wider text-slate-700 flex items-center gap-1.5">
-                <span>📊</span> Tableau Comparatif des Barèmes (Option AFF vs Option NAFF)
-              </h4>
-              <span class="text-[11px] text-slate-500 font-mono" id="costs-table-count">7 niveaux paramétrés</span>
+          <!-- 5. Tableau Synthétique Comparatif Détaillé -->
+          <div class="mt-6 pt-5 border-t border-slate-200/80 space-y-3">
+            <div class="flex justify-between items-center flex-wrap gap-2">
+              <div class="flex items-center gap-2">
+                <span class="text-base">📊</span>
+                <h4 class="text-xs font-extrabold uppercase tracking-wider text-slate-800">
+                  Tableau Comparatif des Barèmes (Option AFF vs Option NAFF)
+                </h4>
+              </div>
+              <span class="text-[11px] text-slate-500 font-mono bg-white px-2.5 py-1 rounded-lg border border-slate-200" id="costs-table-count">7 niveaux paramétrés</span>
             </div>
-            <div class="overflow-x-auto border border-slate-200 rounded-lg shadow-xs">
+            <div class="overflow-x-auto border border-slate-200/90 rounded-2xl shadow-xs bg-white">
               <table class="w-full text-left text-xs">
                 <thead class="bg-table-header text-white font-bold uppercase text-[10px]">
                   <tr>
-                    <th class="p-2.5">Niveau</th>
-                    <th class="p-2.5">Cycle</th>
-                    <th class="p-2.5 text-right bg-emerald-950/40 text-emerald-300">🟢 Option AFF (Frais État)</th>
-                    <th class="p-2.5 text-right bg-amber-950/40 text-amber-300">🟠 Option NAFF (Plein Tarif)</th>
-                    <th class="p-2.5 text-right">Frais Examen</th>
-                    <th class="p-2.5 text-right text-emerald-300 font-mono">Total Dû AFF</th>
-                    <th class="p-2.5 text-right text-amber-300 font-mono">Total Dû NAFF</th>
-                    <th class="p-2.5 text-right text-sky-300 font-mono">Prise en Charge État</th>
-                    <th class="p-2.5 text-center">Action</th>
+                    <th class="p-3">Niveau</th>
+                    <th class="p-3">Cycle</th>
+                    <th class="p-3 text-right bg-emerald-950/40 text-emerald-300">🟢 Option AFF (Frais État)</th>
+                    <th class="p-3 text-right bg-amber-950/40 text-amber-300">🟠 Option NAFF (Plein Tarif)</th>
+                    <th class="p-3 text-right">Frais Examen</th>
+                    <th class="p-3 text-right text-emerald-300 font-mono">Total Dû AFF</th>
+                    <th class="p-3 text-right text-amber-300 font-mono">Total Dû NAFF</th>
+                    <th class="p-3 text-right text-sky-300 font-mono">Prise en Charge État</th>
+                    <th class="p-3 text-center">Action</th>
                   </tr>
                 </thead>
                 <tbody id="ecolage-costs-table-tbody" class="divide-y divide-slate-100 bg-white">
@@ -13876,21 +13921,40 @@
       const btnNaff = document.getElementById('btn-cost-opt-naff');
 
       if (btnAll && btnAff && btnNaff) {
+        const baseClass = 'px-3.5 py-1.5 rounded-lg text-xs font-bold transition shadow-xs cursor-pointer flex items-center gap-1.5 whitespace-nowrap';
         if (appState.costsOptionTab === 'ALL') {
-          btnAll.className = 'px-3 py-1.5 rounded-lg text-xs font-bold transition shadow-xs bg-slate-900 text-white cursor-pointer';
-          btnAff.className = 'px-3 py-1.5 rounded-lg text-xs font-bold transition shadow-xs bg-white text-emerald-800 border border-emerald-300 hover:bg-emerald-50 cursor-pointer flex items-center gap-1.5';
-          btnNaff.className = 'px-3 py-1.5 rounded-lg text-xs font-bold transition shadow-xs bg-white text-amber-800 border border-amber-300 hover:bg-amber-50 cursor-pointer flex items-center gap-1.5';
+          btnAll.className = baseClass + ' bg-slate-900 text-white shadow-sm';
+          btnAff.className = baseClass + ' bg-white text-emerald-800 border border-emerald-300 hover:bg-emerald-50';
+          btnNaff.className = baseClass + ' bg-white text-amber-800 border border-amber-300 hover:bg-amber-50';
         } else if (appState.costsOptionTab === 'AFF') {
-          btnAll.className = 'px-3 py-1.5 rounded-lg text-xs font-bold transition shadow-xs bg-white text-slate-700 border border-slate-300 hover:bg-slate-50 cursor-pointer';
-          btnAff.className = 'px-3 py-1.5 rounded-lg text-xs font-bold transition shadow-xs bg-emerald-600 text-white shadow-md cursor-pointer flex items-center gap-1.5';
-          btnNaff.className = 'px-3 py-1.5 rounded-lg text-xs font-bold transition shadow-xs bg-white text-amber-800 border border-amber-300 hover:bg-amber-50 cursor-pointer flex items-center gap-1.5';
+          btnAll.className = baseClass + ' bg-white text-slate-700 border border-slate-300 hover:bg-slate-50';
+          btnAff.className = baseClass + ' bg-emerald-600 text-white shadow-sm ring-2 ring-emerald-500/20';
+          btnNaff.className = baseClass + ' bg-white text-amber-800 border border-amber-300 hover:bg-amber-50';
         } else if (appState.costsOptionTab === 'NAFF') {
-          btnAll.className = 'px-3 py-1.5 rounded-lg text-xs font-bold transition shadow-xs bg-white text-slate-700 border border-slate-300 hover:bg-slate-50 cursor-pointer';
-          btnAff.className = 'px-3 py-1.5 rounded-lg text-xs font-bold transition shadow-xs bg-white text-emerald-800 border border-emerald-300 hover:bg-emerald-50 cursor-pointer flex items-center gap-1.5';
-          btnNaff.className = 'px-3 py-1.5 rounded-lg text-xs font-bold transition shadow-xs bg-amber-600 text-white shadow-md cursor-pointer flex items-center gap-1.5';
+          btnAll.className = baseClass + ' bg-white text-slate-700 border border-slate-300 hover:bg-slate-50';
+          btnAff.className = baseClass + ' bg-white text-emerald-800 border border-emerald-300 hover:bg-emerald-50';
+          btnNaff.className = baseClass + ' bg-amber-600 text-white shadow-sm ring-2 ring-amber-500/20';
         }
       }
       renderEcolageCosts();
+    }
+
+    function updateCostsQuickKpis() {
+      const kpiCount = document.getElementById('kpi-costs-count');
+      const kpiAvgAff = document.getElementById('kpi-costs-avg-aff');
+      const kpiAvgNaff = document.getElementById('kpi-costs-avg-naff');
+      const kpiAvgSub = document.getElementById('kpi-costs-avg-subvention');
+      if (!appState || !Array.isArray(appState.costsByLevel)) return;
+      const count = appState.costsByLevel.length;
+      if (kpiCount) kpiCount.textContent = count > 0 ? `${count} niveau${count > 1 ? 'x' : ''}` : '0 niveau';
+      if (count > 0) {
+        const avgAff = Math.round(appState.costsByLevel.reduce((acc, c) => acc + (Number(c.baseAff) || 0), 0) / count);
+        const avgNaff = Math.round(appState.costsByLevel.reduce((acc, c) => acc + (Number(c.baseNaff) || 0), 0) / count);
+        const avgSub = Math.max(0, avgNaff - avgAff);
+        if (kpiAvgAff) kpiAvgAff.textContent = `${avgAff.toLocaleString('fr-FR')} XOF`;
+        if (kpiAvgNaff) kpiAvgNaff.textContent = `${avgNaff.toLocaleString('fr-FR')} XOF`;
+        if (kpiAvgSub) kpiAvgSub.textContent = `+${avgSub.toLocaleString('fr-FR')} XOF`;
+      }
     }
 
     function renderEcolageCosts() {
@@ -13920,76 +13984,106 @@
         tableCount.textContent = `${appState.costsByLevel.length} niveau(x) paramétré(s)`;
       }
 
+      updateCostsQuickKpis();
+
       // 2. Rendu des Cartes par Niveau avec les DEUX OPTIONS : AFF & NAFF
       container.innerHTML = appState.costsByLevel.map((c, idx) => {
         const isAffOnly = currentFilter === 'AFF';
         const isNaffOnly = currentFilter === 'NAFF';
+        const priseEnCharge = Math.max(0, (c.baseNaff || 0) - (c.baseAff || 0));
+        const shortLevel = esc(c.level.slice(0, 4));
+        const cycleName = esc(c.cycle || 'Général');
+        const isExamClass = (c.exam > 0) || ['3EME', '3È', 'TLE', 'TERMINALE', 'CM2'].some(k => (c.level || '').toUpperCase().includes(k));
+
+        let badgeStyle = 'bg-indigo-50 text-indigo-700 border-indigo-200/80';
+        if (cycleName.toLowerCase().includes('second') || cycleName.toLowerCase().includes('lycée')) {
+          badgeStyle = 'bg-purple-50 text-purple-700 border-purple-200/80';
+        } else if (cycleName.toLowerCase().includes('primaire')) {
+          badgeStyle = 'bg-emerald-50 text-emerald-700 border-emerald-200/80';
+        } else if (cycleName.toLowerCase().includes('maternelle')) {
+          badgeStyle = 'bg-amber-50 text-amber-700 border-amber-200/80';
+        }
 
         return `
-          <div class="border border-slate-200 p-4 rounded-xl bg-white space-y-3 relative shadow-xs hover:border-slate-300 transition">
-            <div class="flex justify-between items-center border-b border-slate-100 pb-2">
-              <div class="flex items-center gap-2">
-                <span class="w-8 h-8 rounded-lg bg-indigo-50 text-indigo-700 flex items-center justify-center font-black text-xs">
-                  ${esc(c.level.slice(0, 3))}
+          <div class="group bg-white rounded-2xl border border-slate-200/90 hover:border-indigo-400 shadow-xs hover:shadow-md transition-all duration-200 p-4 sm:p-4.5 flex flex-col justify-between space-y-3.5 relative">
+            <!-- En-tête de la carte -->
+            <div class="flex items-center justify-between pb-2.5 border-b border-slate-100">
+              <div class="flex items-center gap-2.5 min-w-0">
+                <span class="w-9 h-9 rounded-xl flex items-center justify-center font-black text-xs shrink-0 border ${badgeStyle}">
+                  ${shortLevel}
                 </span>
-                <div>
-                  <h4 class="font-extrabold text-sm text-slate-900 leading-tight">${esc(c.level)}</h4>
-                  <span class="text-[10px] text-slate-400 font-semibold">${esc(c.cycle || 'Général')}</span>
+                <div class="min-w-0">
+                  <h4 class="font-extrabold text-sm text-slate-900 leading-tight truncate">${esc(c.level)}</h4>
+                  <div class="flex items-center gap-1.5 mt-0.5">
+                    <span class="text-[10px] font-semibold text-slate-500">${cycleName}</span>
+                    ${isExamClass ? `<span class="px-1.5 py-0.2 rounded-full text-[9px] font-black uppercase tracking-wider bg-rose-50 text-rose-600 border border-rose-200">Examen</span>` : ''}
+                  </div>
                 </div>
               </div>
-              <div class="flex items-center gap-1">
-                <button type="button" onclick="editCostLevel('${esc(c.level)}')" class="p-1 text-slate-400 hover:text-indigo-600 rounded transition cursor-pointer" title="Modifier ce barème">✏️</button>
-                <button type="button" onclick="deleteCostLevel('${esc(c.level)}')" class="p-1 text-slate-400 hover:text-rose-600 rounded transition cursor-pointer" title="Supprimer ce niveau">✕</button>
+              <div class="flex items-center gap-1 shrink-0">
+                <button type="button" onclick="editCostLevel('${esc(c.level)}')" class="w-7 h-7 rounded-lg bg-slate-50 hover:bg-indigo-50 text-slate-400 hover:text-indigo-600 flex items-center justify-center transition cursor-pointer text-xs" title="Modifier ce niveau">✏️</button>
+                <button type="button" onclick="deleteCostLevel('${esc(c.level)}')" class="w-7 h-7 rounded-lg bg-slate-50 hover:bg-rose-50 text-slate-400 hover:text-rose-600 flex items-center justify-center transition cursor-pointer text-xs" title="Supprimer ce niveau">✕</button>
               </div>
             </div>
 
-            <!-- OPTION 1 : AFF (Affectés État) -->
-            <div class="p-2.5 rounded-lg border transition ${isNaffOnly ? 'opacity-40 bg-slate-50 border-slate-200' : 'bg-emerald-50/60 border-emerald-200 shadow-xs'}">
-              <div class="flex justify-between items-center mb-1">
-                <span class="text-[10.5px] font-black text-emerald-900 flex items-center gap-1">
-                  <span class="w-2 h-2 rounded-full bg-emerald-500"></span>
-                  Option AFF (Affecté)
+            <!-- Corps de la carte : Les 2 options tarifaires -->
+            <div class="space-y-2.5">
+              <!-- OPTION 1 : AFF (Affectés État) -->
+              <div class="rounded-xl p-2.5 sm:p-3 transition-all border ${isNaffOnly ? 'opacity-35 bg-slate-50/60 border-slate-200' : 'bg-emerald-50/40 border-emerald-200/80 shadow-2xs'}">
+                <div class="flex items-center justify-between mb-1.5">
+                  <div class="flex items-center gap-1.5">
+                    <span class="w-2 h-2 rounded-full bg-emerald-500 shrink-0"></span>
+                    <span class="text-[11px] font-black text-emerald-950">Option AFF (Affecté)</span>
+                    <span class="text-[9px] uppercase font-bold text-emerald-700 bg-emerald-100/70 px-1.5 py-0.2 rounded">Taux État</span>
+                  </div>
+                  <div class="text-[10px] text-emerald-800 font-semibold font-mono">
+                    Total : <strong id="card-total-aff-${idx}" class="font-black text-emerald-900">${c.totalAff.toLocaleString('fr-FR')} XOF</strong>
+                  </div>
+                </div>
+                <div class="relative flex items-center">
+                  <input type="number" id="cost-base-aff-${idx}" value="${c.baseAff}" step="1000" min="0" oninput="updateCostLevelInMemory(${idx}, 'aff', this.value)" onchange="updateCostLevelInMemory(${idx}, 'aff', this.value)" class="w-full bg-white border border-emerald-300/80 rounded-lg pl-2.5 pr-12 py-1.5 font-mono font-bold text-xs text-emerald-950 focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 outline-none transition" placeholder="Tarif AFF">
+                  <span class="absolute right-2.5 text-[10px] font-bold text-emerald-700 pointer-events-none">XOF</span>
+                </div>
+              </div>
+
+              <!-- OPTION 2 : NAFF (Non Affectés Privé) -->
+              <div class="rounded-xl p-2.5 sm:p-3 transition-all border ${isAffOnly ? 'opacity-35 bg-slate-50/60 border-slate-200' : 'bg-amber-50/40 border-amber-200/80 shadow-2xs'}">
+                <div class="flex items-center justify-between mb-1.5">
+                  <div class="flex items-center gap-1.5">
+                    <span class="w-2 h-2 rounded-full bg-amber-500 shrink-0"></span>
+                    <span class="text-[11px] font-black text-amber-950">Option NAFF (Non Affecté)</span>
+                    <span class="text-[9px] uppercase font-bold text-amber-700 bg-amber-100/70 px-1.5 py-0.2 rounded">Plein Tarif</span>
+                  </div>
+                  <div class="text-[10px] text-amber-800 font-semibold font-mono">
+                    Total : <strong id="card-total-naff-${idx}" class="font-black text-amber-900">${c.totalNaff.toLocaleString('fr-FR')} XOF</strong>
+                  </div>
+                </div>
+                <div class="relative flex items-center">
+                  <input type="number" id="cost-base-naff-${idx}" value="${c.baseNaff}" step="1000" min="0" oninput="updateCostLevelInMemory(${idx}, 'naff', this.value)" onchange="updateCostLevelInMemory(${idx}, 'naff', this.value)" class="w-full bg-white border border-amber-300/80 rounded-lg pl-2.5 pr-12 py-1.5 font-mono font-bold text-xs text-amber-950 focus:ring-2 focus:ring-amber-500/20 focus:border-amber-500 outline-none transition" placeholder="Tarif NAFF">
+                  <span class="absolute right-2.5 text-[10px] font-bold text-amber-700 pointer-events-none">XOF</span>
+                </div>
+              </div>
+
+              <!-- Champ rétrocompatibilité pour cost-base-${idx} -->
+              <input type="hidden" id="cost-base-${idx}" value="${c.baseNaff}">
+
+              <!-- Indicateur Subvention État -->
+              <div class="flex items-center justify-between px-2.5 py-1 rounded-lg bg-sky-50/70 border border-sky-100 text-[10px]">
+                <span class="text-sky-800 font-semibold flex items-center gap-1">
+                  <span>🏛️</span> Prise en charge État :
                 </span>
-                <span class="text-[9px] uppercase font-bold text-emerald-700 bg-emerald-100/80 px-1.5 py-0.2 rounded font-semibold">Taux État</span>
-              </div>
-              <div class="flex items-center gap-1.5">
-                <input type="number" id="cost-base-aff-${idx}" value="${c.baseAff}" step="1000" min="0" oninput="updateCostLevelInMemory(${idx}, 'aff', this.value)" onchange="updateCostLevelInMemory(${idx}, 'aff', this.value)" class="w-full border border-emerald-300 rounded px-2 py-1 font-mono font-bold text-xs bg-white text-emerald-950 focus:ring-1 focus:ring-emerald-500 outline-none">
-                <span class="text-[11px] font-bold text-emerald-800">XOF</span>
-              </div>
-              <div class="flex justify-between items-center text-[10px] text-emerald-800 pt-1 mt-0.5 border-t border-emerald-200/60">
-                <span>Total Dû AFF :</span>
-                <strong id="card-total-aff-${idx}" class="font-mono">${c.totalAff.toLocaleString('fr-FR')} XOF</strong>
+                <strong class="font-mono text-sky-900 font-bold">+${priseEnCharge.toLocaleString('fr-FR')} XOF</strong>
               </div>
             </div>
 
-            <!-- OPTION 2 : NAFF (Non Affectés Privé) -->
-            <div class="p-2.5 rounded-lg border transition ${isAffOnly ? 'opacity-40 bg-slate-50 border-slate-200' : 'bg-amber-50/60 border-amber-200 shadow-xs'}">
-              <div class="flex justify-between items-center mb-1">
-                <span class="text-[10.5px] font-black text-amber-900 flex items-center gap-1">
-                  <span class="w-2 h-2 rounded-full bg-amber-500"></span>
-                  Option NAFF (Non Affecté)
-                </span>
-                <span class="text-[9px] uppercase font-bold text-amber-700 bg-amber-100/80 px-1.5 py-0.2 rounded font-semibold">Plein Tarif</span>
-              </div>
-              <div class="flex items-center gap-1.5">
-                <input type="number" id="cost-base-naff-${idx}" value="${c.baseNaff}" step="1000" min="0" oninput="updateCostLevelInMemory(${idx}, 'naff', this.value)" onchange="updateCostLevelInMemory(${idx}, 'naff', this.value)" class="w-full border border-amber-300 rounded px-2 py-1 font-mono font-bold text-xs bg-white text-amber-950 focus:ring-1 focus:ring-amber-500 outline-none">
-                <span class="text-[11px] font-bold text-amber-800">XOF</span>
-              </div>
-              <div class="flex justify-between items-center text-[10px] text-amber-800 pt-1 mt-0.5 border-t border-amber-200/60">
-                <span>Total Dû NAFF :</span>
-                <strong id="card-total-naff-${idx}" class="font-mono">${c.totalNaff.toLocaleString('fr-FR')} XOF</strong>
-              </div>
-            </div>
-
-            <!-- Champ rétrocompatibilité pour cost-base-${idx} -->
-            <input type="hidden" id="cost-base-${idx}" value="${c.baseNaff}">
-
-            <!-- Frais d'examen / droits annexes -->
-            <div class="text-[11px] text-slate-500 flex justify-between items-center pt-1.5 border-t border-slate-100">
-              <span class="text-[10px] font-semibold text-slate-600">Droits examen / dossier :</span>
-              <div class="flex items-center gap-1">
-                <input type="number" id="cost-exam-${idx}" value="${c.exam || 0}" step="1000" min="0" oninput="updateCostLevelInMemory(${idx}, 'exam', this.value)" onchange="updateCostLevelInMemory(${idx}, 'exam', this.value)" class="w-20 text-right border border-slate-300 rounded px-1.5 py-0.5 font-mono font-bold text-xs bg-slate-50 text-slate-800 focus:bg-white focus:ring-1 focus:ring-indigo-500 outline-none">
-                <span class="text-[10px] font-bold text-slate-500">XOF</span>
+            <!-- Pied de carte : Droits examen / dossier -->
+            <div class="pt-2 border-t border-slate-100 flex items-center justify-between text-xs">
+              <span class="text-[11px] font-medium text-slate-500 flex items-center gap-1">
+                <span>📝</span> Droits examen :
+              </span>
+              <div class="relative flex items-center w-24">
+                <input type="number" id="cost-exam-${idx}" value="${c.exam || 0}" step="1000" min="0" oninput="updateCostLevelInMemory(${idx}, 'exam', this.value)" onchange="updateCostLevelInMemory(${idx}, 'exam', this.value)" class="w-full text-right bg-slate-50 focus:bg-white border border-slate-200 focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500/20 rounded-lg pl-1.5 pr-8 py-1 font-mono font-bold text-xs text-slate-800 outline-none transition">
+                <span class="absolute right-2 text-[9px] font-bold text-slate-400 pointer-events-none">XOF</span>
               </div>
             </div>
           </div>
@@ -14004,18 +14098,18 @@
           tableBody.innerHTML = appState.costsByLevel.map(c => {
             const priseEnCharge = Math.max(0, (c.baseNaff || 0) - (c.baseAff || 0));
             return `
-              <tr class="hover:bg-slate-50 transition border-b border-slate-100">
-                <td class="p-2.5 font-bold font-mono text-slate-900">${esc(c.level)}</td>
-                <td class="p-2.5 text-slate-600">${esc(c.cycle || 'Collège')}</td>
-                <td class="p-2.5 text-right font-mono font-black text-emerald-700 bg-emerald-50/40">${(c.baseAff || 0).toLocaleString('fr-FR')} XOF</td>
-                <td class="p-2.5 text-right font-mono font-black text-amber-700 bg-amber-50/40">${(c.baseNaff || 0).toLocaleString('fr-FR')} XOF</td>
-                <td class="p-2.5 text-right font-mono text-slate-600">${(c.exam || 0).toLocaleString('fr-FR')} XOF</td>
-                <td class="p-2.5 text-right font-mono font-black text-emerald-800 bg-emerald-100/50">${(c.totalAff || 0).toLocaleString('fr-FR')} XOF</td>
-                <td class="p-2.5 text-right font-mono font-black text-amber-800 bg-amber-100/50">${(c.totalNaff || 0).toLocaleString('fr-FR')} XOF</td>
-                <td class="p-2.5 text-right font-mono text-sky-700 font-bold bg-sky-50/50">+${priseEnCharge.toLocaleString('fr-FR')} XOF</td>
-                <td class="p-2.5 text-center space-x-1 whitespace-nowrap">
-                  <button type="button" onclick="editCostLevel('${esc(c.level)}')" class="px-2 py-1 bg-indigo-50 hover:bg-indigo-100 text-indigo-700 rounded text-[10px] font-bold transition cursor-pointer">✏️ Modifier</button>
-                  <button type="button" onclick="deleteCostLevel('${esc(c.level)}')" class="px-2 py-1 bg-rose-50 hover:bg-rose-100 text-rose-700 rounded text-[10px] font-bold transition cursor-pointer">🗑️</button>
+              <tr class="hover:bg-slate-50/80 transition border-b border-slate-100">
+                <td class="p-3 font-bold font-mono text-slate-900">${esc(c.level)}</td>
+                <td class="p-3 text-slate-600">${esc(c.cycle || 'Général')}</td>
+                <td class="p-3 text-right font-mono font-black text-emerald-700 bg-emerald-50/40">${(c.baseAff || 0).toLocaleString('fr-FR')} XOF</td>
+                <td class="p-3 text-right font-mono font-black text-amber-700 bg-amber-50/40">${(c.baseNaff || 0).toLocaleString('fr-FR')} XOF</td>
+                <td class="p-3 text-right font-mono text-slate-600">${(c.exam || 0).toLocaleString('fr-FR')} XOF</td>
+                <td class="p-3 text-right font-mono font-black text-emerald-800 bg-emerald-100/50">${(c.totalAff || 0).toLocaleString('fr-FR')} XOF</td>
+                <td class="p-3 text-right font-mono font-black text-amber-800 bg-amber-100/50">${(c.totalNaff || 0).toLocaleString('fr-FR')} XOF</td>
+                <td class="p-3 text-right font-mono text-sky-700 font-bold bg-sky-50/50">+${priseEnCharge.toLocaleString('fr-FR')} XOF</td>
+                <td class="p-3 text-center space-x-1.5 whitespace-nowrap">
+                  <button type="button" onclick="editCostLevel('${esc(c.level)}')" class="px-2.5 py-1 bg-indigo-50 hover:bg-indigo-100 text-indigo-700 rounded-lg text-[10px] font-bold transition cursor-pointer">✏️ Modifier</button>
+                  <button type="button" onclick="deleteCostLevel('${esc(c.level)}')" class="px-2.5 py-1 bg-rose-50 hover:bg-rose-100 text-rose-700 rounded-lg text-[10px] font-bold transition cursor-pointer">🗑️</button>
                 </td>
               </tr>
             `;
@@ -14048,6 +14142,7 @@
       if (totalAffEl) totalAffEl.textContent = `${appState.costsByLevel[idx].totalAff.toLocaleString('fr-FR')} XOF`;
       const totalNaffEl = document.getElementById(`card-total-naff-${idx}`);
       if (totalNaffEl) totalNaffEl.textContent = `${appState.costsByLevel[idx].totalNaff.toLocaleString('fr-FR')} XOF`;
+      updateCostsQuickKpis();
     }
 
     function resetCostLevelForm() {
