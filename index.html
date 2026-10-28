@@ -10732,6 +10732,20 @@
       if (Array.isArray(data.users)) appState.users = data.users;
       if (Array.isArray(data.auditLogs)) appState.auditLogs = data.auditLogs;
       if (Array.isArray(data.importBatches)) appState.importBatches = data.importBatches;
+      if (data.ecolageConfig) {
+        if (Array.isArray(data.ecolageConfig.costsByLevel) && data.ecolageConfig.costsByLevel.length > 0) {
+          appState.costsByLevel = data.ecolageConfig.costsByLevel;
+        }
+        if (Array.isArray(data.ecolageConfig.feeInstallments) && data.ecolageConfig.feeInstallments.length > 0) {
+          appState.feeInstallments = data.ecolageConfig.feeInstallments;
+        }
+        if (Array.isArray(data.ecolageConfig.feeTypes) && data.ecolageConfig.feeTypes.length > 0) {
+          appState.feeTypes = data.ecolageConfig.feeTypes;
+        }
+        if (Array.isArray(data.ecolageConfig.discountCases) && data.ecolageConfig.discountCases.length > 0) {
+          appState.discountCases = data.ecolageConfig.discountCases;
+        }
+      }
 
       // Détermination du périmètre actif de l'établissement
       const u = getActiveUser() || data.currentUser;
@@ -10909,6 +10923,7 @@
         if (school) {
           appState.impersonatedTarget = { type: 'SCHOOL', id: school.id, name: school.name };
           appState.currentSchoolId = school.id;
+        loadSchoolEcolageFromServer(school.id);
           if (school.foundationId) appState.currentFoundationId = school.foundationId;
         }
       } else if (school) {
@@ -13642,6 +13657,55 @@
     // MODULE PARAMÉTRAGES ÉCOLAGE (PHASE 6 & 21)
     // =================================================================
 
+    async function syncEcolageToServer(delta) {
+      const sId = appState.currentSchoolId || (appState.schools && appState.schools[0] ? appState.schools[0].id : 1);
+      try {
+        const res = await fetch('/api/school/ecolage', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            schoolId: sId,
+            ...delta
+          })
+        }).then(r => r.json());
+        if (res && res.success) {
+          showToast("✅ Données d'écolage enregistrées en base de données avec succès !");
+        }
+      } catch (err) {
+        console.warn("Synchronisation réseau écolage échouée (mode hors-ligne):", err);
+      }
+    }
+
+    async function loadSchoolEcolageFromServer(schoolId) {
+      const sId = schoolId || appState.currentSchoolId || 1;
+      try {
+        const res = await fetch(`/api/school/ecolage?school_id=${sId}`).then(r => r.json());
+        if (res && res.success) {
+          if (Array.isArray(res.costsByLevel) && res.costsByLevel.length > 0) {
+            appState.costsByLevel = res.costsByLevel;
+            renderEcolageCosts();
+          }
+          if (Array.isArray(res.feeInstallments) && res.feeInstallments.length > 0) {
+            appState.feeInstallments = res.feeInstallments;
+            renderEcolageSchedule();
+          }
+          if (Array.isArray(res.feeTypes) && res.feeTypes.length > 0) {
+            appState.feeTypes = res.feeTypes;
+            renderEcolageFees();
+          }
+          if (Array.isArray(res.discountCases) && res.discountCases.length > 0) {
+            appState.discountCases = res.discountCases;
+            renderEcolageReductions();
+          }
+          if (appState.ecolageSubTab === 'summary') {
+            renderEcolageSummary();
+          }
+        }
+      } catch (e) {
+        console.warn("Échec chargement écolage serveur:", e);
+      }
+    }
+
     function setEcolageSubTab(tabId) {
       appState.ecolageSubTab = tabId;
       const subviews = ['schedule', 'fees', 'costs', 'reductions', 'personal', 'summary'];
@@ -13672,7 +13736,11 @@
       if (!tbody) return;
       tbody.innerHTML = '';
 
+      // Calculer le montant de référence collège à partir de la grille réelle
+      const refCollege = (appState.costsByLevel && appState.costsByLevel[0]) ? (appState.costsByLevel[0].baseNaff || 120000) : 120000;
+
       appState.feeInstallments.forEach(inst => {
+        const computedAmount = inst.montantCollege || Math.round(refCollege * ((inst.pct || 10) / 100));
         const tr = document.createElement('tr');
         tr.className = "hover:bg-slate-50 border-b border-slate-100";
         tr.innerHTML = `
@@ -13680,7 +13748,7 @@
           <td class="p-2.5 text-slate-700">${esc(inst.name)}</td>
           <td class="p-2.5 font-mono text-slate-600 font-bold">${esc(inst.date)}</td>
           <td class="p-2.5 text-right font-bold text-purple-700">${esc(inst.pct)}%</td>
-          <td class="p-2.5 text-right font-mono font-bold">${inst.montantCollege.toLocaleString()} XOF</td>
+          <td class="p-2.5 text-right font-mono font-bold">${computedAmount.toLocaleString('fr-FR')} XOF</td>
           <td class="p-2.5 text-center"><span class="px-2 py-0.5 bg-emerald-100 text-emerald-800 rounded font-bold text-[10px]">OUI</span></td>
           <td class="p-2.5 text-center space-x-1 whitespace-nowrap">
             <button onclick="editFeeInstallment(${escJs(inst.id)})" class="p-1 text-slate-600 hover:text-blue-600" title="Modifier la tranche">✏️</button>
@@ -13771,6 +13839,7 @@
       }
       closeFeeInstallmentModal();
       renderEcolageSchedule();
+      syncEcolageToServer({ feeInstallments: appState.feeInstallments });
     }
 
     function editFeeInstallment(id) {
@@ -13785,6 +13854,7 @@
 
       appState.feeInstallments.splice(idx, 1);
       renderEcolageSchedule();
+      syncEcolageToServer({ feeInstallments: appState.feeInstallments });
       auditAction('ECOLAGE_INSTALLMENT_DELETE', 'Écolage', `Tranche #${esc(id)}`, inst.name, 'SUPPRIMÉE', 'SUCCÈS');
       showToast("Tranche d'écolage supprimée !");
     }
@@ -13892,6 +13962,7 @@
       }
       closeFeeTypeModal();
       renderEcolageFees();
+      syncEcolageToServer({ feeTypes: appState.feeTypes });
     }
 
     function editFeeType(code) {
@@ -13906,6 +13977,7 @@
 
       appState.feeTypes.splice(idx, 1);
       renderEcolageFees();
+      syncEcolageToServer({ feeTypes: appState.feeTypes });
       auditAction('FEE_TYPE_DELETE', 'Écolage', f.code, f.name, 'SUPPRIMÉ', 'SUCCÈS');
       showToast("Type de frais supprimé du catalogue !");
     }
@@ -14297,6 +14369,7 @@
         localStorage.setItem('scolapro_costs_by_level', JSON.stringify(appState.costsByLevel));
       } catch (_) {}
       renderEcolageCosts();
+      syncEcolageToServer({ costsByLevel: appState.costsByLevel });
       auditAction('ECOLAGE_COSTS_UPDATE', 'Écolage', 'Grille Tarifaire', '', 'Nouveaux coûts par niveau appliqués (Options AFF & NAFF)', 'SUCCÈS');
       showToast("Grille tarifaire (Options AFF & NAFF) sauvegardée avec succès !");
     }
@@ -14398,6 +14471,7 @@
       }
       closeReductionModal();
       renderEcolageReductions();
+      syncEcolageToServer({ discountCases: appState.discountCases });
     }
 
     function editReduction(code) {
@@ -14412,6 +14486,7 @@
 
       appState.discountCases.splice(idx, 1);
       renderEcolageReductions();
+      syncEcolageToServer({ discountCases: appState.discountCases });
       auditAction('REDUCTION_DELETE', 'Écolage', d.code, d.label, 'SUPPRIMÉ', 'SUCCÈS');
       showToast("Cas de réduction supprimé !");
     }
@@ -14436,22 +14511,107 @@
     function renderPersonalSchedule(studentId) {
       const box = document.getElementById('personal-sched-result-box');
       const student = appState.students.find(s => s.id === parseInt(studentId)) || appState.students[0];
-      if (!box || !student) return;
+      if (!box) return;
+      if (!student) {
+        box.innerHTML = '<div class="p-6 text-center text-slate-400 italic">Aucun élève trouvé dans la base pour cet établissement.</div>';
+        return;
+      }
+
+      const totalFee = Number(student.feeDue) || 0;
+      const paidFee = Number(student.feePaid) || 0;
+      const balance = Math.max(0, totalFee - paidFee);
+      const isSolde = balance === 0 && totalFee > 0;
+
+      // Calcul dynamique des tranches individuelles pour cet élève réel
+      const installments = (appState.feeInstallments && appState.feeInstallments.length > 0) 
+        ? appState.feeInstallments 
+        : [
+            { tranche: '1re Tranche', name: 'Rentrée', date: '30/09/2026', pct: 40 },
+            { tranche: '2e Tranche', name: 'Deuxième Trimestre', date: '30/12/2026', pct: 35 },
+            { tranche: '3e Tranche', name: 'Solde Annuel', date: '28/02/2027', pct: 25 }
+          ];
+
+      let runningTarget = 0;
+      const rowsHtml = installments.map(inst => {
+        const instAmount = Math.round(totalFee * ((inst.pct || 0) / 100));
+        runningTarget += instAmount;
+        let badge = '';
+        if (paidFee >= runningTarget && totalFee > 0) {
+          badge = '<span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-100 text-emerald-800">Réglé ✓</span>';
+        } else if (paidFee > (runningTarget - instAmount) && paidFee < runningTarget) {
+          badge = '<span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-100 text-amber-800">Partiel</span>';
+        } else {
+          badge = '<span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-slate-100 text-slate-600">En attente</span>';
+        }
+
+        return `
+          <tr class="hover:bg-slate-50 transition border-b border-slate-100">
+            <td class="p-2.5 font-bold text-slate-800">${esc(inst.tranche)}</td>
+            <td class="p-2.5 text-slate-600">${esc(inst.name)}</td>
+            <td class="p-2.5 font-mono text-slate-700 font-bold">${esc(inst.date)}</td>
+            <td class="p-2.5 text-right font-bold text-purple-700">${esc(inst.pct)}%</td>
+            <td class="p-2.5 text-right font-mono font-bold text-slate-900">${instAmount.toLocaleString('fr-FR')} XOF</td>
+            <td class="p-2.5 text-center">${badge}</td>
+          </tr>
+        `;
+      }).join('');
 
       box.innerHTML = `
-        <div class="border border-slate-200 rounded-xl p-4 bg-white space-y-3">
-          <div class="flex justify-between items-center border-b pb-2">
+        <div class="border border-slate-200 rounded-xl p-4 bg-white space-y-4 shadow-xs">
+          <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2 border-b border-slate-100 pb-3">
             <div>
-              <h4 class="font-bold text-sm text-slate-900">${esc(student.nomPrenom)}</h4>
-              <p class="text-xs text-slate-500">Matricule : <span class="font-mono font-bold">${esc(student.matricule)}</span> &bull; Classe : ${esc(student.classe)}</p>
+              <h4 class="font-bold text-sm text-slate-900 flex items-center gap-2">
+                <span>${esc(student.nomPrenom)}</span>
+                <span class="px-2 py-0.5 rounded text-[10px] font-bold ${(student.statut === 'Affecté' || student.statut === 'AFF') ? 'bg-emerald-100 text-emerald-800' : 'bg-amber-100 text-amber-800'}">
+                  ${esc(student.statut || 'Non-Affecté')}
+                </span>
+              </h4>
+              <p class="text-xs text-slate-500">Matricule : <span class="font-mono font-bold text-slate-700">${esc(student.matricule)}</span> &bull; Classe : <span class="font-bold text-slate-700">${esc(student.classe)}</span></p>
             </div>
-            <span class="px-2.5 py-1 bg-indigo-100 text-indigo-800 rounded-full font-bold text-xs">Échéancier Dérogatoire Validé</span>
+            <span class="px-3 py-1 ${isSolde ? 'bg-emerald-100 text-emerald-800' : 'bg-indigo-100 text-indigo-800'} rounded-full font-bold text-xs">
+              ${isSolde ? 'Scolarité Totalement Soldée ✓' : 'Échéancier Individuel Actif'}
+            </span>
           </div>
-          <div class="grid grid-cols-1 sm:grid-cols-4 gap-3 text-xs">
-            <div class="p-2 bg-slate-50 rounded border"><span class="text-slate-500 block">Frais Dus</span><strong>${student.feeDue.toLocaleString()} XOF</strong></div>
-            <div class="p-2 bg-slate-50 rounded border"><span class="text-slate-500 block">Déjà Réglé</span><strong class="text-emerald-600">${student.feePaid.toLocaleString()} XOF</strong></div>
-            <div class="p-2 bg-slate-50 rounded border"><span class="text-slate-500 block">Solde</span><strong class="text-red-600">${(student.feeDue - student.feePaid).toLocaleString()} XOF</strong></div>
-            <div class="p-2 bg-slate-50 rounded border"><span class="text-slate-500 block">Accord Accordé Par</span><strong>Dr. N'Guetta (D.E)</strong></div>
+
+          <div class="grid grid-cols-2 sm:grid-cols-4 gap-3 text-xs">
+            <div class="p-3 bg-slate-50 rounded-lg border border-slate-100">
+              <span class="text-slate-500 block text-[11px]">Total Scolarité Dû</span>
+              <strong class="font-mono text-sm text-slate-900">${totalFee.toLocaleString('fr-FR')} XOF</strong>
+            </div>
+            <div class="p-3 bg-emerald-50/50 rounded-lg border border-emerald-100">
+              <span class="text-emerald-700 block text-[11px]">Montant Réglé</span>
+              <strong class="font-mono text-sm text-emerald-700">${paidFee.toLocaleString('fr-FR')} XOF</strong>
+            </div>
+            <div class="p-3 bg-rose-50/50 rounded-lg border border-rose-100">
+              <span class="text-rose-700 block text-[11px]">Reste à Payer (Solde)</span>
+              <strong class="font-mono text-sm text-rose-700">${balance.toLocaleString('fr-FR')} XOF</strong>
+            </div>
+            <div class="p-3 bg-slate-50 rounded-lg border border-slate-100">
+              <span class="text-slate-500 block text-[11px]">Autorité de Validation</span>
+              <strong class="text-slate-800">${esc(appState.currentUser ? appState.currentUser.nomPrenom : "Direction des Études")}</strong>
+            </div>
+          </div>
+
+          <div class="mt-4 border border-slate-200 rounded-lg overflow-hidden">
+            <div class="bg-slate-50 px-3 py-2 border-b border-slate-200 flex justify-between items-center">
+              <span class="font-bold text-xs text-slate-800">Plan d'échelonnement individuel calculé</span>
+              <button onclick="window.print()" class="text-[11px] font-bold text-indigo-700 hover:text-indigo-900">🖨️ Imprimer la Fiche Élève</button>
+            </div>
+            <table class="w-full text-left text-xs">
+              <thead class="bg-table-header text-white font-bold uppercase text-[10px]">
+                <tr>
+                  <th class="p-2.5">Tranche</th>
+                  <th class="p-2.5">Période</th>
+                  <th class="p-2.5">Date Limite</th>
+                  <th class="p-2.5 text-right">% Requis</th>
+                  <th class="p-2.5 text-right">Montant Exigible</th>
+                  <th class="p-2.5 text-center">État Recouvrement</th>
+                </tr>
+              </thead>
+              <tbody class="divide-y divide-slate-100">
+                ${rowsHtml}
+              </tbody>
+            </table>
           </div>
         </div>
       `;
@@ -14460,19 +14620,43 @@
     function renderEcolageSummary() {
       const box = document.getElementById('ecolage-summary-table-box');
       if (!box) return;
+      if (!appState.costsByLevel || appState.costsByLevel.length === 0) {
+        box.innerHTML = '<div class="p-8 text-center text-slate-400 italic">Aucun barème tarifaire configuré pour cet établissement.</div>';
+        return;
+      }
+
       box.innerHTML = `
-        <table class="w-full text-left text-xs">
-          <thead class="bg-table-header text-white font-bold uppercase text-[10px]">
-            <tr><th class="p-2.5">Cycle</th><th class="p-2.5">Niveau</th><th class="p-2.5 text-right">Scolarité Annuelle</th><th class="p-2.5 text-right">Frais d'Examen</th><th class="p-2.5 text-right">Total Écolage</th></tr>
+        <table class="w-full text-left text-xs min-w-[700px]">
+          <thead class="bg-table-header text-white font-bold uppercase text-[10px] tracking-wider">
+            <tr>
+              <th class="p-3 whitespace-nowrap">Niveau</th>
+              <th class="p-3 whitespace-nowrap">Cycle</th>
+              <th class="p-3 text-right bg-emerald-950/40 text-emerald-300 whitespace-nowrap">Option AFF (État)</th>
+              <th class="p-3 text-right bg-amber-950/40 text-amber-300 whitespace-nowrap">Option NAFF (Privé)</th>
+              <th class="p-3 text-right whitespace-nowrap">Frais d'Examen</th>
+              <th class="p-3 text-right text-emerald-300 font-mono whitespace-nowrap">Total Dû AFF</th>
+              <th class="p-3 text-right text-amber-300 font-mono whitespace-nowrap">Total Dû NAFF</th>
+              <th class="p-3 text-right text-sky-300 font-mono whitespace-nowrap">Prise en Charge État</th>
+            </tr>
           </thead>
-          <tbody class="divide-y divide-slate-100">
-            <tr><td class="p-2 font-semibold">Collège</td><td class="p-2 font-bold">6EME</td><td class="p-2 text-right font-mono">120 000 XOF</td><td class="p-2 text-right">0 XOF</td><td class="p-2 text-right font-mono font-bold">120 000 XOF</td></tr>
-            <tr><td class="p-2 font-semibold">Collège</td><td class="p-2 font-bold">5EME</td><td class="p-2 text-right font-mono">120 000 XOF</td><td class="p-2 text-right">0 XOF</td><td class="p-2 text-right font-mono font-bold">120 000 XOF</td></tr>
-            <tr><td class="p-2 font-semibold">Collège</td><td class="p-2 font-bold">4EME</td><td class="p-2 text-right font-mono">120 000 XOF</td><td class="p-2 text-right">0 XOF</td><td class="p-2 text-right font-mono font-bold">120 000 XOF</td></tr>
-            <tr><td class="p-2 font-semibold">Collège</td><td class="p-2 font-bold">3EME</td><td class="p-2 text-right font-mono">120 000 XOF</td><td class="p-2 text-right font-mono">10 000 XOF</td><td class="p-2 text-right font-mono font-bold">130 000 XOF</td></tr>
-            <tr><td class="p-2 font-semibold">Lycée</td><td class="p-2 font-bold">2NDE</td><td class="p-2 text-right font-mono">130 000 XOF</td><td class="p-2 text-right">0 XOF</td><td class="p-2 text-right font-mono font-bold">130 000 XOF</td></tr>
-            <tr><td class="p-2 font-semibold">Lycée</td><td class="p-2 font-bold">1ERE</td><td class="p-2 text-right font-mono">130 000 XOF</td><td class="p-2 text-right">0 XOF</td><td class="p-2 text-right font-mono font-bold">130 000 XOF</td></tr>
-            <tr><td class="p-2 font-semibold">Lycée</td><td class="p-2 font-bold">TLE</td><td class="p-2 text-right font-mono">140 000 XOF</td><td class="p-2 text-right font-mono">15 000 XOF</td><td class="p-2 text-right font-mono font-bold">155 000 XOF</td></tr>
+          <tbody class="divide-y divide-slate-100 bg-white">
+            ${appState.costsByLevel.map(c => {
+              const priseEnCharge = Math.max(0, (c.baseNaff || 0) - (c.baseAff || 0));
+              const isExam = ['3EME', '3È', 'TLE', 'TERMINALE', 'CM2'].some(k => (c.level || '').toUpperCase().includes(k));
+              const examText = isExam ? `${(c.exam || 0).toLocaleString('fr-FR')} XOF` : '—';
+              return `
+                <tr class="hover:bg-slate-50 transition border-b border-slate-100">
+                  <td class="p-3 font-black font-mono text-slate-900 whitespace-nowrap">${esc(c.level)}</td>
+                  <td class="p-3 text-slate-600 whitespace-nowrap">${esc(c.cycle || 'Général')}</td>
+                  <td class="p-3 text-right font-mono font-bold text-emerald-700 whitespace-nowrap">${(c.baseAff || 0).toLocaleString('fr-FR')} XOF</td>
+                  <td class="p-3 text-right font-mono font-bold text-amber-700 whitespace-nowrap">${(c.baseNaff || 0).toLocaleString('fr-FR')} XOF</td>
+                  <td class="p-3 text-right font-mono text-slate-600 whitespace-nowrap">${examText}</td>
+                  <td class="p-3 text-right font-mono font-black text-emerald-800 bg-emerald-50/50 whitespace-nowrap">${(c.totalAff || 0).toLocaleString('fr-FR')} XOF</td>
+                  <td class="p-3 text-right font-mono font-black text-amber-800 bg-amber-50/50 whitespace-nowrap">${(c.totalNaff || 0).toLocaleString('fr-FR')} XOF</td>
+                  <td class="p-3 text-right font-mono text-sky-700 font-bold whitespace-nowrap">+${priseEnCharge.toLocaleString('fr-FR')} XOF</td>
+                </tr>
+              `;
+            }).join('')}
           </tbody>
         </table>
       `;

@@ -975,6 +975,22 @@ const server = http.createServer(async (req, res) => {
     }
 
     // Paramètres Établissement (Niveau 3)
+    // -----------------------------------------------------------------
+    // MODULE PARAMÉTRAGES ÉCOLAGE & GRILLES TARIFAIRES (FULLSTACK)
+    // -----------------------------------------------------------------
+    if (reqPath === '/api/school/ecolage' || reqPath === '/api/school/costs') {
+      const sId = parseInt(queryParams.school_id || queryParams.schoolId || user.schoolId || (user.role === 'concepteur' ? 1 : 1), 10);
+      if (method === 'GET') {
+        return sendJson(res, 200, { success: true, ...db.getSchoolEcolageConfig(user, sId) });
+      }
+      if (method === 'POST' || method === 'PUT') {
+        const payload = await readJsonBody(req);
+        const targetSchoolId = parseInt(payload.schoolId || sId, 10);
+        const result = db.updateSchoolEcolageConfig(user, targetSchoolId, payload);
+        return sendJson(res, 200, { success: true, message: "Paramétrages écolage enregistrés en base de données.", ...result });
+      }
+    }
+
     if (reqPath === '/api/school/settings') {
       if (method === 'GET') {
         return sendJson(res, 200, { success: true, list: db.getSchoolSettings(user, user.schoolId) });

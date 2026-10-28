@@ -4230,6 +4230,143 @@ function updateSchoolSettings(user, schoolId, newSettings) {
   return getSchoolSettings(user, schoolId);
 }
 
+function getSchoolEcolageConfig(user, schoolId) {
+  assertSchoolAccess(user, schoolId, lookupSchool);
+  const rows = db.prepare("SELECT key, value FROM school_settings WHERE school_id = ? AND key LIKE 'ecolage_%'").all(schoolId);
+  const map = {};
+  for (const r of rows) {
+    try {
+      map[r.key] = JSON.parse(r.value);
+    } catch (_) {
+      map[r.key] = r.value;
+    }
+  }
+
+  // 1. Barème tarifaire par niveau
+  let costsByLevel = map['ecolage_costs_by_level'] || null;
+  if (!costsByLevel) {
+    // Si pas encore personnalisé, déduire dynamiquement des classes et élèves réels de l'établissement
+    const distinctLevels = db.prepare(`
+      SELECT DISTINCT level, cycle FROM classes 
+      WHERE school_id = ? 
+      ORDER BY 
+        CASE 
+          WHEN UPPER(level) LIKE '6%' THEN 1
+          WHEN UPPER(level) LIKE '5%' THEN 2
+          WHEN UPPER(level) LIKE '4%' THEN 3
+          WHEN UPPER(level) LIKE '3%' THEN 4
+          WHEN UPPER(level) LIKE '2ND%' THEN 5
+          WHEN UPPER(level) LIKE '1ER%' THEN 6
+          WHEN UPPER(level) LIKE 'TLE%' OR UPPER(level) LIKE 'TERM%' THEN 7
+          ELSE 8
+        END ASC
+    `).all(schoolId);
+
+    if (distinctLevels && distinctLevels.length > 0) {
+      costsByLevel = distinctLevels.map(cl => {
+        const isExam = ['3EME', '3È', 'TLE', 'TERMINALE', 'CM2'].some(k => (cl.level || '').toUpperCase().includes(k));
+        const feeRow = db.prepare("SELECT fee_due FROM students WHERE school_id = ? AND (niveau LIKE ? OR classe LIKE ?) AND fee_due > 0 LIMIT 1").get(schoolId, `${cl.level}%`, `${cl.level}%`);
+        const realFee = feeRow ? feeRow.fee_due : 0;
+        const baseNaff = realFee > 0 ? realFee : 0;
+        const baseAff = realFee > 0 ? Math.round(realFee * 0.4) : 0;
+        const examFee = isExam ? 10000 : 0;
+        return {
+          level: cl.level,
+          cycle: cl.cycle || 'Secondaire',
+          baseAff: baseAff,
+          baseNaff: baseNaff,
+          base: baseNaff,
+          exam: isExam ? examFee : 0,
+          totalAff: baseAff + (isExam ? examFee : 0),
+          totalNaff: baseNaff + (isExam ? examFee : 0),
+          total: baseNaff + (isExam ? examFee : 0)
+        };
+      });
+    }
+  }
+
+  // Si toujours null (aucune classe enregistrée dans l'école pour le moment), barème initial standard
+  if (!costsByLevel || costsByLevel.length === 0) {
+    costsByLevel = [
+      { level: '6EME', cycle: 'Collège', baseAff: 45000, baseNaff: 120000, base: 120000, exam: 0, totalAff: 45000, totalNaff: 120000, total: 120000 },
+      { level: '5EME', cycle: 'Collège', baseAff: 45000, baseNaff: 120000, base: 120000, exam: 0, totalAff: 45000, totalNaff: 120000, total: 120000 },
+      { level: '4EME', cycle: 'Collège', baseAff: 45000, baseNaff: 120000, base: 120000, exam: 0, totalAff: 45000, totalNaff: 120000, total: 120000 },
+      { level: '3EME', cycle: 'Collège', baseAff: 45000, baseNaff: 120000, base: 120000, exam: 10000, totalAff: 55000, totalNaff: 130000, total: 130000 },
+      { level: '2NDE', cycle: 'Lycée', baseAff: 55000, baseNaff: 130000, base: 130000, exam: 0, totalAff: 55000, totalNaff: 130000, total: 130000 },
+      { level: '1ERE', cycle: 'Lycée', baseAff: 55000, baseNaff: 130000, base: 130000, exam: 0, totalAff: 55000, totalNaff: 130000, total: 130000 },
+      { level: 'TLE', cycle: 'Lycée', baseAff: 60000, baseNaff: 140000, base: 140000, exam: 15000, totalAff: 75000, totalNaff: 155000, total: 155000 }
+    ];
+  }
+
+  // 2. Échéancier général
+  let feeInstallments = map['ecolage_fee_installments'] || null;
+  if (!feeInstallments || !Array.isArray(feeInstallments) || feeInstallments.length === 0) {
+    const refAmount = costsByLevel[0] ? (costsByLevel[0].baseNaff || 120000) : 120000;
+    feeInstallments = [
+      { id: 1, tranche: '1re Tranche', name: 'Rentrée Scolaire', date: '30/09/2026', pct: 40, montantCollege: Math.round(refAmount * 0.4), isObligatory: true },
+      { id: 2, tranche: '2e Tranche', name: 'Deuxième Trimestre', date: '30/12/2026', pct: 35, montantCollege: Math.round(refAmount * 0.35), isObligatory: true },
+      { id: 3, tranche: '3e Tranche', name: 'Solde Annuel', date: '28/02/2027', pct: 25, montantCollege: Math.round(refAmount * 0.25), isObligatory: true }
+    ];
+  }
+
+  // 3. Catalogue des types de frais
+  let feeTypes = map['ecolage_fee_types'] || null;
+  if (!feeTypes || !Array.isArray(feeTypes) || feeTypes.length === 0) {
+    const refAmount = costsByLevel[0] ? (costsByLevel[0].baseNaff || 120000) : 120000;
+    feeTypes = [
+      { code: 'SCOL', name: 'Frais Généraux de Scolarité', nature: 'Obligatoire', recurring: true, amount: refAmount, status: 'Actif' },
+      { code: 'INSC', name: 'Droit d\'Inscription Administrative', nature: 'Obligatoire', recurring: false, amount: 25000, status: 'Actif' },
+      { code: 'EXAM', name: 'Frais de Dossier d\'Examen (BEPC/BAC)', nature: 'Obligatoire', recurring: false, amount: 10000, status: 'Actif' }
+    ];
+  }
+
+  // 4. Cas de réduction
+  let discountCases = map['ecolage_discount_cases'] || null;
+  if (!discountCases || !Array.isArray(discountCases) || discountCases.length === 0) {
+    discountCases = [
+      { code: 'BOURSE_ETAT', label: "Bourse Nationale de l'État (MENA)", type: 'Pourcentage', value: '20%', appliesTo: 'Affectés État', status: 'Actif' },
+      { code: 'ENFANT_PERS', label: 'Enfant du Personnel Enseignant', type: 'Pourcentage', value: '50%', appliesTo: 'Tous', status: 'Actif' },
+      { code: 'FRATRIE_3', label: 'Tarif Fratrie (3 enfants et plus)', type: 'Montant Fixe', value: '25 000 XOF', appliesTo: 'Non-Affectés Privé', status: 'Actif' }
+    ];
+  }
+
+  return {
+    schoolId,
+    costsByLevel,
+    feeInstallments,
+    feeTypes,
+    discountCases
+  };
+}
+
+function updateSchoolEcolageConfig(user, schoolId, config) {
+  assertSchoolAccess(user, schoolId, lookupSchool);
+  const updates = {};
+  if (config.costsByLevel && Array.isArray(config.costsByLevel)) {
+    config.costsByLevel.forEach(c => {
+      const isExam = ['3EME', '3È', 'TLE', 'TERMINALE', 'CM2'].some(k => (c.level || '').toUpperCase().includes(k));
+      if (!isExam) c.exam = 0;
+      c.base = c.baseNaff || c.base || 0;
+      c.totalAff = (Number(c.baseAff) || 0) + (Number(c.exam) || 0);
+      c.totalNaff = (Number(c.baseNaff) || 0) + (Number(c.exam) || 0);
+      c.total = c.totalNaff;
+    });
+    updates['ecolage_costs_by_level'] = JSON.stringify(config.costsByLevel);
+  }
+  if (config.feeInstallments && Array.isArray(config.feeInstallments)) {
+    updates['ecolage_fee_installments'] = JSON.stringify(config.feeInstallments);
+  }
+  if (config.feeTypes && Array.isArray(config.feeTypes)) {
+    updates['ecolage_fee_types'] = JSON.stringify(config.feeTypes);
+  }
+  if (config.discountCases && Array.isArray(config.discountCases)) {
+    updates['ecolage_discount_cases'] = JSON.stringify(config.discountCases);
+  }
+
+  updateSchoolSettings(user, schoolId, updates);
+  return getSchoolEcolageConfig(user, schoolId);
+}
+
 function getUserHierarchyRank(user) {
   if (!user || !user.role || !ROLES[user.role]) return 99;
   return ROLES[user.role].rank;
@@ -4357,6 +4494,7 @@ function getBootstrapData(user) {
     payments,
     users,
     auditLogs,
+    ecolageConfig: (() => { try { return getSchoolEcolageConfig(user, user.schoolId ? user.schoolId : (schools[0] ? schools[0].id : 1)); } catch(_) { return null; } })(),
     systemSettings: user.role === 'concepteur' ? getSystemSettings(user) : []
   };
 }
@@ -4480,6 +4618,8 @@ module.exports = {
   updateFoundationSettings,
   getSchoolSettings,
   updateSchoolSettings,
+  getSchoolEcolageConfig,
+  updateSchoolEcolageConfig,
   getFoundationConsolidatedData,
   addAuditLog,
   getAuditLogs,
