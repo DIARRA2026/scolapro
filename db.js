@@ -4269,7 +4269,7 @@ function getSchoolEcolageConfig(user, schoolId) {
         const realFee = feeRow ? feeRow.fee_due : 0;
         const baseNaff = realFee > 0 ? realFee : 0;
         const baseAff = realFee > 0 ? Math.round(realFee * 0.4) : 0;
-        const examFee = isExam ? 10000 : 0;
+        const examFee = 0;
         return {
           level: cl.level,
           cycle: cl.cycle || 'Secondaire',
@@ -4285,23 +4285,23 @@ function getSchoolEcolageConfig(user, schoolId) {
     }
   }
 
-  // Si toujours null (aucune classe enregistrée dans l'école pour le moment), barème initial standard
+  // Barème initial vierge par niveau (tous montants fictifs effacés : 0 XOF par défaut)
   if (!costsByLevel || costsByLevel.length === 0) {
     costsByLevel = [
-      { level: '6EME', cycle: 'Collège', baseAff: 45000, baseNaff: 120000, base: 120000, exam: 0, totalAff: 45000, totalNaff: 120000, total: 120000 },
-      { level: '5EME', cycle: 'Collège', baseAff: 45000, baseNaff: 120000, base: 120000, exam: 0, totalAff: 45000, totalNaff: 120000, total: 120000 },
-      { level: '4EME', cycle: 'Collège', baseAff: 45000, baseNaff: 120000, base: 120000, exam: 0, totalAff: 45000, totalNaff: 120000, total: 120000 },
-      { level: '3EME', cycle: 'Collège', baseAff: 45000, baseNaff: 120000, base: 120000, exam: 10000, totalAff: 55000, totalNaff: 130000, total: 130000 },
-      { level: '2NDE', cycle: 'Lycée', baseAff: 55000, baseNaff: 130000, base: 130000, exam: 0, totalAff: 55000, totalNaff: 130000, total: 130000 },
-      { level: '1ERE', cycle: 'Lycée', baseAff: 55000, baseNaff: 130000, base: 130000, exam: 0, totalAff: 55000, totalNaff: 130000, total: 130000 },
-      { level: 'TLE', cycle: 'Lycée', baseAff: 60000, baseNaff: 140000, base: 140000, exam: 15000, totalAff: 75000, totalNaff: 155000, total: 155000 }
+      { level: '6EME', cycle: 'Collège', baseAff: 0, baseNaff: 0, base: 0, exam: 0, totalAff: 0, totalNaff: 0, total: 0 },
+      { level: '5EME', cycle: 'Collège', baseAff: 0, baseNaff: 0, base: 0, exam: 0, totalAff: 0, totalNaff: 0, total: 0 },
+      { level: '4EME', cycle: 'Collège', baseAff: 0, baseNaff: 0, base: 0, exam: 0, totalAff: 0, totalNaff: 0, total: 0 },
+      { level: '3EME', cycle: 'Collège', baseAff: 0, baseNaff: 0, base: 0, exam: 0, totalAff: 0, totalNaff: 0, total: 0 },
+      { level: '2NDE', cycle: 'Lycée', baseAff: 0, baseNaff: 0, base: 0, exam: 0, totalAff: 0, totalNaff: 0, total: 0 },
+      { level: '1ERE', cycle: 'Lycée', baseAff: 0, baseNaff: 0, base: 0, exam: 0, totalAff: 0, totalNaff: 0, total: 0 },
+      { level: 'TLE', cycle: 'Lycée', baseAff: 0, baseNaff: 0, base: 0, exam: 0, totalAff: 0, totalNaff: 0, total: 0 }
     ];
   }
 
   // 2. Échéancier général
   let feeInstallments = map['ecolage_fee_installments'] || null;
   if (!feeInstallments || !Array.isArray(feeInstallments) || feeInstallments.length === 0) {
-    const refAmount = costsByLevel[0] ? (costsByLevel[0].baseNaff || 120000) : 120000;
+    const refAmount = costsByLevel[0] ? (costsByLevel[0].baseNaff || 0) : 120000;
     feeInstallments = [
       { id: 1, tranche: '1re Tranche', name: 'Rentrée Scolaire', date: '30/09/2026', pct: 40, montantCollege: Math.round(refAmount * 0.4), isObligatory: true },
       { id: 2, tranche: '2e Tranche', name: 'Deuxième Trimestre', date: '30/12/2026', pct: 35, montantCollege: Math.round(refAmount * 0.35), isObligatory: true },
@@ -4312,7 +4312,7 @@ function getSchoolEcolageConfig(user, schoolId) {
   // 3. Catalogue des types de frais
   let feeTypes = map['ecolage_fee_types'] || null;
   if (!feeTypes || !Array.isArray(feeTypes) || feeTypes.length === 0) {
-    const refAmount = costsByLevel[0] ? (costsByLevel[0].baseNaff || 120000) : 120000;
+    const refAmount = costsByLevel[0] ? (costsByLevel[0].baseNaff || 0) : 120000;
     feeTypes = [
       { code: 'SCOL', name: 'Frais Généraux de Scolarité', nature: 'Obligatoire', recurring: true, amount: refAmount, status: 'Actif' },
       { code: 'INSC', name: 'Droit d\'Inscription Administrative', nature: 'Obligatoire', recurring: false, amount: 25000, status: 'Actif' },

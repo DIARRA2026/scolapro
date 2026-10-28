@@ -151,8 +151,8 @@ describe('SUITE : Deux Options Tarifaires (AFF & NAFF) sur la Page Coût de la S
       const end = htmlContent.indexOf('discountCases: [', start);
       const dataBlock = htmlContent.slice(start, end);
 
-      assert.ok(dataBlock.includes('baseAff: 45000'), 'Option AFF pour le collège doit être 45000');
-      assert.ok(dataBlock.includes('baseNaff: 120000'), 'Option NAFF pour le collège doit être 120000');
+      assert.ok(dataBlock.includes('baseAff: 0'), 'Option AFF initiale doit être à 0 (montants fictifs effacés)');
+      assert.ok(dataBlock.includes('baseNaff: 0'), 'Option NAFF initiale doit être à 0 (montants fictifs effacés)');
       assert.ok(dataBlock.includes('totalAff:'), 'totalAff doit être présent');
       assert.ok(dataBlock.includes('totalNaff:'), 'totalNaff doit être présent');
     });

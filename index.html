@@ -9744,7 +9744,7 @@
                 <span>🟢 Option AFF (Affecté)</span>
                 <span class="text-[9px] font-normal uppercase bg-emerald-100 text-emerald-800 px-1.5 py-0.2 rounded font-semibold">Taux État</span>
               </label>
-              <input type="number" id="cl-base-aff" min="0" step="5000" required placeholder="45000" class="w-full border border-emerald-300 rounded px-2.5 py-1.5 outline-none font-mono font-bold text-emerald-950 bg-white focus:ring-2 focus:ring-emerald-500 text-xs">
+              <input type="number" id="cl-base-aff" min="0" step="5000" required placeholder="0" class="w-full border border-emerald-300 rounded px-2.5 py-1.5 outline-none font-mono font-bold text-emerald-950 bg-white focus:ring-2 focus:ring-emerald-500 text-xs">
               <span class="text-[10px] text-emerald-700 block mt-1">Scolarité subventionnée MENA</span>
             </div>
             <div class="bg-amber-50/70 border border-amber-200 p-2.5 rounded-lg">
@@ -9752,7 +9752,7 @@
                 <span>🟠 Option NAFF (Non Affecté)</span>
                 <span class="text-[9px] font-normal uppercase bg-amber-100 text-amber-800 px-1.5 py-0.2 rounded font-semibold">Plein Tarif</span>
               </label>
-              <input type="number" id="cl-base-naff" min="0" step="5000" required placeholder="120000" oninput="const b=document.getElementById('cl-base');if(b)b.value=this.value;" class="w-full border border-amber-300 rounded px-2.5 py-1.5 outline-none font-mono font-bold text-amber-950 bg-white focus:ring-2 focus:ring-amber-500 text-xs">
+              <input type="number" id="cl-base-naff" min="0" step="5000" required placeholder="0" oninput="const b=document.getElementById('cl-base');if(b)b.value=this.value;" class="w-full border border-amber-300 rounded px-2.5 py-1.5 outline-none font-mono font-bold text-amber-950 bg-white focus:ring-2 focus:ring-amber-500 text-xs">
               <span class="text-[10px] text-amber-700 block mt-1">Scolarité privé direct</span>
             </div>
           </div>
@@ -10295,13 +10295,13 @@
 
       costsOptionTab: 'ALL', // 'ALL', 'AFF', 'NAFF'
       costsByLevel: [
-        { level: '6EME', cycle: 'Collège', baseAff: 45000, baseNaff: 120000, base: 120000, exam: 0, totalAff: 45000, totalNaff: 120000, total: 120000 },
-        { level: '5EME', cycle: 'Collège', baseAff: 45000, baseNaff: 120000, base: 120000, exam: 0, totalAff: 45000, totalNaff: 120000, total: 120000 },
-        { level: '4EME', cycle: 'Collège', baseAff: 45000, baseNaff: 120000, base: 120000, exam: 0, totalAff: 45000, totalNaff: 120000, total: 120000 },
-        { level: '3EME', cycle: 'Collège', baseAff: 50000, baseNaff: 120000, base: 120000, exam: 10000, totalAff: 60000, totalNaff: 130000, total: 130000 },
-        { level: '2NDE', cycle: 'Lycée', baseAff: 60000, baseNaff: 130000, base: 130000, exam: 0, totalAff: 60000, totalNaff: 130000, total: 130000 },
-        { level: '1ERE', cycle: 'Lycée', baseAff: 60000, baseNaff: 130000, base: 130000, exam: 0, totalAff: 60000, totalNaff: 130000, total: 130000 },
-        { level: 'TLE', cycle: 'Lycée', baseAff: 70000, baseNaff: 140000, base: 140000, exam: 15000, totalAff: 85000, totalNaff: 155000, total: 155000 }
+        { level: '6EME', cycle: 'Collège', baseAff: 0, baseNaff: 0, base: 0, exam: 0, totalAff: 0, totalNaff: 0, total: 0 },
+        { level: '5EME', cycle: 'Collège', baseAff: 0, baseNaff: 0, base: 0, exam: 0, totalAff: 0, totalNaff: 0, total: 0 },
+        { level: '4EME', cycle: 'Collège', baseAff: 0, baseNaff: 0, base: 0, exam: 0, totalAff: 0, totalNaff: 0, total: 0 },
+        { level: '3EME', cycle: 'Collège', baseAff: 0, baseNaff: 0, base: 0, exam: 0, totalAff: 0, totalNaff: 0, total: 0 },
+        { level: '2NDE', cycle: 'Lycée', baseAff: 0, baseNaff: 0, base: 0, exam: 0, totalAff: 0, totalNaff: 0, total: 0 },
+        { level: '1ERE', cycle: 'Lycée', baseAff: 0, baseNaff: 0, base: 0, exam: 0, totalAff: 0, totalNaff: 0, total: 0 },
+        { level: 'TLE', cycle: 'Lycée', baseAff: 0, baseNaff: 0, base: 0, exam: 0, totalAff: 0, totalNaff: 0, total: 0 }
       ],
 
       discountCases: [
@@ -10786,14 +10786,23 @@
       try {
         const savedCosts = localStorage.getItem('scolapro_costs_by_level');
         if (savedCosts) {
+          try {
+            const parsed = JSON.parse(savedCosts);
+            // Si le cache local contient les anciens faux montants (45000 ou 120000), le purger immédiatement
+            if (Array.isArray(parsed) && parsed.some(c => c.baseAff === 45000 || c.baseNaff === 120000 || c.base === 120000)) {
+              localStorage.removeItem('scolapro_costs_by_level');
+            }
+          } catch (_) {}
+        }
+        if (savedCosts) {
           const parsedCosts = JSON.parse(savedCosts);
           if (Array.isArray(parsedCosts) && parsedCosts.length > 0) {
             parsedCosts.forEach(c => {
               if (c.baseAff === undefined || c.baseAff === null) {
-                c.baseAff = Math.round((c.base || 120000) * 0.4);
+                c.baseAff = c.base ? Math.round(c.base * 0.4) : 0;
               }
               if (c.baseNaff === undefined || c.baseNaff === null) {
-                c.baseNaff = c.base || 120000;
+                c.baseNaff = c.base || 0;
               }
               c.base = c.baseNaff;
               c.exam = Number(c.exam) || 0;
@@ -14023,9 +14032,9 @@
         const avgAff = Math.round(appState.costsByLevel.reduce((acc, c) => acc + (Number(c.baseAff) || 0), 0) / count);
         const avgNaff = Math.round(appState.costsByLevel.reduce((acc, c) => acc + (Number(c.baseNaff) || 0), 0) / count);
         const avgSub = Math.max(0, avgNaff - avgAff);
-        if (kpiAvgAff) kpiAvgAff.textContent = `${avgAff.toLocaleString('fr-FR')} XOF`;
-        if (kpiAvgNaff) kpiAvgNaff.textContent = `${avgNaff.toLocaleString('fr-FR')} XOF`;
-        if (kpiAvgSub) kpiAvgSub.textContent = `+${avgSub.toLocaleString('fr-FR')} XOF`;
+        if (kpiAvgAff) kpiAvgAff.textContent = avgAff > 0 ? `${avgAff.toLocaleString('fr-FR')} XOF` : '0 XOF';
+        if (kpiAvgNaff) kpiAvgNaff.textContent = avgNaff > 0 ? `${avgNaff.toLocaleString('fr-FR')} XOF` : '0 XOF';
+        if (kpiAvgSub) kpiAvgSub.textContent = avgSub > 0 ? `+${avgSub.toLocaleString('fr-FR')} XOF` : '0 XOF';
       }
     }
 
@@ -14048,10 +14057,10 @@
           c.exam = Number(c.exam) || 0;
         }
         if (c.baseAff === undefined || c.baseAff === null) {
-          c.baseAff = Math.round((c.base || 120000) * 0.4);
+          c.baseAff = c.base ? Math.round(c.base * 0.4) : 0;
         }
         if (c.baseNaff === undefined || c.baseNaff === null) {
-          c.baseNaff = c.base || 120000;
+          c.baseNaff = c.base || 0;
         }
         c.base = c.baseNaff;
         c.totalAff = (Number(c.baseAff) || 0) + c.exam;
@@ -14117,7 +14126,7 @@
                   <span class="text-[10px] uppercase font-bold text-emerald-700 bg-emerald-100/80 px-2 py-0.5 rounded-full whitespace-nowrap shrink-0">Taux État</span>
                 </div>
                 <div class="relative flex items-center">
-                  <input type="number" id="cost-base-aff-${idx}" value="${c.baseAff}" step="1000" min="0" oninput="updateCostLevelInMemory(${idx}, 'aff', this.value)" onchange="updateCostLevelInMemory(${idx}, 'aff', this.value)" class="w-full bg-white border border-emerald-300 rounded-lg pl-3 pr-11 py-1.5 font-mono font-bold text-xs text-slate-900 focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-600 outline-none transition" placeholder="Tarif AFF">
+                  <input type="number" id="cost-base-aff-${idx}" value="${c.baseAff > 0 ? c.baseAff : ''}" placeholder="0" step="1000" min="0" oninput="updateCostLevelInMemory(${idx}, 'aff', this.value)" onchange="updateCostLevelInMemory(${idx}, 'aff', this.value)" class="w-full bg-white border border-emerald-300 rounded-lg pl-3 pr-11 py-1.5 font-mono font-bold text-xs text-slate-900 focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-600 outline-none transition">
                   <span class="absolute right-2.5 top-1/2 -translate-y-1/2 text-[10px] font-bold text-emerald-700 pointer-events-none">XOF</span>
                 </div>
                 <div class="pt-1.5 border-t border-emerald-200/50 flex items-center justify-between text-xs">
@@ -14136,7 +14145,7 @@
                   <span class="text-[10px] uppercase font-bold text-amber-700 bg-amber-100/80 px-2 py-0.5 rounded-full whitespace-nowrap shrink-0">Plein Tarif</span>
                 </div>
                 <div class="relative flex items-center">
-                  <input type="number" id="cost-base-naff-${idx}" value="${c.baseNaff}" step="1000" min="0" oninput="updateCostLevelInMemory(${idx}, 'naff', this.value)" onchange="updateCostLevelInMemory(${idx}, 'naff', this.value)" class="w-full bg-white border border-amber-300 rounded-lg pl-3 pr-11 py-1.5 font-mono font-bold text-xs text-slate-900 focus:ring-2 focus:ring-amber-500/20 focus:border-amber-600 outline-none transition" placeholder="Tarif NAFF">
+                  <input type="number" id="cost-base-naff-${idx}" value="${c.baseNaff > 0 ? c.baseNaff : ''}" placeholder="0" step="1000" min="0" oninput="updateCostLevelInMemory(${idx}, 'naff', this.value)" onchange="updateCostLevelInMemory(${idx}, 'naff', this.value)" class="w-full bg-white border border-amber-300 rounded-lg pl-3 pr-11 py-1.5 font-mono font-bold text-xs text-slate-900 focus:ring-2 focus:ring-amber-500/20 focus:border-amber-600 outline-none transition">
                   <span class="absolute right-2.5 top-1/2 -translate-y-1/2 text-[10px] font-bold text-amber-700 pointer-events-none">XOF</span>
                 </div>
                 <div class="pt-1.5 border-t border-amber-200/50 flex items-center justify-between text-xs">
@@ -14153,7 +14162,7 @@
                 <span class="text-[11px] font-bold text-sky-900 flex items-center gap-1.5 whitespace-nowrap">
                   <span>🏛️</span> Économie / Prise en charge État :
                 </span>
-                <span class="font-mono font-black text-xs text-sky-800 bg-white/80 px-2 py-0.5 rounded-md border border-sky-100 shadow-2xs whitespace-nowrap">
+                <span id="card-prise-en-charge-${idx}" class="font-mono font-black text-xs text-sky-800 bg-white/80 px-2 py-0.5 rounded-md border border-sky-100 shadow-2xs whitespace-nowrap">
                   +${priseEnCharge.toLocaleString('fr-FR')} XOF
                 </span>
               </div>
@@ -14167,7 +14176,7 @@
                   <span>Frais d'examen d'État :</span>
                 </label>
                 <div class="relative w-28 shrink-0">
-                  <input type="number" id="cost-exam-${idx}" value="${c.exam || 0}" step="1000" min="0" oninput="updateCostLevelInMemory(${idx}, 'exam', this.value)" onchange="updateCostLevelInMemory(${idx}, 'exam', this.value)" class="w-full text-right bg-slate-50 hover:bg-white focus:bg-white border border-slate-200 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 rounded-lg pl-2 pr-9 py-1 font-mono font-bold text-xs text-slate-800 outline-none transition">
+                  <input type="number" id="cost-exam-${idx}" value="${c.exam > 0 ? c.exam : ''}" placeholder="0" step="1000" min="0" oninput="updateCostLevelInMemory(${idx}, 'exam', this.value)" onchange="updateCostLevelInMemory(${idx}, 'exam', this.value)" class="w-full text-right bg-slate-50 hover:bg-white focus:bg-white border border-slate-200 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 rounded-lg pl-2 pr-9 py-1 font-mono font-bold text-xs text-slate-800 outline-none transition">
                   <span class="absolute right-2 top-1/2 -translate-y-1/2 text-[10px] font-bold text-slate-400 pointer-events-none">XOF</span>
                 </div>
               </div>
@@ -14233,6 +14242,11 @@
       if (totalAffEl) totalAffEl.textContent = `${appState.costsByLevel[idx].totalAff.toLocaleString('fr-FR')} XOF`;
       const totalNaffEl = document.getElementById(`card-total-naff-${idx}`);
       if (totalNaffEl) totalNaffEl.textContent = `${appState.costsByLevel[idx].totalNaff.toLocaleString('fr-FR')} XOF`;
+      const priseEl = document.getElementById(`card-prise-en-charge-${idx}`);
+      if (priseEl) {
+        const sub = Math.max(0, (appState.costsByLevel[idx].baseNaff || 0) - (appState.costsByLevel[idx].baseAff || 0));
+        priseEl.textContent = `+${sub.toLocaleString('fr-FR')} XOF`;
+      }
       updateCostsQuickKpis();
     }
 
@@ -14244,11 +14258,11 @@
       const cyc = document.getElementById('cl-cycle');
       if (cyc) cyc.value = 'Premier Cycle';
       const baseAff = document.getElementById('cl-base-aff');
-      if (baseAff) baseAff.value = '45000';
+      if (baseAff) baseAff.value = '';
       const baseNaff = document.getElementById('cl-base-naff');
-      if (baseNaff) baseNaff.value = '120000';
+      if (baseNaff) baseNaff.value = '';
       const base = document.getElementById('cl-base');
-      if (base) base.value = '120000';
+      if (base) base.value = '';
       const exam = document.getElementById('cl-exam');
       if (exam) exam.value = '0';
     }
@@ -14269,11 +14283,11 @@
       const cycEl = document.getElementById('cl-cycle');
       if (cycEl) cycEl.value = item.cycle || 'Premier Cycle';
       const affEl = document.getElementById('cl-base-aff');
-      if (affEl) affEl.value = item.baseAff !== undefined ? item.baseAff : Math.round((item.base || 120000) * 0.4);
+      if (affEl) affEl.value = item.baseAff !== undefined ? item.baseAff : Math.round((item.base || 0) * 0.4);
       const naffEl = document.getElementById('cl-base-naff');
-      if (naffEl) naffEl.value = item.baseNaff !== undefined ? item.baseNaff : (item.base || 120000);
+      if (naffEl) naffEl.value = item.baseNaff !== undefined ? item.baseNaff : (item.base || 0);
       const baseEl = document.getElementById('cl-base');
-      if (baseEl) baseEl.value = item.baseNaff !== undefined ? item.baseNaff : (item.base || 120000);
+      if (baseEl) baseEl.value = item.baseNaff !== undefined ? item.baseNaff : (item.base || 0);
       const examEl = document.getElementById('cl-exam');
       if (examEl) examEl.value = item.exam || 0;
     }
@@ -14292,8 +14306,8 @@
       const rawNaff = document.getElementById('cl-base-naff')?.value;
       const rawBase = document.getElementById('cl-base')?.value;
 
-      const baseNaff = parseInt(rawNaff, 10) || parseInt(rawBase, 10) || 120000;
-      const baseAff = parseInt(rawAff, 10) || Math.round(baseNaff * 0.4);
+      const baseNaff = parseInt(rawNaff, 10) || parseInt(rawBase, 10) || 0;
+      const baseAff = parseInt(rawAff, 10) || 0;
       const exam = parseInt(document.getElementById('cl-exam')?.value, 10) || 0;
       if (!lvl) return;
 
@@ -15405,14 +15419,14 @@
       const isAff = String(statut).toUpperCase().includes('AFF') && !String(statut).toUpperCase().includes('NON') && !String(statut).toUpperCase().includes('NAFF');
       const levelCost = (appState.costsByLevel || []).find(c => c.level === niveau);
 
-      let baseAmount = isAff ? 45000 : 120000;
+      let baseAmount = 0;
       let examAmount = 0;
       if (levelCost) {
         examAmount = Number(levelCost.exam) || 0;
         if (isAff) {
-          baseAmount = levelCost.baseAff !== undefined ? Number(levelCost.baseAff) : Math.round((Number(levelCost.base) || 120000) * 0.4);
+          baseAmount = levelCost.baseAff !== undefined ? Number(levelCost.baseAff) : Math.round((Number(levelCost.base) || 0) * 0.4);
         } else {
-          baseAmount = levelCost.baseNaff !== undefined ? Number(levelCost.baseNaff) : (Number(levelCost.base) || 120000);
+          baseAmount = levelCost.baseNaff !== undefined ? Number(levelCost.baseNaff) : (Number(levelCost.base) || 0);
         }
       }
       const computedFeeDue = baseAmount + examAmount;
@@ -15451,10 +15465,10 @@
         const isAff = String(statut).toUpperCase().includes('AFF') && !String(statut).toUpperCase().includes('NON') && !String(statut).toUpperCase().includes('NAFF');
         const levelCost = (appState.costsByLevel || []).find(c => c.level === niveau);
         if (levelCost) {
-          const base = isAff ? (levelCost.baseAff !== undefined ? Number(levelCost.baseAff) : Math.round((Number(levelCost.base) || 120000) * 0.4)) : (levelCost.baseNaff !== undefined ? Number(levelCost.baseNaff) : (Number(levelCost.base) || 120000));
+          const base = isAff ? (levelCost.baseAff !== undefined ? Number(levelCost.baseAff) : Math.round((Number(levelCost.base) || 0) * 0.4)) : (levelCost.baseNaff !== undefined ? Number(levelCost.baseNaff) : (Number(levelCost.base) || 0));
           feeDue = base + (Number(levelCost.exam) || 0);
         } else {
-          feeDue = isAff ? 45000 : 120000;
+          feeDue = 0;
         }
       }
 
