@@ -5468,7 +5468,7 @@
                   <th class="p-2.5">Libellé de la Réduction</th>
                   <th class="p-2.5 text-center">Type de Réduction</th>
                   <th class="p-2.5 text-right">Valeur de la Remise</th>
-                  <th class="p-2.5 text-center">Bénéficiaires Éligibles</th>
+                  <th class="p-2.5 text-center">Périmètre d'Application</th>
                   <th class="p-2.5 text-center">Statut</th>
                   <th class="p-2.5 text-center">Action</th>
                 </tr>
@@ -9815,9 +9815,13 @@
         <div>
           <label class="block text-slate-700 font-semibold mb-1">Périmètre d'Application <span class="text-red-500">*</span></label>
           <select id="red-applies" required class="w-full border border-slate-300 rounded-lg px-3 py-2 outline-none font-bold bg-white focus:ring-2 focus:ring-purple-600">
-            <option value="Tous">Tous les cycles</option>
+            <option value="Tous">Tous les cycles (Maternelle, Primaire, Secondaire)</option>
+            <option value="Maternelle">Maternelle uniquement</option>
+            <option value="Primaire">Primaire uniquement</option>
             <option value="Collège">Premier Cycle (Collège uniquement)</option>
             <option value="Lycée">Second Cycle (Lycée uniquement)</option>
+            <option value="Maternelle & Primaire">Maternelle &amp; Primaire</option>
+            <option value="Collège & Lycée">Secondaire (Collège &amp; Lycée)</option>
           </select>
         </div>
         <div class="pt-3 border-t border-slate-200 flex justify-end gap-2.5">
@@ -14414,13 +14418,23 @@
 
       appState.discountCases.forEach(d => {
         const tr = document.createElement('tr');
-        tr.className = "hover:bg-slate-50 border-b border-slate-100";
+        tr.className = "hover:bg-slate-50 border-b border-slate-100 transition";
+        const applies = d.appliesTo || 'Tous';
+        let badgeClass = "bg-slate-100 text-slate-700 border border-slate-200";
+        if (applies === 'Maternelle') badgeClass = "bg-pink-100 text-pink-800 border border-pink-200";
+        else if (applies === 'Primaire') badgeClass = "bg-amber-100 text-amber-800 border border-amber-200";
+        else if (applies.includes('Maternelle') && applies.includes('Primaire')) badgeClass = "bg-orange-100 text-orange-800 border border-orange-200";
+        else if (applies === 'Collège') badgeClass = "bg-blue-100 text-blue-800 border border-blue-200";
+        else if (applies === 'Lycée') badgeClass = "bg-purple-100 text-purple-800 border border-purple-200";
+        else if (applies.includes('Collège') && applies.includes('Lycée')) badgeClass = "bg-indigo-100 text-indigo-800 border border-indigo-200";
+        else if (applies === 'Tous' || applies.toLowerCase().includes('tous')) badgeClass = "bg-emerald-100 text-emerald-800 border border-emerald-200";
+
         tr.innerHTML = `
           <td class="p-2.5 font-mono font-bold text-purple-800">${esc(d.code)}</td>
           <td class="p-2.5 font-bold text-slate-800">${esc(d.label)}</td>
           <td class="p-2.5 text-center"><span class="px-2 py-0.5 bg-slate-100 rounded text-[10px] font-semibold">${esc(d.type)}</span></td>
           <td class="p-2.5 text-right font-black text-emerald-600 font-mono">${esc(d.value)}</td>
-          <td class="p-2.5 text-center text-slate-600">${esc(d.appliesTo)}</td>
+          <td class="p-2.5 text-center"><span class="px-2.5 py-0.5 rounded-full text-[10px] font-bold ${badgeClass}">${esc(applies)}</span></td>
           <td class="p-2.5 text-center text-emerald-600 font-bold">Actif ✓</td>
           <td class="p-2.5 text-center space-x-1 whitespace-nowrap">
             <button onclick="editReduction('${esc(d.code)}')" class="p-1 text-slate-600 hover:text-blue-600" title="Modifier la réduction">✏️</button>
@@ -14457,7 +14471,18 @@
           document.getElementById('red-label').value = d.label || '';
           document.getElementById('red-type').value = d.type || 'Pourcentage';
           document.getElementById('red-val').value = d.value || '';
-          document.getElementById('red-applies').value = d.appliesTo || 'Tous';
+          const appliesSelect = document.getElementById('red-applies');
+          if (appliesSelect) {
+            const val = d.appliesTo || 'Tous';
+            const exists = Array.from(appliesSelect.options).some(o => o.value === val);
+            if (!exists && val) {
+              const opt = document.createElement('option');
+              opt.value = val;
+              opt.textContent = val;
+              appliesSelect.appendChild(opt);
+            }
+            appliesSelect.value = val;
+          }
         }
       }
       m.classList.remove('hidden');

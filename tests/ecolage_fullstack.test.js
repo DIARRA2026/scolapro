@@ -79,4 +79,18 @@ describe('SUITE : Module Écolage Fullstack & Élimination des Données Fictives
     assert.ok(indexContent.includes('feeTypes: []'), 'feeTypes doit être initialisé à un tableau vide');
     assert.ok(indexContent.includes('discountCases: []'), 'discountCases doit être initialisé à un tableau vide');
   });
+
+  test('FULLSTACK-09: Rubrique Cas de Réduction intègre le Primaire et la Maternelle dans le périmètre d application', () => {
+    // 1. Options dans la modale de réduction
+    assert.ok(indexContent.includes('<option value="Maternelle">Maternelle uniquement</option>'), 'Option Maternelle doit être présente dans red-applies');
+    assert.ok(indexContent.includes('<option value="Primaire">Primaire uniquement</option>'), 'Option Primaire doit être présente dans red-applies');
+    assert.ok(indexContent.includes('<option value="Maternelle & Primaire">Maternelle &amp; Primaire</option>'), 'Option Maternelle & Primaire doit être présente dans red-applies');
+
+    // 2. Colonne Périmètre d Application dans le tableau des réductions
+    assert.ok(indexContent.includes('Périmètre d\'Application</th>'), 'En-tête de colonne Périmètre d\'Application doit être présent');
+
+    // 3. Badges distinctifs pour Maternelle et Primaire
+    assert.ok(indexContent.includes("if (applies === 'Maternelle')"), 'renderEcolageReductions doit styliser le badge Maternelle');
+    assert.ok(indexContent.includes("else if (applies === 'Primaire')"), 'renderEcolageReductions doit styliser le badge Primaire');
+  });
 });
