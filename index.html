@@ -10400,6 +10400,9 @@
       // Le Concepteur a un accès universel intégral
       if (user.role === 'concepteur') return true;
 
+      // L'Administrateur et le Directeur de l'école ont TOUS les accès sur l'établissement (Dashboard, Caisses, Scolarité, Pédagogie, Notes, Utilisateurs, etc.)
+      if (user.role === 'admin' || user.role === 'directeur') return true;
+
       // Le Fondateur a les permissions de supervision pour consulter les modules des écoles de sa fondation
       if (user.role === 'fondateur') {
         const fondationPerms = [
@@ -10441,14 +10444,14 @@
         if (user.scopeType === 'CASH_DESK') {
           return Array.isArray(user.scopeValue) ? user.scopeValue.includes(targetValue) : user.scopeValue === targetValue;
         }
-        return user.role === 'admin' || user.role === 'de' || user.role === 'fondateur';
+        return user.role === 'admin' || user.role === 'directeur' || user.role === 'de' || user.role === 'fondateur';
       }
 
       if (scopeType === 'CLASS') {
         if (user.scopeType === 'CLASSES') {
           return Array.isArray(user.scopeValue) ? user.scopeValue.includes(targetValue) : user.scopeValue === targetValue;
         }
-        return user.role === 'admin' || user.role === 'de' || user.role === 'fondateur';
+        return user.role === 'admin' || user.role === 'directeur' || user.role === 'de' || user.role === 'fondateur';
       }
 
       return false;
@@ -10661,7 +10664,7 @@
         'nav-dashboard': ['admin', 'directeur', 'de', 'cf', 'educateur', 'caisse_principale', 'caisse_secondaire', 'consultation', 'concepteur', 'fondateur'],
         'nav-foundation': ['fondateur', 'concepteur'],
         'nav-admin': ['admin', 'directeur', 'concepteur'],
-        'nav-caisses': ['caisse_principale', 'caisse_secondaire', 'comptable', 'concepteur', 'fondateur'],
+        'nav-caisses': ['admin', 'directeur', 'caisse_principale', 'caisse_secondaire', 'comptable', 'concepteur', 'fondateur'],
         'nav-ecolage': ['admin', 'directeur', 'cf', 'de', 'concepteur', 'fondateur'],
         'nav-inscription': ['admin', 'directeur', 'de', 'concepteur', 'educateur', 'fondateur'],
         'nav-pedagogie': ['admin', 'directeur', 'de', 'educateur', 'concepteur', 'fondateur'],
@@ -11230,12 +11233,7 @@
       appState.landingActive = false;
       const user = getActiveUser();
 
-      // Contrôle d'accès strict pour la gestion des caisses (Directeur & Admin exclus conformément à la séparation des fonctions)
-      if (moduleId === 'caisses' && (user.role === 'admin' || user.role === 'directeur')) {
-        showToast("Accès restreint : La caisse principale et les autres caisses sont gérées exclusivement par les caissiers et comptables habilités.");
-        navigateTo('dashboard');
-        return;
-      }
+
 
       // Contrôle d'isolation stricte des 3 Niveaux
       if (moduleId === 'superadmin' && user.role !== 'concepteur' && !appState.impersonating) {
@@ -11624,10 +11622,13 @@
               <p class="text-2xl font-black text-emerald-700 mt-1">${schoolTotalPaid.toLocaleString('fr-FR')} <span class="text-xs font-normal">XOF</span></p>
               <p class="text-[11px] text-emerald-700 font-semibold">Scolarités encaissées</p>
             </div>
-            <div class="bg-white border border-slate-200 p-4 rounded-xl shadow-sm">
-              <span class="text-xs uppercase font-bold text-slate-500">Montants en Caisse</span>
+            <div onclick="navigateTo('caisses')" class="bg-white border border-slate-200 hover:border-emerald-400 p-4 rounded-xl shadow-sm hover:shadow-md transition cursor-pointer group">
+              <div class="flex justify-between items-start">
+                <span class="text-xs uppercase font-bold text-slate-500">Montants en Caisse</span>
+                <span class="text-xs group-hover:scale-110 transition">💰</span>
+              </div>
               <p class="text-2xl font-black text-emerald-600 mt-1">${totalCash.toLocaleString('fr-FR')} <span class="text-xs font-normal">XOF</span></p>
-              <p class="text-[11px] text-slate-500">${recRate}% taux de recouvrement</p>
+              <p class="text-[11px] text-emerald-700 font-semibold">${schoolDesks.length} guichet(s) &bull; Accéder aux caisses &rarr;</p>
             </div>
             <div class="bg-white border border-slate-200 p-4 rounded-xl shadow-sm">
               <span class="text-xs uppercase font-bold text-slate-500">Moyenne Générale</span>

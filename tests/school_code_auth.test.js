@@ -1546,9 +1546,10 @@ test('AUTH-CODE-26 : Compte admin / directeur : accès complet école hors caiss
   assert.ok(rbac.ASSIGNABLE_ROLES.admin.includes('de'), 'L\'admin doit pouvoir assigner les rôles administratifs');
   assert.ok(rbac.ASSIGNABLE_ROLES.admin.includes('comptable'), 'L\'admin doit pouvoir assigner le rôle comptable');
 
-  // 2. Vérification isolation caisses pour admin et directeur dans index.html
-  assert.ok(indexHtml.includes("'nav-caisses': ['caisse_principale', 'caisse_secondaire', 'comptable', 'concepteur', 'fondateur']"), 'nav-caisses doit exclure admin et directeur');
-  assert.ok(indexHtml.includes("moduleId === 'caisses' && (user.role === 'admin' || user.role === 'directeur')"), 'navigateTo doit interdire la caisse physique à l\'admin/directeur');
+  // 2. Vérification plein accès caisses et tous modules pour admin et directeur dans index.html
+  assert.ok(indexHtml.includes("'nav-caisses': ['admin', 'directeur', 'caisse_principale', 'caisse_secondaire', 'comptable', 'concepteur', 'fondateur']"), 'nav-caisses doit inclure admin et directeur pour un accès total');
+  assert.ok(!indexHtml.includes("moduleId === 'caisses' && (user.role === 'admin' || user.role === 'directeur')"), 'navigateTo ne doit pas restreindre les caisses pour l\'admin/directeur');
+  assert.ok(indexHtml.includes("if (user.role === 'admin' || user.role === 'directeur') return true;"), 'hasPerm doit garantir tous les accès à l\'admin et au directeur');
 
   // 3. Vérification des éléments DOM de gestion par catégories
   assert.ok(indexHtml.includes('id="nu-category"'), 'new-user-modal doit contenir id="nu-category"');
