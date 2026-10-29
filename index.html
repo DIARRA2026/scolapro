@@ -4498,13 +4498,34 @@
             </div>
           </div>
 
+          <!-- Filtres par Catégorie de Personnel -->
+          <div class="flex flex-wrap items-center gap-2 pt-1 pb-2 border-b border-slate-100">
+            <span class="text-xs font-bold text-slate-600 mr-1">Filtrer par catégorie :</span>
+            <button id="user-filter-all" onclick="filterUsersByCategory('ALL')" class="px-3 py-1.5 rounded-lg text-xs font-bold bg-purple-700 text-white shadow-xs transition flex items-center gap-1.5 cursor-pointer">
+              <span>👥</span>
+              <span>Tous les personnels</span>
+              <span id="user-count-all" class="px-1.5 py-0.2 bg-white/20 text-white rounded-full text-[10px]">0</span>
+            </button>
+            <button id="user-filter-admin" onclick="filterUsersByCategory('ADMINISTRATIF')" class="px-3 py-1.5 rounded-lg text-xs font-bold bg-slate-100 text-slate-700 hover:bg-slate-200 transition flex items-center gap-1.5 cursor-pointer">
+              <span>📋</span>
+              <span>Personnel Administratif</span>
+              <span id="user-count-admin" class="px-1.5 py-0.2 bg-slate-200 text-slate-800 rounded-full text-[10px]">0</span>
+            </button>
+            <button id="user-filter-prof" onclick="filterUsersByCategory('ENSEIGNANT')" class="px-3 py-1.5 rounded-lg text-xs font-bold bg-slate-100 text-slate-700 hover:bg-slate-200 transition flex items-center gap-1.5 cursor-pointer">
+              <span>🎓</span>
+              <span>Personnel Enseignant</span>
+              <span id="user-count-prof" class="px-1.5 py-0.2 bg-slate-200 text-slate-800 rounded-full text-[10px]">0</span>
+            </button>
+          </div>
+
           <div class="overflow-x-auto border border-slate-200 rounded">
             <table class="w-full text-left text-xs">
               <thead class="bg-table-header text-white font-bold uppercase text-[10px]">
                 <tr>
                   <th class="py-2.5 px-3">Nom & Prénoms</th>
                   <th class="py-2.5 px-3 font-mono">Email / Téléphone</th>
-                  <th class="py-2.5 px-3">Rôle</th>
+                  <th class="py-2.5 px-3">Catégorie</th>
+                  <th class="py-2.5 px-3">Rôle & Discipline</th>
                   <th class="py-2.5 px-3">Établissement</th>
                   <th class="py-2.5 px-3">Périmètre de Données</th>
                   <th class="py-2.5 px-3 text-center">Statut</th>
@@ -6643,26 +6664,57 @@
         </div>
         <div class="grid grid-cols-2 gap-3">
           <div>
-            <label class="block text-slate-700 font-semibold mb-1">Rôle Attribué *</label>
-            <select id="nu-role" required class="w-full border border-slate-300 rounded px-2.5 py-1.5 bg-white font-bold text-purple-900">
-              <option value="de">D.E / A.C.E</option>
-              <option value="cf">Correspondant Fichier (CF)</option>
-              <option value="educateur">Éducateur</option>
-              <option value="caisse_principale">Responsable Caisse Principale</option>
-              <option value="caisse_secondaire">Responsable Caisse Secondaire</option>
-              <option value="consultation">Utilisateur Consultation</option>
+            <label class="block text-slate-700 font-semibold mb-1">Catégorie du Personnel *</label>
+            <select id="nu-category" onchange="onUserCategoryChange('nu-category', 'nu-role', 'nu-scope', 'nu-discipline-container')" required class="w-full border border-slate-300 rounded px-2.5 py-1.5 bg-white font-bold text-indigo-900">
+              <option value="ADMINISTRATIF">📋 Personnel Administratif</option>
+              <option value="ENSEIGNANT">🎓 Personnel Enseignant</option>
             </select>
           </div>
           <div>
-            <label class="block text-slate-700 font-semibold mb-1">Périmètre de Données *</label>
-            <select id="nu-scope" required class="w-full border border-slate-300 rounded px-2.5 py-1.5 bg-white font-bold text-slate-800">
-              <option value="Établissement">Établissement Local (Global École)</option>
-              <option value="Classes 4EME 5 & 6EME 1">Classes attribuées (4EME 5 & 6EME 1)</option>
-              <option value="Caisse Principale & Caisses Filles">Caisse Principale & Filles</option>
-              <option value="Caisse 2 uniquement">Caisse 2 uniquement (Strict)</option>
-              <option value="GLOBAL">GLOBAL (Accès transverse)</option>
+            <label class="block text-slate-700 font-semibold mb-1">Rôle Attribué *</label>
+            <select id="nu-role" required class="w-full border border-slate-300 rounded px-2.5 py-1.5 bg-white font-bold text-purple-900">
+              <optgroup label="📋 Personnel Administratif" id="nu-role-group-admin">
+                <option value="de">Directeur des Études (D.E / A.C.E)</option>
+                <option value="cf">Chef du Fichier & Scolarité (CF)</option>
+                <option value="comptable">Comptable / Économe</option>
+                <option value="educateur">Éducateur de Niveau</option>
+                <option value="caisse_principale">Responsable Caisse Principale</option>
+                <option value="caisse_secondaire">Responsable Caisse Secondaire</option>
+                <option value="consultation">Agent de Consultation (Lecture Seule)</option>
+              </optgroup>
+              <optgroup label="🎓 Personnel Enseignant" id="nu-role-group-prof">
+                <option value="professeur">Professeur / Enseignant</option>
+              </optgroup>
             </select>
           </div>
+        </div>
+        <div id="nu-discipline-container" class="hidden">
+          <label class="block text-slate-700 font-semibold mb-1">Discipline / Matière Enseignée *</label>
+          <select id="nu-discipline" class="w-full border border-slate-300 rounded px-2.5 py-1.5 bg-white font-semibold text-slate-800">
+            <option value="Mathématiques">Mathématiques</option>
+            <option value="Français">Français</option>
+            <option value="Anglais">Anglais</option>
+            <option value="Histoire-Géographie">Histoire-Géographie</option>
+            <option value="Sciences de la Vie et de la Terre (SVT)">Sciences de la Vie et de la Terre (SVT)</option>
+            <option value="Physique-Chimie">Physique-Chimie</option>
+            <option value="Philosophie">Philosophie</option>
+            <option value="Éducation Physique & Sportive (EPS)">Éducation Physique & Sportive (EPS)</option>
+            <option value="Allemand">Allemand</option>
+            <option value="Espagnol">Espagnol</option>
+            <option value="Arts Plastiques">Arts Plastiques</option>
+            <option value="Musique">Musique</option>
+            <option value="Autre">Autre matière</option>
+          </select>
+        </div>
+        <div>
+          <label class="block text-slate-700 font-semibold mb-1">Périmètre d'Affectation / Données *</label>
+          <select id="nu-scope" required class="w-full border border-slate-300 rounded px-2.5 py-1.5 bg-white font-bold text-slate-800">
+            <option value="Établissement">Établissement Local (Global École)</option>
+            <option value="Classes 4EME 5 & 6EME 1">Classes attribuées (4EME 5 & 6EME 1)</option>
+            <option value="Caisse Principale & Caisses Filles">Caisse Principale & Filles</option>
+            <option value="Caisse 2 uniquement">Caisse 2 uniquement (Strict)</option>
+            <option value="GLOBAL">GLOBAL (Accès transverse)</option>
+          </select>
         </div>
         <div class="grid grid-cols-2 gap-3 pt-2 border-t border-slate-100">
           <div>
@@ -6727,17 +6779,51 @@
         </div>
         <div class="grid grid-cols-2 gap-3">
           <div>
-            <label class="block text-slate-700 font-semibold mb-1">Rôle Attribué *</label>
-            <select id="eu-role" required class="w-full border border-slate-300 rounded px-2.5 py-1.5 bg-white font-bold text-purple-900">
-              <option value="admin">Administrateur Établissement</option>
-              <option value="de">D.E / A.C.E</option>
-              <option value="cf">Correspondant Fichier (CF)</option>
-              <option value="educateur">Éducateur</option>
-              <option value="caisse_principale">Responsable Caisse Principale</option>
-              <option value="caisse_secondaire">Responsable Caisse Secondaire</option>
-              <option value="consultation">Utilisateur Consultation</option>
+            <label class="block text-slate-700 font-semibold mb-1">Catégorie du Personnel *</label>
+            <select id="eu-category" onchange="onUserCategoryChange('eu-category', 'eu-role', null, 'eu-discipline-container')" required class="w-full border border-slate-300 rounded px-2.5 py-1.5 bg-white font-bold text-indigo-900">
+              <option value="ADMINISTRATIF">📋 Personnel Administratif</option>
+              <option value="ENSEIGNANT">🎓 Personnel Enseignant</option>
             </select>
           </div>
+          <div>
+            <label class="block text-slate-700 font-semibold mb-1">Rôle Attribué *</label>
+            <select id="eu-role" required class="w-full border border-slate-300 rounded px-2.5 py-1.5 bg-white font-bold text-purple-900">
+              <optgroup label="📋 Personnel Administratif" id="eu-role-group-admin">
+                <option value="admin">Administrateur Établissement</option>
+                <option value="directeur">Directeur / Chef d'Établissement</option>
+                <option value="de">Directeur des Études (D.E / A.C.E)</option>
+                <option value="cf">Chef du Fichier & Scolarité (CF)</option>
+                <option value="comptable">Comptable / Économe</option>
+                <option value="educateur">Éducateur de Niveau</option>
+                <option value="caisse_principale">Responsable Caisse Principale</option>
+                <option value="caisse_secondaire">Responsable Caisse Secondaire</option>
+                <option value="consultation">Agent de Consultation (Lecture Seule)</option>
+              </optgroup>
+              <optgroup label="🎓 Personnel Enseignant" id="eu-role-group-prof">
+                <option value="professeur">Professeur / Enseignant</option>
+              </optgroup>
+            </select>
+          </div>
+        </div>
+        <div id="eu-discipline-container" class="hidden">
+          <label class="block text-slate-700 font-semibold mb-1">Discipline / Matière Enseignée *</label>
+          <select id="eu-discipline" class="w-full border border-slate-300 rounded px-2.5 py-1.5 bg-white font-semibold text-slate-800">
+            <option value="Mathématiques">Mathématiques</option>
+            <option value="Français">Français</option>
+            <option value="Anglais">Anglais</option>
+            <option value="Histoire-Géographie">Histoire-Géographie</option>
+            <option value="Sciences de la Vie et de la Terre (SVT)">Sciences de la Vie et de la Terre (SVT)</option>
+            <option value="Physique-Chimie">Physique-Chimie</option>
+            <option value="Philosophie">Philosophie</option>
+            <option value="Éducation Physique & Sportive (EPS)">Éducation Physique & Sportive (EPS)</option>
+            <option value="Allemand">Allemand</option>
+            <option value="Espagnol">Espagnol</option>
+            <option value="Arts Plastiques">Arts Plastiques</option>
+            <option value="Musique">Musique</option>
+            <option value="Autre">Autre matière</option>
+          </select>
+        </div>
+        <div class="grid grid-cols-2 gap-3">
           <div>
             <label class="block text-slate-700 font-semibold mb-1">Statut du Compte</label>
             <select id="eu-status" class="w-full border border-slate-300 rounded px-2.5 py-1.5 bg-white font-bold text-slate-800">
@@ -6745,6 +6831,7 @@
               <option value="SUSPENDU">Suspendu</option>
             </select>
           </div>
+          <div></div>
         </div>
         <div class="pt-2 border-t border-slate-100 space-y-1">
           <label class="block text-slate-700 font-semibold text-[11px]">Nouveau mot de passe (Optionnel, min. 8 car.)</label>
@@ -10571,18 +10658,18 @@
 
       // Sous-espaces métier stricts avec inclusion Concepteur et Fondateur
       const navItems = {
-        'nav-dashboard': ['admin', 'de', 'cf', 'educateur', 'caisse_principale', 'caisse_secondaire', 'consultation', 'concepteur', 'fondateur'],
+        'nav-dashboard': ['admin', 'directeur', 'de', 'cf', 'educateur', 'caisse_principale', 'caisse_secondaire', 'consultation', 'concepteur', 'fondateur'],
         'nav-foundation': ['fondateur', 'concepteur'],
-        'nav-admin': ['admin', 'concepteur'],
-        'nav-caisses': ['admin', 'caisse_principale', 'caisse_secondaire', 'de', 'concepteur', 'fondateur'],
-        'nav-ecolage': ['admin', 'cf', 'de', 'concepteur', 'fondateur'],
-        'nav-inscription': ['admin', 'de', 'concepteur', 'educateur', 'fondateur'],
-        'nav-pedagogie': ['admin', 'de', 'educateur', 'concepteur', 'fondateur'],
-        'nav-grades': ['admin', 'de', 'educateur', 'concepteur', 'fondateur'],
-        'nav-finance': ['admin', 'de', 'concepteur', 'caisse_principale', 'fondateur'],
-        'nav-consultations': ['admin', 'consultation', 'de', 'concepteur', 'fondateur'],
-        'nav-transferts': ['admin', 'de', 'concepteur'],
-        'nav-settings': ['admin', 'concepteur']
+        'nav-admin': ['admin', 'directeur', 'concepteur'],
+        'nav-caisses': ['caisse_principale', 'caisse_secondaire', 'comptable', 'concepteur', 'fondateur'],
+        'nav-ecolage': ['admin', 'directeur', 'cf', 'de', 'concepteur', 'fondateur'],
+        'nav-inscription': ['admin', 'directeur', 'de', 'concepteur', 'educateur', 'fondateur'],
+        'nav-pedagogie': ['admin', 'directeur', 'de', 'educateur', 'concepteur', 'fondateur'],
+        'nav-grades': ['admin', 'directeur', 'de', 'educateur', 'concepteur', 'fondateur'],
+        'nav-finance': ['admin', 'directeur', 'de', 'concepteur', 'caisse_principale', 'fondateur'],
+        'nav-consultations': ['admin', 'directeur', 'consultation', 'de', 'concepteur', 'fondateur'],
+        'nav-transferts': ['admin', 'directeur', 'de', 'concepteur'],
+        'nav-settings': ['admin', 'directeur', 'concepteur']
       };
 
       Object.keys(navItems).forEach(id => {
@@ -11142,6 +11229,13 @@
       }
       appState.landingActive = false;
       const user = getActiveUser();
+
+      // Contrôle d'accès strict pour la gestion des caisses (Directeur & Admin exclus conformément à la séparation des fonctions)
+      if (moduleId === 'caisses' && (user.role === 'admin' || user.role === 'directeur')) {
+        showToast("Accès restreint : La caisse principale et les autres caisses sont gérées exclusivement par les caissiers et comptables habilités.");
+        navigateTo('dashboard');
+        return;
+      }
 
       // Contrôle d'isolation stricte des 3 Niveaux
       if (moduleId === 'superadmin' && user.role !== 'concepteur' && !appState.impersonating) {
@@ -11915,20 +12009,84 @@
       if (tabId === 'audit') renderAuditLogTable();
     }
 
+    function filterUsersByCategory(category) {
+      appState.userCategoryFilter = category;
+      const btnAll = document.getElementById('user-filter-all');
+      const btnAdmin = document.getElementById('user-filter-admin');
+      const btnProf = document.getElementById('user-filter-prof');
+
+      if (btnAll) {
+        btnAll.className = category === 'ALL'
+          ? "px-3 py-1.5 rounded-lg text-xs font-bold bg-purple-700 text-white shadow-xs transition flex items-center gap-1.5 cursor-pointer"
+          : "px-3 py-1.5 rounded-lg text-xs font-bold bg-slate-100 text-slate-700 hover:bg-slate-200 transition flex items-center gap-1.5 cursor-pointer";
+      }
+      if (btnAdmin) {
+        btnAdmin.className = category === 'ADMINISTRATIF'
+          ? "px-3 py-1.5 rounded-lg text-xs font-bold bg-purple-700 text-white shadow-xs transition flex items-center gap-1.5 cursor-pointer"
+          : "px-3 py-1.5 rounded-lg text-xs font-bold bg-slate-100 text-slate-700 hover:bg-slate-200 transition flex items-center gap-1.5 cursor-pointer";
+      }
+      if (btnProf) {
+        btnProf.className = category === 'ENSEIGNANT'
+          ? "px-3 py-1.5 rounded-lg text-xs font-bold bg-purple-700 text-white shadow-xs transition flex items-center gap-1.5 cursor-pointer"
+          : "px-3 py-1.5 rounded-lg text-xs font-bold bg-slate-100 text-slate-700 hover:bg-slate-200 transition flex items-center gap-1.5 cursor-pointer";
+      }
+
+      renderAdminUsersTable();
+    }
+
+    function onUserCategoryChange(catId, roleId, scopeId, discContainerId) {
+      const catEl = document.getElementById(catId);
+      if (!catEl) return;
+      const cat = catEl.value;
+      const discBox = document.getElementById(discContainerId);
+      const roleEl = document.getElementById(roleId);
+      const scopeEl = scopeId ? document.getElementById(scopeId) : null;
+
+      if (cat === 'ENSEIGNANT') {
+        if (discBox) discBox.classList.remove('hidden');
+        if (roleEl) roleEl.value = 'professeur';
+        if (scopeEl) scopeEl.value = 'Classes 4EME 5 & 6EME 1';
+      } else {
+        if (discBox) discBox.classList.add('hidden');
+        if (roleEl && roleEl.value === 'professeur') roleEl.value = 'de';
+        if (scopeEl) scopeEl.value = 'Établissement';
+      }
+    }
+
     function renderAdminUsersTable() {
       const tbody = document.getElementById('admin-users-tbody');
       if (!tbody) return;
       tbody.innerHTML = '';
 
-      if (!appState.users || appState.users.length === 0) {
+      const users = appState.users || [];
+      const totalCount = users.length;
+      const adminCount = users.filter(u => (u.category === 'ADMINISTRATIF' || (!u.category && u.role !== 'professeur'))).length;
+      const profCount = users.filter(u => (u.category === 'ENSEIGNANT' || u.role === 'professeur')).length;
+
+      const cntAll = document.getElementById('user-count-all');
+      const cntAdmin = document.getElementById('user-count-admin');
+      const cntProf = document.getElementById('user-count-prof');
+      if (cntAll) cntAll.textContent = totalCount;
+      if (cntAdmin) cntAdmin.textContent = adminCount;
+      if (cntProf) cntProf.textContent = profCount;
+
+      const currentFilter = appState.userCategoryFilter || 'ALL';
+      const filteredUsers = users.filter(u => {
+        const isProf = (u.category === 'ENSEIGNANT' || u.role === 'professeur');
+        if (currentFilter === 'ADMINISTRATIF') return !isProf;
+        if (currentFilter === 'ENSEIGNANT') return isProf;
+        return true;
+      });
+
+      if (filteredUsers.length === 0) {
         tbody.innerHTML = `
           <tr>
-            <td colspan="8" class="py-12 text-center text-slate-500">
+            <td colspan="9" class="py-12 text-center text-slate-500">
               <div class="flex flex-col items-center justify-center max-w-md mx-auto space-y-3">
                 <div class="w-12 h-12 rounded-xl bg-slate-100 flex items-center justify-center text-2xl">👥</div>
                 <div>
-                  <p class="font-bold text-slate-800 text-sm">Aucun utilisateur enregistré</p>
-                  <p class="text-xs text-slate-400">Tous les comptes fictifs ont été purgés. Cliquez sur le bouton ci-dessous pour ajouter votre premier utilisateur réel.</p>
+                  <p class="font-bold text-slate-800 text-sm">Aucun utilisateur dans cette catégorie</p>
+                  <p class="text-xs text-slate-400">Cliquez sur le bouton ci-dessous pour ajouter un compte.</p>
                 </div>
                 <button onclick="openNewUserModal()" class="px-4 py-2 bg-slate-900 hover:bg-slate-800 text-yellow-400 font-bold rounded-xl text-xs transition cursor-pointer">
                   + Ajouter un utilisateur
@@ -11940,9 +12098,14 @@
         return;
       }
 
-      appState.users.forEach(u => {
+      filteredUsers.forEach(u => {
         const tr = document.createElement('tr');
         tr.className = "hover:bg-slate-50 transition border-b border-slate-100";
+
+        const isTeacher = (u.category === 'ENSEIGNANT' || u.role === 'professeur');
+        const categoryBadge = isTeacher
+          ? `<span class="px-2 py-0.5 bg-emerald-100 text-emerald-800 rounded-full font-bold text-[10px] inline-flex items-center gap-1">🎓 Enseignant</span>`
+          : `<span class="px-2 py-0.5 bg-indigo-100 text-indigo-800 rounded-full font-bold text-[10px] inline-flex items-center gap-1">📋 Administratif</span>`;
 
         const statusBadge = u.status === 'ACTIF'
           ? `<span class="px-2 py-0.5 bg-emerald-100 text-emerald-800 rounded-full font-bold text-[10px]">ACTIF</span>`
@@ -11951,24 +12114,28 @@
         tr.innerHTML = `
           <td class="py-2.5 px-3 font-bold text-slate-800">${esc(u.nom)} ${esc(u.prenom)}</td>
           <td class="py-2.5 px-3 font-mono text-slate-600">${esc(u.email)}<br><span class="text-[10px] text-slate-400">${esc(u.phone)}</span></td>
-          <td class="py-2.5 px-3"><span class="px-2 py-0.5 bg-purple-100 text-purple-800 rounded font-semibold text-[10px]">${esc(u.roleLabel)}</span></td>
+          <td class="py-2.5 px-3">${categoryBadge}</td>
+          <td class="py-2.5 px-3">
+            <span class="px-2 py-0.5 bg-purple-100 text-purple-800 rounded font-semibold text-[10px]">${esc(u.roleLabel || u.role)}</span>
+            ${u.discipline ? `<div class="text-[10px] text-emerald-700 font-bold mt-0.5">📚 ${esc(u.discipline)}</div>` : ''}
+          </td>
           <td class="py-2.5 px-3 text-slate-700">${esc(u.school)}</td>
           <td class="py-2.5 px-3"><span class="px-2 py-0.5 bg-slate-100 text-slate-800 border rounded font-mono text-[10px]">${esc(u.scopeLabel)}</span></td>
           <td class="py-2.5 px-3 text-center">${statusBadge}</td>
           <td class="py-2.5 px-3 font-mono text-[11px] text-slate-500">${esc(u.lastLogin)}</td>
           <td class="py-2.5 px-3 text-center">
             <div class="flex items-center justify-center gap-1">
-              <button onclick="openEditUserModal(${escJs(u.id)})" class="px-2 py-1 bg-sky-100 hover:bg-sky-200 text-sky-800 border border-sky-300 rounded text-[10px] font-bold" title="Modifier les coordonnées et le rôle">
+              <button onclick="openEditUserModal(${escJs(u.id)})" class="px-2 py-1 bg-sky-100 hover:bg-sky-200 text-sky-800 border border-sky-300 rounded text-[10px] font-bold cursor-pointer" title="Modifier les coordonnées et le rôle">
                 ✏️
               </button>
-              <button onclick="toggleUserStatus(${escJs(u.id)})" class="px-2 py-1 rounded text-[10px] font-bold ${u.status === 'ACTIF' ? 'bg-amber-100 text-amber-800 hover:bg-amber-200' : 'bg-emerald-100 text-emerald-800 hover:bg-emerald-200'}" title="${u.status === 'ACTIF' ? 'Désactiver le compte' : 'Réactiver'}">
+              <button onclick="toggleUserStatus(${escJs(u.id)})" class="px-2 py-1 rounded text-[10px] font-bold cursor-pointer ${u.status === 'ACTIF' ? 'bg-amber-100 text-amber-800 hover:bg-amber-200' : 'bg-emerald-100 text-emerald-800 hover:bg-emerald-200'}" title="${u.status === 'ACTIF' ? 'Désactiver le compte' : 'Réactiver'}">
                 ${u.status === 'ACTIF' ? 'Désactiver' : 'Activer'}
               </button>
-              <button onclick="resetUserAccess(${escJs(u.id)})" class="px-2 py-1 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded text-[10px] font-bold" title="Réinitialiser l'accès">
+              <button onclick="resetUserAccess(${escJs(u.id)})" class="px-2 py-1 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded text-[10px] font-bold cursor-pointer" title="Réinitialiser l'accès">
                 Réinit.
               </button>
               ${u.id !== 0 && u.role !== 'concepteur' ? `
-                <button onclick="deleteUserPrompt(${escJs(u.id)}, '${esc(u.nom + ' ' + u.prenom).replace(/'/g, "\\'")}')" class="px-2 py-1 bg-rose-100 hover:bg-rose-200 text-rose-700 border border-rose-300 rounded text-[10px] font-bold" title="Supprimer cet utilisateur">
+                <button onclick="deleteUserPrompt(${escJs(u.id)}, '${esc(u.nom + ' ' + u.prenom).replace(/'/g, "\\'")}')" class="px-2 py-1 bg-rose-100 hover:bg-rose-200 text-rose-700 border border-rose-300 rounded text-[10px] font-bold cursor-pointer" title="Supprimer cet utilisateur">
                   🗑️
                 </button>
               ` : ''}
@@ -11992,6 +12159,17 @@
       document.getElementById('eu-prenom').value = u.prenom || '';
       document.getElementById('eu-email').value = u.email || '';
       document.getElementById('eu-phone').value = u.phone || '';
+      const cat = u.category || (u.role === 'professeur' ? 'ENSEIGNANT' : 'ADMINISTRATIF');
+      const euCat = document.getElementById('eu-category');
+      if (euCat) euCat.value = cat;
+      const euDiscBox = document.getElementById('eu-discipline-container');
+      const euDisc = document.getElementById('eu-discipline');
+      if (cat === 'ENSEIGNANT') {
+        if (euDiscBox) euDiscBox.classList.remove('hidden');
+        if (euDisc && u.discipline) euDisc.value = u.discipline;
+      } else {
+        if (euDiscBox) euDiscBox.classList.add('hidden');
+      }
       document.getElementById('eu-role').value = u.role || 'consultation';
       document.getElementById('eu-status').value = u.status || 'ACTIF';
       const epEl = document.getElementById('eu-password');
@@ -12016,6 +12194,8 @@
       const email = document.getElementById('eu-email').value.trim().toLowerCase();
       const phone = document.getElementById('eu-phone').value.trim();
       const role = document.getElementById('eu-role').value;
+      const category = document.getElementById('eu-category') ? document.getElementById('eu-category').value : (role === 'professeur' ? 'ENSEIGNANT' : 'ADMINISTRATIF');
+      const discipline = (category === 'ENSEIGNANT' && document.getElementById('eu-discipline')) ? document.getElementById('eu-discipline').value : null;
       const status = document.getElementById('eu-status').value;
       const editPassword = document.getElementById('eu-password')?.value;
 
@@ -12034,6 +12214,8 @@
             email,
             phone,
             role,
+            category,
+            discipline,
             isActive: status === 'ACTIF',
             ...(editPassword ? { password: editPassword } : {})
           }),
@@ -12129,6 +12311,12 @@
         const el = document.getElementById(f);
         if (el) el.value = '';
       });
+      const catSel = document.getElementById('nu-category');
+      if (catSel) catSel.selectedIndex = 0;
+      const discBox = document.getElementById('nu-discipline-container');
+      if (discBox) discBox.classList.add('hidden');
+      const discSel = document.getElementById('nu-discipline');
+      if (discSel) discSel.selectedIndex = 0;
       const roleSel = document.getElementById('nu-role');
       if (roleSel) roleSel.selectedIndex = 0;
       const scopeSel = document.getElementById('nu-scope');
@@ -12158,6 +12346,8 @@
       const email = document.getElementById('nu-email').value.trim();
       const phone = document.getElementById('nu-phone').value.trim();
       const roleKey = document.getElementById('nu-role').value;
+      const category = document.getElementById('nu-category') ? document.getElementById('nu-category').value : (roleKey === 'professeur' ? 'ENSEIGNANT' : 'ADMINISTRATIF');
+      const discipline = (category === 'ENSEIGNANT' && document.getElementById('nu-discipline')) ? document.getElementById('nu-discipline').value : null;
       const scopeLabel = document.getElementById('nu-scope').value;
 
       const password = document.getElementById('nu-password')?.value || '';
@@ -12178,7 +12368,9 @@
         email: email,
         phone: phone,
         role: roleKey,
-        roleLabel: roleKey.toUpperCase(),
+        roleLabel: roleKey === 'professeur' ? 'Professeur / Enseignant' : roleKey.toUpperCase(),
+        category: category,
+        discipline: discipline,
         school: (appState.schools && appState.schools[0]) ? appState.schools[0].name : "Non assigné",
         schoolId: (appState.schools && appState.schools[0]) ? appState.schools[0].id : null,
         scopeType: scopeLabel.includes('GLOBAL') ? 'GLOBAL' : scopeLabel.includes('Caisse') ? 'CASH_DESK' : scopeLabel.includes('Classes') ? 'CLASSES' : 'SCHOOL',
@@ -12201,6 +12393,8 @@
             phone: phone,
             role: roleKey,
             roleLabel: newUser.roleLabel,
+            category: category,
+            discipline: discipline,
             scopeType: newUser.scopeType,
             scopeLabel: newUser.scopeLabel,
             password: password

@@ -634,6 +634,12 @@ function initSchema() {
   if (!userCols.includes('scope_value')) {
     db.exec('ALTER TABLE users ADD COLUMN scope_value TEXT DEFAULT NULL');
   }
+  if (!userCols.includes('category')) {
+    try { db.exec('ALTER TABLE users ADD COLUMN category TEXT DEFAULT NULL'); } catch (_) {}
+  }
+  if (!userCols.includes('discipline')) {
+    try { db.exec('ALTER TABLE users ADD COLUMN discipline TEXT DEFAULT NULL'); } catch (_) {}
+  }
 
   // Colonne password_hash sur schools (Miroir de sécurité pour connexion par code)
   const schoolCols = db.prepare('PRAGMA table_info(schools)').all().map(c => c.name);
@@ -1415,6 +1421,7 @@ function formatUser(u) {
     scopeValue = schoolId ? [`S${schoolId}_PRINCIPALE`] : ['PRINCIPALE'];
   }
 
+  const category = u.category || ((u.role === 'professeur' || u.role === 'enseignant') ? 'ENSEIGNANT' : 'ADMINISTRATIF');
   return {
     id: u.id,
     nom: u.nom,
@@ -1423,6 +1430,8 @@ function formatUser(u) {
     phone: u.phone || '',
     role: u.role,
     roleLabel: u.role_label,
+    category: category,
+    discipline: u.discipline || null,
     school: u.school_name || (schoolId ? `Établissement #${schoolId}` : (foundationId ? 'Fondation FEA' : 'INNOVA GROUP — Siège Éditeur')),
     schoolId: schoolId,
     foundationId: foundationId,
@@ -3499,13 +3508,15 @@ function createUser(user, data) {
   const nextId = (maxIdRow && maxIdRow.maxId !== null ? maxIdRow.maxId : 8) + 1;
 
   const mustChange = data.mustChangePassword !== undefined ? (data.mustChangePassword ? 1 : 0) : (data.password ? 0 : 1);
+  const category = data.category || (role === 'professeur' ? 'ENSEIGNANT' : 'ADMINISTRATIF');
+  const discipline = data.discipline || null;
 
   db.prepare(`
     INSERT INTO users (
       id, school_id, foundation_id, nom, prenom, email, phone,
       role, role_label, scope_type, scope_label, level, is_active,
-      password_hash, must_change_password
-    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 1, ?, ?)
+      password_hash, must_change_password, category, discipline
+    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 1, ?, ?, ?, ?)
   `).run(
     nextId,
     targetSchoolId,
@@ -3520,7 +3531,9 @@ function createUser(user, data) {
     scopeLabel,
     level,
     passwordHash,
-    mustChange
+    mustChange,
+    category,
+    discipline
   );
 
   addAuditLog(user, {
@@ -3593,16 +3606,19 @@ function updateUser(user, id, data) {
   const phone = data.phone !== undefined ? String(data.phone).trim() : targetUser.phone;
   const isActive = data.isActive !== undefined ? (data.isActive ? 1 : 0) : (targetUser.isActive ? 1 : 0);
 
+  const category = data.category !== undefined ? data.category : (data.role ? (data.role === 'professeur' ? 'ENSEIGNANT' : 'ADMINISTRATIF') : (targetUser.category || 'ADMINISTRATIF'));
+  const discipline = data.discipline !== undefined ? data.discipline : (targetUser.discipline || null);
+
   db.prepare(`
     UPDATE users SET
       nom = ?, prenom = ?, email = ?, phone = ?,
       role = ?, role_label = ?, scope_type = ?, scope_label = ?,
-      level = ?, is_active = ?
+      level = ?, is_active = ?, category = ?, discipline = ?
     WHERE id = ?
   `).run(
     nom, prenom, email, phone,
     role, roleLabel, scopeType, scopeLabel,
-    level, isActive, uId
+    level, isActive, category, discipline, uId
   );
 
   if (data.password) {

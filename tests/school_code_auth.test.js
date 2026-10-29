@@ -1531,3 +1531,94 @@ test('AUTH-CODE-25 : Vérification de la protection anti-crash JSON.parse sur r�
   assert.ok(loginHtml.includes('responseText = await res.text()'), 'login.html doit lire le texte brut avant de parser');
   assert.ok(loginHtml.includes('data = responseText ? JSON.parse(responseText) : null'), 'login.html doit parser le JSON de manière sécurisée');
 });
+
+test('AUTH-CODE-26 : Compte admin / directeur : accès complet école hors caisses, et création d\'utilisateurs par catégories (administratif, enseignant)', async () => {
+  const fs = require('node:fs');
+  const path = require('node:path');
+  const indexHtml = fs.readFileSync(path.join(__dirname, '..', 'index.html'), 'utf8');
+  const rbac = require('../lib/rbac.js');
+
+  // 1. Vérification RBAC : directeur est défini avec catégorie ADMINISTRATIF et professeur avec ENSEIGNANT
+  assert.ok(rbac.ROLES.directeur, 'ROLES.directeur doit être défini dans rbac.js');
+  assert.strictEqual(rbac.ROLES.directeur.category, 'ADMINISTRATIF');
+  assert.strictEqual(rbac.ROLES.professeur.category, 'ENSEIGNANT');
+  assert.ok(rbac.ASSIGNABLE_ROLES.admin.includes('professeur'), 'L\'admin doit pouvoir assigner le rôle professeur');
+  assert.ok(rbac.ASSIGNABLE_ROLES.admin.includes('de'), 'L\'admin doit pouvoir assigner les rôles administratifs');
+  assert.ok(rbac.ASSIGNABLE_ROLES.admin.includes('comptable'), 'L\'admin doit pouvoir assigner le rôle comptable');
+
+  // 2. Vérification isolation caisses pour admin et directeur dans index.html
+  assert.ok(indexHtml.includes("'nav-caisses': ['caisse_principale', 'caisse_secondaire', 'comptable', 'concepteur', 'fondateur']"), 'nav-caisses doit exclure admin et directeur');
+  assert.ok(indexHtml.includes("moduleId === 'caisses' && (user.role === 'admin' || user.role === 'directeur')"), 'navigateTo doit interdire la caisse physique à l\'admin/directeur');
+
+  // 3. Vérification des éléments DOM de gestion par catégories
+  assert.ok(indexHtml.includes('id="nu-category"'), 'new-user-modal doit contenir id="nu-category"');
+  assert.ok(indexHtml.includes('id="eu-category"'), 'edit-user-modal doit contenir id="eu-category"');
+  assert.ok(indexHtml.includes('id="nu-discipline"'), 'new-user-modal doit contenir id="nu-discipline"');
+  assert.ok(indexHtml.includes('id="eu-discipline"'), 'edit-user-modal doit contenir id="eu-discipline"');
+  assert.ok(indexHtml.includes('id="user-filter-all"'), 'subview-admin-users doit contenir id="user-filter-all"');
+  assert.ok(indexHtml.includes('id="user-filter-admin"'), 'subview-admin-users doit contenir id="user-filter-admin"');
+  assert.ok(indexHtml.includes('id="user-filter-prof"'), 'subview-admin-users doit contenir id="user-filter-prof"');
+
+  // 4. Test API : création d'un utilisateur administratif et d'un enseignant par l'admin d'école
+  const schoolCode = 'SCH-CAT-' + Date.now().toString().slice(-4);
+  const schRes = await makeRequest(baseUrl, {
+    path: '/api/schools',
+    method: 'POST'
+  }, {
+    code: schoolCode,
+    name: 'École Test Catégories',
+    password: '@Password2026'
+  });
+  assert.strictEqual(schRes.statusCode, 201);
+  const createdSchool = schRes.json.school;
+
+  // Connexion admin école
+  const adminLogin = await makeRequest(baseUrl, {
+    path: '/api/auth/login',
+    method: 'POST'
+  }, {
+    identifier: schoolCode,
+    password: '@Password2026'
+  });
+  assert.strictEqual(adminLogin.statusCode, 200);
+  const adminCookie = adminLogin.headers['set-cookie'];
+
+  // Création d'un utilisateur Personnel Administratif (D.E)
+  const adminUserRes = await makeRequest(baseUrl, {
+    path: '/api/users',
+    method: 'POST',
+    headers: { Cookie: adminCookie }
+  }, {
+    nom: 'KOUASSI',
+    prenom: 'Directeur Études',
+    email: `de.${Date.now()}@test.ci`,
+    phone: '+225 01020304',
+    role: 'de',
+    category: 'ADMINISTRATIF',
+    password: '@Password2026'
+  });
+  assert.strictEqual(adminUserRes.statusCode, 201, 'L\'admin doit pouvoir créer un utilisateur administratif');
+  assert.strictEqual(adminUserRes.json.user.role, 'de');
+  assert.strictEqual(adminUserRes.json.user.category, 'ADMINISTRATIF');
+
+  // Création d'un utilisateur Personnel Enseignant (Professeur)
+  const profUserRes = await makeRequest(baseUrl, {
+    path: '/api/users',
+    method: 'POST',
+    headers: { Cookie: adminCookie }
+  }, {
+    nom: 'TRAORE',
+    prenom: 'Enseignant Maths',
+    email: `prof.${Date.now()}@test.ci`,
+    phone: '+225 05060708',
+    role: 'professeur',
+    category: 'ENSEIGNANT',
+    discipline: 'Mathématiques',
+    password: '@Password2026'
+  });
+  assert.strictEqual(profUserRes.statusCode, 201, 'L\'admin doit pouvoir créer un enseignant');
+  assert.strictEqual(profUserRes.json.user.role, 'professeur');
+  assert.strictEqual(profUserRes.json.user.category, 'ENSEIGNANT');
+  assert.strictEqual(profUserRes.json.user.discipline, 'Mathématiques');
+});
+
