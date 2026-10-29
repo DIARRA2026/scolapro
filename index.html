@@ -2546,40 +2546,11 @@
             </span>
           </div>
 
-          <!-- Bouton Retour Souverain Concepteur (affiché en mode intervention) -->
-          <button id="btn-return-concepteur" onclick="exitImpersonation()" class="hidden header-pill px-2.5 sm:px-3 bg-amber-400 hover:bg-yellow-300 text-slate-950 font-black text-xs gap-1.5 shadow-md transition cursor-pointer border border-yellow-200" title="Quitter l'inspection de l'école et retourner au Mission Control Concepteur">
-            <span>⚡</span>
-            <span>Mission Control (N1)</span>
-          </button>
-
-          <!-- Bouton Retour Fondation (affiché pour le fondateur supervisant une école) -->
-          <button id="btn-return-fondation" onclick="returnToFoundation()" class="hidden header-pill px-2.5 sm:px-3 bg-blue-900/90 hover:bg-blue-800 text-blue-200 hover:text-white font-black text-xs gap-1.5 shadow-md transition cursor-pointer border border-blue-400/50" title="Quitter l'inspection de l'école et retourner au portail fondation">
-            <span>🏛️</span>
-            <span>Portail Fondation (N2)</span>
-          </button>
         </div>
       </div>
 
       <!-- DROITE : Profil Utilisateur & Sélecteur Démo École -->
       <div class="flex items-center gap-2 sm:gap-2.5 flex-shrink-0">
-                
-        <!-- Bouton Console Concepteur Système (Visible si Concepteur / Super Admin) -->
-        <button id="header-btn-superadmin" onclick="enterAsConcepteur()" class="header-pill inline-flex px-3 bg-gradient-to-r from-red-700 via-red-800 to-[#180408] hover:from-red-600 hover:to-red-700 active:scale-95 text-yellow-300 text-xs font-black shadow-sm border border-yellow-400/40 gap-1.5 transition cursor-pointer" title="Accéder à la Console Concepteur & Supervision Globale (INNOVA GROUP)">
-          <span class="text-xs">🛡️</span>
-          <span class="font-black">Mission Control</span>
-        </button>
-<!-- Sélecteur Universel des 3 Compartiments (Header École) -->
-        <div class="header-pill hidden md:inline-flex bg-black/25 p-0.5 rounded-lg border border-yellow-400/30 gap-1 text-[11px] font-bold">
-          <button onclick="openConcepteurInterface()" class="px-2 py-0.5 rounded text-yellow-300/80 hover:text-white hover:bg-black/30 transition flex items-center gap-1 cursor-pointer" title="Basculer vers Niveau 1 : Concepteur SaaS">
-            <span>🛡️</span> <span class="hidden lg:inline">N1 Concepteur</span><span class="lg:hidden">N1</span>
-          </button>
-          <button onclick="openFoundationInterface()" class="px-2 py-0.5 rounded text-yellow-300/80 hover:text-white hover:bg-black/30 transition flex items-center gap-1 cursor-pointer" title="Basculer vers Niveau 2 : Espace Fondation">
-            <span>🏛️</span> <span class="hidden lg:inline">N2 Fondation</span><span class="lg:hidden">N2</span>
-          </button>
-          <span class="px-2 py-0.5 rounded bg-yellow-400 text-slate-950 font-black shadow-xs flex items-center gap-1" title="Compartiment Actuel : Espace Établissement">
-            <span>🏫</span> <span class="hidden lg:inline">N3 École</span><span class="lg:hidden">N3</span>
-          </span>
-        </div>
 
 <!-- Sélecteur Profil École (Profils Établissement) -->
         <div class="header-pill hidden lg:inline-flex bg-red-950/85 hover:bg-red-950 border border-yellow-400/40 hover:border-yellow-400/70 px-2.5 gap-1.5 shadow-inner transition">
@@ -2659,7 +2630,7 @@
           </a>
 
           <!-- 0. Tableau de Bord Central Fondation (Entité Mère) -->
-          <a href="javascript:void(0)" onclick="navigateTo('foundation')" id="nav-foundation" class="nav-item flex items-center justify-between px-4 py-2.5 text-slate-300 hover:bg-sidebar-hover hover:text-white transition">
+          <a href="javascript:void(0)" onclick="navigateTo('foundation')" id="nav-foundation" class="nav-item hidden flex items-center justify-between px-4 py-2.5 text-slate-300 hover:bg-sidebar-hover hover:text-white transition">
             <div class="flex items-center gap-3">
               <span class="text-base">🏛️</span>
               <span class="font-bold text-yellow-300">Dashboard Fondation</span>
@@ -10601,6 +10572,7 @@
       // Sous-espaces métier stricts avec inclusion Concepteur et Fondateur
       const navItems = {
         'nav-dashboard': ['admin', 'de', 'cf', 'educateur', 'caisse_principale', 'caisse_secondaire', 'consultation', 'concepteur', 'fondateur'],
+        'nav-foundation': ['fondateur', 'concepteur'],
         'nav-admin': ['admin', 'concepteur'],
         'nav-caisses': ['admin', 'caisse_principale', 'caisse_secondaire', 'de', 'concepteur', 'fondateur'],
         'nav-ecolage': ['admin', 'cf', 'de', 'concepteur', 'fondateur'],
@@ -26115,5 +26087,11 @@ document.addEventListener('keydown', function(e) {
     }
 
 </script>
+  <!-- Éléments masqués hors interface établissement (maintien intégrité DOM) -->
+  <div style="display:none!important;" aria-hidden="true" class="hidden">
+    <button id="btn-return-concepteur" style="display:none!important;"></button>
+    <button id="btn-return-fondation" style="display:none!important;"></button>
+    <button id="header-btn-superadmin" style="display:none!important;"></button>
+  </div>
 </body>
 </html>
