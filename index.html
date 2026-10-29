@@ -2556,21 +2556,21 @@
         <div class="header-pill hidden lg:inline-flex bg-red-950/85 hover:bg-red-950 border border-yellow-400/40 hover:border-yellow-400/70 px-2.5 gap-1.5 shadow-inner transition">
           <span class="text-yellow-400 font-black flex items-center gap-1 text-[11px]">Compte :</span>
           <select id="header-user-select" onchange="switchUserRole(this.value)" class="max-w-[170px] xl:max-w-[220px] truncate transition bg-transparent text-white text-xs outline-none cursor-pointer">
-            <option value="1" class="bg-[#190507] text-white">1. Direction Établissement (Admin)</option>
+            <option value="0" class="bg-[#190507] text-white">0. DIARRA Dolourou (Concepteur SaaS)</option>
           </select>
         </div>
 
         <!-- Profil Utilisateur de l'école -->
         <div onclick="openSessionModal()" class="header-pill gap-2 px-1.5 py-0 hover:bg-black/20 rounded-lg cursor-pointer transition" title="Voir les détails de la session">
           <div class="text-right hidden sm:flex flex-col justify-center leading-none">
-            <span id="header-user-name" class="font-extrabold text-xs text-white max-w-[140px] xl:max-w-[190px] truncate leading-none">Direction Établissement</span>
+            <span id="header-user-name" class="font-extrabold text-xs text-white max-w-[140px] xl:max-w-[190px] truncate leading-none">DIARRA Dolourou</span>
             <div class="flex items-center justify-end gap-1.5 mt-1">
-              <span id="header-user-role" class="text-[10px] text-yellow-200 font-semibold max-w-[100px] truncate leading-none">Directeur / Admin</span>
-              <span id="header-user-scope-badge" class="bg-yellow-400/25 text-yellow-300 border border-yellow-400/40 px-1 py-0.5 rounded font-mono text-[8.5px] font-bold leading-none">Périmètre: Établissement</span>
+              <span id="header-user-role" class="text-[10px] text-yellow-200 font-semibold max-w-[100px] truncate leading-none">Concepteur Souverain</span>
+              <span id="header-user-scope-badge" class="bg-yellow-400/25 text-yellow-300 border border-yellow-400/40 px-1 py-0.5 rounded font-mono text-[8.5px] font-bold leading-none">Périmètre: Global</span>
             </div>
           </div>
           <button id="header-avatar-btn" class="w-8 h-8 rounded-full bg-yellow-400 hover:bg-yellow-300 border-2 border-yellow-200 flex items-center justify-center font-black text-xs text-red-950 shadow-sm hover:scale-105 active:scale-95 transition flex-shrink-0 pointer-events-none">
-            DIR
+            DD
           </button>
         </div>
 
@@ -9490,11 +9490,11 @@
       <div class="bg-gradient-to-r from-slate-950 via-slate-900 to-indigo-950 text-white p-5 flex items-center justify-between border-b border-indigo-500/20">
         <div class="flex items-center gap-3">
           <div id="sess-user-initials" class="w-12 h-12 rounded-xl bg-gradient-to-br from-amber-400 to-amber-600 text-slate-950 font-black text-lg flex items-center justify-center shadow">
-            DIR
+            DD
           </div>
           <div>
-            <h3 id="sess-user-name" class="font-black text-base text-white">Direction Établissement</h3>
-            <p id="sess-user-email" class="text-xs text-slate-300 font-mono">direction@scolapro.ci</p>
+            <h3 id="sess-user-name" class="font-black text-base text-white">DIARRA Dolourou</h3>
+            <p id="sess-user-email" class="text-xs text-slate-300 font-mono">concepteur@scolapro.ci</p>
           </div>
         </div>
         <button type="button" onclick="closeSessionModal()" class="text-slate-400 hover:text-white text-2xl font-bold cursor-pointer">&times;</button>
@@ -9503,11 +9503,11 @@
         <div class="grid grid-cols-2 gap-3 bg-slate-50 p-3.5 rounded-xl border border-slate-200">
           <div>
             <span class="text-[10px] text-slate-400 uppercase font-bold block">Rôle Opérateur</span>
-            <span id="sess-user-role" class="font-extrabold text-indigo-900 text-xs">Directeur / Admin</span>
+            <span id="sess-user-role" class="font-extrabold text-indigo-900 text-xs">Concepteur Souverain</span>
           </div>
           <div>
             <span class="text-[10px] text-slate-400 uppercase font-bold block">Périmètre de données</span>
-            <span id="sess-user-scope" class="font-extrabold text-slate-800 text-xs">Établissement</span>
+            <span id="sess-user-scope" class="font-extrabold text-slate-800 text-xs">Souverain (Global)</span>
           </div>
           <div class="col-span-2 pt-2 border-t border-slate-200/60">
             <span class="text-[10px] text-slate-400 uppercase font-bold block">Établissement Actif</span>
@@ -10307,47 +10307,6 @@
       // 1. UTILISATEURS DU SYSTÈME (Initialisé dynamiquement depuis l'API SQLite)
       users: [
         {
-          id: 1,
-          nom: "TRAORE",
-          prenom: "Djakaridja",
-          email: "admin@scolapro.ci",
-          phone: "+225 07 01 02 03",
-          role: "admin",
-          roleLabel: "Directeur / Administrateur",
-          category: "ADMINISTRATIF",
-          school: "Lycée d'Excellence d'Abidjan",
-          schoolId: 1,
-          foundationId: null,
-          scopeType: "SCHOOL",
-          scopeLabel: "Établissement",
-          scopeValue: 1,
-          status: "ACTIF",
-          lastLogin: "Aujourd'hui",
-          createdAt: "01/01/2026",
-          permissions: ["*"]
-        },
-        {
-          id: 2,
-          nom: "DIARRASSOUBA",
-          prenom: "Bintou",
-          email: "b.diarrassouba@scolapro.ci",
-          phone: "+225 05 02 03 04",
-          role: "professeur",
-          roleLabel: "Enseignant",
-          category: "ENSEIGNANT",
-          discipline: "Mathématiques",
-          school: "Lycée d'Excellence d'Abidjan",
-          schoolId: 1,
-          foundationId: null,
-          scopeType: "SCHOOL",
-          scopeLabel: "Établissement",
-          scopeValue: 1,
-          status: "ACTIF",
-          lastLogin: "Hier",
-          createdAt: "01/01/2026",
-          permissions: ["pedagogie.*", "grades.*"]
-        },
-        {
           id: 0,
           nom: "DIARRA",
           prenom: "Dolourou",
@@ -11141,27 +11100,13 @@
     function syncHeaderUserSelectors() {
       const selIds = ["header-platform-user-select", "header-found-user-select", "header-user-select"];
       const activeUser = getActiveUser() || (appState.users && appState.users[0]);
-      const currentSchoolId = appState.currentSchoolId || (appState.schools && appState.schools[0] ? appState.schools[0].id : null);
 
       selIds.forEach(id => {
         const sel = document.getElementById(id);
         if (!sel) return;
         sel.innerHTML = '';
 
-        let userList = (appState.users && appState.users.length > 0) ? [...appState.users] : (activeUser ? [activeUser] : []);
-        
-        // Pour le sélecteur de l'espace établissement (header-user-select), EXCLURE formellement le concepteur du logiciel
-        if (id === 'header-user-select') {
-          userList = userList.filter(u => {
-            if (!u) return false;
-            if (u.role === 'concepteur' || u.id === 0) return false;
-            if (u.roleLabel && u.roleLabel.toLowerCase().includes('concepteur')) return false;
-            if (u.nom && u.nom.toUpperCase().includes('DIARRA') && u.prenom && u.prenom.toLowerCase().includes('dolourou') && !u.schoolId) return false;
-            if (currentSchoolId && u.schoolId && u.schoolId !== currentSchoolId) return false;
-            return true;
-          });
-        }
-
+        const userList = (appState.users && appState.users.length > 0) ? appState.users : (activeUser ? [activeUser] : []);
         userList.forEach(u => {
           const opt = document.createElement('option');
           opt.value = u.id;
@@ -11171,38 +11116,23 @@
         });
 
         if (activeUser) {
-          if (id === 'header-user-select' && (activeUser.role === 'concepteur' || activeUser.id === 0)) {
-            if (userList.length > 0) sel.value = userList[0].id;
-          } else {
-            sel.value = activeUser.id;
-          }
+          sel.value = activeUser.id;
         }
       });
 
       // Synchroniser le profil affiché dans la barre de titre
       if (activeUser) {
-        const isConcepteur = (activeUser.role === 'concepteur' || activeUser.id === 0);
         const nameEl = document.getElementById('header-user-name');
-        if (nameEl) {
-          nameEl.textContent = isConcepteur ? "Direction Établissement" : `${activeUser.prenom} ${activeUser.nom}`;
-        }
+        if (nameEl) nameEl.textContent = `${activeUser.prenom} ${activeUser.nom}`;
         const roleEl = document.getElementById('header-user-role');
-        if (roleEl) {
-          roleEl.textContent = isConcepteur ? "Directeur / Admin" : (activeUser.roleLabel || activeUser.role);
-        }
+        if (roleEl) roleEl.textContent = activeUser.roleLabel || activeUser.role;
         const scopeEl = document.getElementById('header-user-scope-badge');
-        if (scopeEl) {
-          scopeEl.textContent = isConcepteur ? "Périmètre: Établissement" : `Périmètre: ${activeUser.scopeLabel || activeUser.scopeType}`;
-        }
+        if (scopeEl) scopeEl.textContent = `Périmètre: ${activeUser.scopeLabel || activeUser.scopeType}`;
         const avatarEl = document.getElementById('header-avatar-btn');
         if (avatarEl) {
-          if (isConcepteur) {
-            avatarEl.textContent = 'DIR';
-          } else {
-            const p = activeUser.prenom ? activeUser.prenom[0] : '';
-            const n = activeUser.nom ? activeUser.nom[0] : '';
-            avatarEl.textContent = (p + n).toUpperCase() || 'U';
-          }
+          const p = activeUser.prenom ? activeUser.prenom[0] : '';
+          const n = activeUser.nom ? activeUser.nom[0] : '';
+          avatarEl.textContent = (p + n).toUpperCase() || 'U';
         }
 
         const foundNameEl = document.getElementById('found-header-user-name');
@@ -11675,14 +11605,12 @@
 
       // 2. Vue Administrateur Local (Proviseur / Admin d'établissement)
       if (user.role === 'admin') {
-        const schoolStaffList = (appState.users || []).filter(u => u && u.role !== 'concepteur' && u.id !== 0 && !u.roleLabel?.toLowerCase().includes('concepteur'));
-        const activeSchoolStaffCount = schoolStaffList.filter(u => u.status === 'ACTIF').length;
         container.innerHTML = `
           <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
             <div class="bg-white border border-slate-200 p-4 rounded-xl shadow-sm">
-              <span class="text-xs uppercase font-bold text-slate-500">Personnel & Utilisateurs</span>
-              <p class="text-2xl font-black text-purple-700 mt-1">${activeSchoolStaffCount} / ${schoolStaffList.length}</p>
-              <p class="text-[11px] text-slate-400">Personnel actif de l'établissement</p>
+              <span class="text-xs uppercase font-bold text-slate-500">Utilisateurs Actifs</span>
+              <p class="text-2xl font-black text-purple-700 mt-1">${appState.users.filter(u => u.status === 'ACTIF').length} / ${appState.users.length}</p>
+              <p class="text-[11px] text-slate-400">Profils RBAC configurés</p>
             </div>
             <div class="bg-white border border-slate-200 p-4 rounded-xl shadow-sm">
               <span class="text-xs uppercase font-bold text-slate-500">Effectif Élèves</span>
@@ -12131,21 +12059,7 @@
       if (!tbody) return;
       tbody.innerHTML = '';
 
-      const allUsers = appState.users || [];
-      const currentSchoolId = appState.currentSchoolId || (appState.schools && appState.schools[0] ? appState.schools[0].id : null);
-
-      // Exclusion stricte et absolue du concepteur du logiciel de la liste du personnel des établissements
-      const users = allUsers.filter(u => {
-        if (!u) return false;
-        // Exclure formellement le concepteur du logiciel (DIARRA Dolourou / Rôle concepteur / id 0)
-        if (u.role === 'concepteur' || u.id === 0) return false;
-        if (u.roleLabel && u.roleLabel.toLowerCase().includes('concepteur')) return false;
-        if (u.nom && u.nom.toUpperCase().includes('DIARRA') && u.prenom && u.prenom.toLowerCase().includes('dolourou') && !u.schoolId) return false;
-        // Filtrer par établissement actif si l'utilisateur est rattaché à un établissement précis
-        if (currentSchoolId && u.schoolId && u.schoolId !== currentSchoolId) return false;
-        return true;
-      });
-
+      const users = appState.users || [];
       const totalCount = users.length;
       const adminCount = users.filter(u => (u.category === 'ADMINISTRATIF' || (!u.category && u.role !== 'professeur'))).length;
       const profCount = users.filter(u => (u.category === 'ENSEIGNANT' || u.role === 'professeur')).length;
@@ -18377,16 +18291,7 @@
       } else {
         const tbody = document.getElementById('modal-users-tbody');
         if (tbody) {
-          const currentSchoolId = appState.currentSchoolId || (appState.schools && appState.schools[0] ? appState.schools[0].id : null);
-          const schoolUsers = (appState.users || []).filter(u => {
-            if (!u) return false;
-            if (u.role === 'concepteur' || u.id === 0) return false;
-            if (u.roleLabel && u.roleLabel.toLowerCase().includes('concepteur')) return false;
-            if (u.nom && u.nom.toUpperCase().includes('DIARRA') && u.prenom && u.prenom.toLowerCase().includes('dolourou') && !u.schoolId) return false;
-            if (currentSchoolId && u.schoolId && u.schoolId !== currentSchoolId) return false;
-            return true;
-          });
-          tbody.innerHTML = schoolUsers.map(u => `
+          tbody.innerHTML = (appState.users || []).map(u => `
             <tr class="hover:bg-slate-50">
               <td class="p-2 font-bold">${esc(u.prenom)} ${esc(u.nom)}</td>
               <td class="p-2"><span class="px-2 py-0.5 bg-indigo-100 text-indigo-800 rounded font-bold">${u.roleLabel || u.role}</span></td>

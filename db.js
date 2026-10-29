@@ -3445,8 +3445,7 @@ function getUsers(user) {
       SELECT u.*, s.name as school_name 
       FROM users u 
       LEFT JOIN schools s ON u.school_id = s.id 
-      WHERE (u.foundation_id = ? OR u.school_id IN (SELECT id FROM schools WHERE foundation_id = ?))
-        AND u.role != 'concepteur' AND u.id != 0
+      WHERE u.foundation_id = ? OR u.school_id IN (SELECT id FROM schools WHERE foundation_id = ?)
       ORDER BY u.id ASC
     `).all(user.foundationId, user.foundationId).map(formatUser);
   }
@@ -3457,7 +3456,6 @@ function getUsers(user) {
     FROM users u 
     LEFT JOIN schools s ON u.school_id = s.id 
     WHERE u.school_id = ?
-      AND u.role != 'concepteur' AND u.id != 0
     ORDER BY u.id ASC
   `).all(user.schoolId).map(formatUser);
 }
