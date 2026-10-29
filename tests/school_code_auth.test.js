@@ -548,6 +548,34 @@ test('AUTH-CODE-15 : Réinitialisation intégrale des formulaires de création (
   assert.ok(closeStudentMatch[1].includes('resetAddStudentForm()'), 'closeAddStudentModal doit appeler resetAddStudentForm');
 });
 
+test('AUTH-CODE-15b : Création d\'un espace fondation et école : exclusion totale du bandeau d\'intervention Concepteur', () => {
+  const fs = require('node:fs');
+  const path = require('node:path');
+  const content = fs.readFileSync(path.join(__dirname, '..', 'index.html'), 'utf8');
+
+  // 1. saveFoundationGeneratorForm désactive formellement l'impersonation et provisionne le rôle fondateur
+  const saveFoundMatch = content.match(/async function saveFoundationGeneratorForm\([^)]*\)\s*\{([\s\S]*?)\n    \}/);
+  assert.ok(saveFoundMatch, 'saveFoundationGeneratorForm doit être définie');
+  const saveFoundBody = saveFoundMatch[1];
+  assert.ok(saveFoundBody.includes("appState.impersonating = false;"), 'saveFoundationGeneratorForm doit désactiver appState.impersonating');
+  assert.ok(saveFoundBody.includes("role: 'fondateur'"), 'saveFoundationGeneratorForm doit provisionner le profil fondateur');
+  assert.ok(saveFoundBody.includes("banner.classList.add('hidden')"), 'saveFoundationGeneratorForm doit masquer impersonation-banner');
+
+  // 2. saveSchoolGeneratorForm désactive formellement l'impersonation et provisionne le rôle admin
+  const saveSchoolMatch = content.match(/async function saveSchoolGeneratorForm\([^)]*\)\s*\{([\s\S]*?)\n    \}/);
+  assert.ok(saveSchoolMatch, 'saveSchoolGeneratorForm doit être définie');
+  const saveSchoolBody = saveSchoolMatch[1];
+  assert.ok(saveSchoolBody.includes("appState.impersonating = false;"), 'saveSchoolGeneratorForm doit désactiver appState.impersonating');
+  assert.ok(saveSchoolBody.includes("role: 'admin'"), 'saveSchoolGeneratorForm doit provisionner le profil admin');
+  assert.ok(saveSchoolBody.includes("banner.classList.add('hidden')"), 'saveSchoolGeneratorForm doit masquer impersonation-banner');
+
+  // 3. switchTenant n'active l'intervention QUE si l'impersonation a été explicitement demandée via impersonateTenant
+  const switchTenantMatch = content.match(/function switchTenant\([^)]*\)\s*\{([\s\S]*?)\n    \}/);
+  assert.ok(switchTenantMatch, 'switchTenant doit être définie');
+  const switchTenantBody = switchTenantMatch[1];
+  assert.ok(switchTenantBody.includes("appState.impersonating && user && user.role === 'concepteur'"), 'switchTenant ne doit pas activer l\'impersonation silencieusement sans demande explicite');
+});
+
 test('AUTH-CODE-16 : Réinitialisation systématique de TOUS les formulaires d\'inscription et de création', () => {
   const fs = require('node:fs');
   const path = require('node:path');

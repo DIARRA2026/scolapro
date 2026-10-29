@@ -10876,8 +10876,7 @@
         return;
       }
 
-      if (user && isConcepteur) {
-        appState.impersonating = true;
+      if (user && isConcepteur && appState.impersonating) {
         appState.impersonationType = 'FOUNDATION';
         appState.isImpersonating = true;
         if (found) {
@@ -10885,6 +10884,9 @@
           appState.currentFoundationId = found.id;
         }
       } else if (found) {
+        appState.impersonating = false;
+        appState.isImpersonating = false;
+        appState.impersonatedTarget = null;
         appState.currentFoundationId = found.id;
       }
       appState.currentTenantType = 'FOUNDATION';
@@ -10911,17 +10913,19 @@
       const school = (appState.schools || []).find(s => s.id === parseInt(sId)) || (appState.schools && appState.schools[0]);
 
       const user = getActiveUser();
-      if (user && (user.role === 'concepteur' || user.id === 0)) {
-        appState.impersonating = true;
+      if (user && (user.role === 'concepteur' || user.id === 0) && appState.impersonating) {
         appState.impersonationType = 'SCHOOL';
         appState.isImpersonating = true;
         if (school) {
           appState.impersonatedTarget = { type: 'SCHOOL', id: school.id, name: school.name };
           appState.currentSchoolId = school.id;
-        loadSchoolEcolageFromServer(school.id);
+          loadSchoolEcolageFromServer(school.id);
           if (school.foundationId) appState.currentFoundationId = school.foundationId;
         }
       } else if (school) {
+        appState.impersonating = false;
+        appState.isImpersonating = false;
+        appState.impersonatedTarget = null;
         appState.currentSchoolId = school.id;
         if (school.foundationId) appState.currentFoundationId = school.foundationId;
       }
@@ -11070,11 +11074,17 @@
         }
 
         const foundNameEl = document.getElementById('found-header-user-name');
-        if (foundNameEl) foundNameEl.textContent = `${activeUser.prenom} ${activeUser.nom}`;
+        if (foundNameEl) foundNameEl.textContent = `${activeUser.prenom || ''} ${activeUser.nom || ''}`.trim();
         const foundRoleEl = document.getElementById('found-header-user-role');
         if (foundRoleEl) {
           const rText = activeUser.role === 'concepteur' ? 'SUPER ADMIN' : (activeUser.roleLabel ? activeUser.roleLabel.split('(')[0].trim().toUpperCase() : (activeUser.role || 'ADMIN').toUpperCase());
           foundRoleEl.textContent = rText;
+        }
+        const foundAvatar = document.getElementById('found-header-avatar');
+        if (foundAvatar) {
+          const p = activeUser.prenom ? activeUser.prenom[0] : '';
+          const n = activeUser.nom ? activeUser.nom[0] : '';
+          foundAvatar.textContent = (p + n).toUpperCase() || 'FD';
         }
       }
     }
@@ -18798,6 +18808,13 @@
       // 1. Réinitialisation complète pour formulaire 100% vierge
       resetSchoolGeneratorForm();
       resetFoundationGeneratorForm();
+      appState.impersonating = false;
+      appState.isImpersonating = false;
+      appState.impersonatedTarget = null;
+      const banner = document.getElementById('impersonation-banner');
+      if (banner) banner.classList.add('hidden');
+      const btnC = document.getElementById('btn-return-concepteur');
+      if (btnC) btnC.classList.add('hidden');
 
       // Alimenter le select des fondations
       const select = document.getElementById('gen-school-foundation');
@@ -19516,12 +19533,58 @@
       const hSchoolsCount = document.getElementById('header-schools-count');
       if (hSchoolsCount) hSchoolsCount.textContent = appState.schools.length;
 
+      // 1. Auto-provision et connexion immédiate sur le compte Administrateur de la nouvelle école
+      const schoolAdminId = (appState.users && appState.users.length ? Math.max(...appState.users.map(u => u.id)) : 10) + 1;
+      const newSchoolAdmin = {
+        id: schoolAdminId,
+        nom: 'ADMINISTRATEUR',
+        prenom: name.length > 20 ? name.substring(0, 18) + '...' : name,
+        email: email,
+        phone: phone,
+        role: 'admin',
+        roleLabel: 'Directeur / Admin',
+        school: name,
+        schoolId: newId,
+        foundationId: isAffiliated ? parseInt(foundVal) : null,
+        scopeType: 'SCHOOL',
+        scopeLabel: name,
+        scopeValue: newId,
+        level: 'N3',
+        status: 'ACTIF',
+        lastLogin: "À l'instant",
+        createdAt: new Date().toLocaleDateString('fr-FR'),
+        permissions: ['school.*', 'students.*', 'finance.*', 'pedagogy.*']
+      };
+      if (!appState.users) appState.users = [];
+      appState.users.push(newSchoolAdmin);
+      appState.currentUserId = schoolAdminId;
+      appState.isAuthenticated = true;
+      sessionStorage.setItem('scolapro_authenticated', 'true');
+
+      // 2. Annulation stricte de tout mode impersonation / intervention Concepteur
+      appState.impersonating = false;
+      appState.isImpersonating = false;
+      appState.impersonatedTarget = null;
+      const banner = document.getElementById('impersonation-banner');
+      if (banner) banner.classList.add('hidden');
+      const btnConcepteur = document.getElementById('btn-return-concepteur');
+      if (btnConcepteur) btnConcepteur.classList.add('hidden');
+
+      // 3. Masquer la landing page
+      const landing = document.getElementById('view-landing');
+      if (landing) {
+        landing.classList.add('hidden', 'opacity-0', 'pointer-events-none');
+      }
+      appState.landingActive = false;
+      dismissLoadingScreen();
+
       auditAction('TENANT_SCHOOL_CREATE', 'Multi-Tenant', name, '', `Instance école créée [${code}] - ID #${newId} - ${foundObj ? 'Affiliée ' + foundObj.sigle : 'Autonome'}`);
       resetSchoolGeneratorForm();
       closeSchoolGeneratorModal();
       showToast(`Nouvel établissement "${name}" enregistré avec succès !`);
       switchTenant('SCHOOL', newId);
       navigateTo('dashboard');
+      if (typeof renderHeaderUserSelect === 'function') renderHeaderUserSelect();
     }
 
     async function saveFoundationGeneratorForm(e) {
@@ -19651,11 +19714,58 @@
         selectFound.appendChild(opt);
       }
 
+      // 1. Auto-provision et connexion immédiate sur le compte Fondateur de la nouvelle fondation
+      const foundUserId = (appState.users && appState.users.length ? Math.max(...appState.users.map(u => u.id)) : 10) + 1;
+      const newFondUser = {
+        id: foundUserId,
+        nom: (president || sigle || name).toUpperCase(),
+        prenom: 'Direction',
+        email: email,
+        phone: phone,
+        role: 'fondateur',
+        roleLabel: 'Conseil de Fondation',
+        school: null,
+        schoolId: null,
+        foundationId: newId,
+        scopeType: 'FOUNDATION',
+        scopeLabel: name,
+        scopeValue: newId,
+        level: 'N2',
+        status: 'ACTIF',
+        lastLogin: "À l'instant",
+        createdAt: new Date().toLocaleDateString('fr-FR'),
+        permissions: ['foundation.*', 'schools.read', 'finance.read', 'reports.read']
+      };
+      if (!appState.users) appState.users = [];
+      appState.users.push(newFondUser);
+      appState.currentUserId = newFondUser.id;
+      appState.isAuthenticated = true;
+      sessionStorage.setItem('scolapro_authenticated', 'true');
+
+      // 2. Annulation stricte de tout mode impersonation / intervention Concepteur
+      appState.impersonating = false;
+      appState.isImpersonating = false;
+      appState.impersonatedTarget = null;
+      const banner = document.getElementById('impersonation-banner');
+      if (banner) banner.classList.add('hidden');
+      const btnConcepteur = document.getElementById('btn-return-concepteur');
+      if (btnConcepteur) btnConcepteur.classList.add('hidden');
+
+      // 3. Masquer la landing page
+      const landing = document.getElementById('view-landing');
+      if (landing) {
+        landing.classList.add('hidden', 'opacity-0', 'pointer-events-none');
+      }
+      appState.landingActive = false;
+      dismissLoadingScreen();
+
       auditAction('TENANT_FOUNDATION_CREATE', 'Multi-Tenant', name, '', `Nouvelle fondation créée [${sigle}] - ID #${newId}`);
       resetFoundationGeneratorForm();
       closeSchoolGeneratorModal();
       showToast(`Entité mère "${name}" (${sigle}) enregistrée avec succès !`);
       switchTenant('FOUNDATION', newId);
+      if (typeof renderHeaderUserSelect === 'function') renderHeaderUserSelect();
+      if (typeof renderFoundationDashboard === 'function') renderFoundationDashboard(newId);
     }
 
     // =================================================================
@@ -20094,12 +20204,15 @@
           appState.currentFoundationId = school.foundationId;
         }
 
-        // Si c'est le Concepteur qui bascule vers l'école, activer l'intervention souveraine
-        if (user.role === 'concepteur') {
-          appState.impersonating = true;
+        // L'intervention souveraine Concepteur est active UNIQUEMENT si explicitement demandée via impersonateTenant
+        if (appState.impersonating && user && user.role === 'concepteur') {
           appState.impersonationType = 'SCHOOL';
           appState.isImpersonating = true;
           appState.impersonatedTarget = { type: 'SCHOOL', id: school.id, name: school.name };
+        } else {
+          appState.impersonating = false;
+          appState.isImpersonating = false;
+          appState.impersonatedTarget = null;
         }
 
         // 1. ACTIVER LE SHELL ECOLE (NIVEAU 3) POUR AFFICHER LA PAGE DE L'ÉCOLE
@@ -20123,9 +20236,14 @@
         const found = (appState.foundations || []).find(f => f.id === parseInt(id));
         if (!found) return;
         appState.currentFoundationId = found.id;
-        if (user.role === 'concepteur') {
-          appState.impersonating = true;
+        if (appState.impersonating && user && user.role === 'concepteur') {
           appState.impersonationType = 'FOUNDATION';
+          appState.isImpersonating = true;
+          appState.impersonatedTarget = { type: 'FOUNDATION', id: found.id, name: found.name };
+        } else {
+          appState.impersonating = false;
+          appState.isImpersonating = false;
+          appState.impersonatedTarget = null;
         }
         activateShell('FOUNDATION');
         updateHeaderTenantContext();
@@ -20913,6 +21031,13 @@
       if (!hasPerm('system.superadmin') && user.role !== 'concepteur') {
         showToast("Action refusée : Seul le Concepteur Système peut activer le mode Impersonation Souverain.");
         return;
+      }
+      appState.impersonating = true;
+      appState.impersonationType = type;
+      appState.isImpersonating = true;
+      const target = (type === 'SCHOOL' ? (appState.schools || []) : (appState.foundations || [])).find(x => x.id === parseInt(id));
+      if (target) {
+        appState.impersonatedTarget = { type: type, id: target.id, name: target.name };
       }
       auditAction('SUPERADMIN_IMPERSONATE', 'Supervision', `${type} #${id}`, '', `Impersonation souveraine du tenant ${type} #${id}`, 'SUCCÈS');
       switchTenant(type, id);
