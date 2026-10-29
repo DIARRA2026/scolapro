@@ -456,6 +456,68 @@ const server = http.createServer(async (req, res) => {
     }
   }
 
+  // 6c. Auto-création / Inscription publique École depuis la landing page (sans session)
+  if (reqPath === '/api/schools' && method === 'POST') {
+    const sessionUser = authenticate(req);
+    if (!sessionUser) {
+      try {
+        const body = await readJsonBody(req);
+        if (!body.name || !body.password || body.password.length < 8) {
+          return sendError(res, new Error("Nom de l'établissement et mot de passe administrateur (min. 8 car.) requis."), 400);
+        }
+        const sysUser = { id: 0, nom: 'AUTO-INSCRIPTION', role: 'concepteur', rank: 1 };
+        const created = db.createSchool(sysUser, body);
+        syncToSupabase('schools', {
+          code: created.code,
+          name: created.name,
+          short_name: created.shortName || created.short_name || created.name,
+          school_type: created.schoolType || created.school_type || 'COLLÈGE & LYCÉE',
+          country_code: 'CI',
+          city: created.city || 'Abidjan',
+          address: created.address || 'Abidjan',
+          phone: created.phone || '+225 27 00 00 00',
+          email: created.email || `${created.code.toLowerCase()}@scolapro.ci`,
+          currency: 'XOF',
+          is_active: true
+        }).catch(() => {});
+        return sendJson(res, 201, { success: true, school: created, id: created.id, ...created });
+      } catch (err) {
+        return sendError(res, err, 400);
+      }
+    }
+  }
+
+  // 6d. Auto-création / Inscription publique Fondation depuis la landing page (sans session)
+  if (reqPath === '/api/foundations' && method === 'POST') {
+    const sessionUser = authenticate(req);
+    if (!sessionUser) {
+      try {
+        const body = await readJsonBody(req);
+        if (!body.name || !body.password || body.password.length < 8) {
+          return sendError(res, new Error("Nom de la fondation et mot de passe administrateur (min. 8 car.) requis."), 400);
+        }
+        const sysUser = { id: 0, nom: 'AUTO-INSCRIPTION', role: 'concepteur', rank: 1 };
+        const created = db.createFoundation(sysUser, body);
+        syncToSupabase('foundations', {
+          code: created.code,
+          name: created.name,
+          sigle: created.sigle || (created.code ? created.code.toUpperCase() : 'FND'),
+          country_code: 'CI',
+          city: created.city || 'Abidjan',
+          address: created.hq || created.address || 'Abidjan',
+          president_name: created.president || 'Direction Générale',
+          phone: created.phone || '+225 27 00 00 00',
+          email: created.email || 'contact@fondation.ci',
+          description: created.description || '',
+          is_active: true
+        }).catch(() => {});
+        return sendJson(res, 201, { success: true, foundation: created, id: created.id, ...created });
+      } catch (err) {
+        return sendError(res, err, 400);
+      }
+    }
+  }
+
   // -------------------------------------------------------------------
   // VÉRIFICATION D'AUTHENTIFICATION OBLIGATOIRE POUR TOUT LE RESTE
   // -------------------------------------------------------------------

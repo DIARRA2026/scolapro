@@ -1440,6 +1440,94 @@ test('AUTH-CODE-22 : Persistance garantie des listes importées et registre perm
   assert.ok(indexHtml.includes('pendingImportFileName'), 'Le suivi de nom de fichier pendingImportFileName doit exister');
 });
 
+test('AUTH-CODE-23 : Inscription publique d\'un établissement sans session et connexion par e-mail', async () => {
+  const schoolCode = 'PUB-SCH-' + Math.floor(Math.random() * 9000 + 1000);
+  const schoolEmail = 'direction.' + schoolCode.toLowerCase() + '@groupe-educ.ci';
+  const schoolPassword = 'SecurePublicPwd2026!';
 
+  // Création publique depuis la landing page (sans cookie / session)
+  const createRes = await makeRequest(baseUrl, {
+    path: '/api/schools',
+    method: 'POST'
+  }, {
+    name: 'Groupe Scolaire Public Test',
+    code: schoolCode,
+    email: schoolEmail,
+    password: schoolPassword
+  });
 
+  assert.strictEqual(createRes.statusCode, 201, 'La création publique de l\'école doit réussir avec code HTTP 201');
+  assert.ok(createRes.json.school);
 
+  // Connexion avec l'adresse e-mail et le mot de passe défini
+  const loginRes = await makeRequest(baseUrl, {
+    path: '/api/auth/login',
+    method: 'POST'
+  }, {
+    identifier: schoolEmail,
+    password: schoolPassword
+  });
+
+  assert.strictEqual(loginRes.statusCode, 200, 'La connexion avec l\'e-mail d\'école doit retourner HTTP 200');
+  assert.ok(loginRes.json.success);
+  assert.strictEqual(loginRes.json.user.role, 'admin');
+  assert.strictEqual(loginRes.json.user.email.toLowerCase(), schoolEmail.toLowerCase());
+});
+
+test('AUTH-CODE-24 : Inscription publique d\'une fondation sans session et connexion par e-mail (ex: groupaminat@gmail.com)', async () => {
+  const sigle = 'FND-' + Math.floor(Math.random() * 9000 + 1000);
+  const fndEmail = 'groupaminat.' + sigle.toLowerCase() + '@gmail.com';
+  const fndPassword = '@Merci2026!';
+
+  // Création publique depuis la landing page (sans cookie / session)
+  const createRes = await makeRequest(baseUrl, {
+    path: '/api/foundations',
+    method: 'POST'
+  }, {
+    name: 'Fondation Aminata Test',
+    sigle: sigle,
+    email: fndEmail,
+    password: fndPassword
+  });
+
+  assert.strictEqual(createRes.statusCode, 201, 'La création publique de la fondation doit réussir avec code HTTP 201');
+  assert.ok(createRes.json.foundation);
+
+  // Connexion avec l'adresse e-mail et le mot de passe défini
+  const loginRes = await makeRequest(baseUrl, {
+    path: '/api/auth/login',
+    method: 'POST'
+  }, {
+    identifier: fndEmail,
+    password: fndPassword
+  });
+
+  assert.strictEqual(loginRes.statusCode, 200, 'La connexion avec l\'e-mail de fondation doit retourner HTTP 200');
+  assert.ok(loginRes.json.success);
+  assert.strictEqual(loginRes.json.user.role, 'fondateur');
+  assert.strictEqual(loginRes.json.user.email.toLowerCase(), fndEmail.toLowerCase());
+});
+
+test('AUTH-CODE-25 : Vérification de la protection anti-crash JSON.parse sur réponse vide ou 405 dans index.html et login.html', async () => {
+  const fs = require('node:fs');
+  const path = require('node:path');
+  const indexHtml = fs.readFileSync(path.join(__dirname, '..', 'index.html'), 'utf8');
+  const loginHtml = fs.readFileSync(path.join(__dirname, '..', 'login.html'), 'utf8');
+
+  // Extraire la fonction handleSecureLoginSubmit
+  const fnMatch = indexHtml.match(/async function handleSecureLoginSubmit[\s\S]*?\n    \}/);
+  assert.ok(fnMatch, 'handleSecureLoginSubmit doit être défini dans index.html');
+  const handleSecureLoginFn = fnMatch[0];
+
+  // Vérifier qu'aucun resp.json() direct n'est effectué dans handleSecureLoginSubmit
+  assert.ok(handleSecureLoginFn.includes('responseText = await resp.text()'), 'index.html doit lire le texte brut de réponse avant de parser');
+  assert.ok(handleSecureLoginFn.includes('data = responseText ? JSON.parse(responseText) : null'), 'index.html doit parser le JSON de manière sécurisée');
+  assert.ok(!handleSecureLoginFn.includes('await resp.json()'), 'handleSecureLoginSubmit ne doit plus avoir de resp.json() direct non sécurisé');
+  assert.ok(handleSecureLoginFn.includes('allFoundations'), 'index.html doit rechercher les fondations locales');
+  assert.ok(handleSecureLoginFn.includes('allSchools'), 'index.html doit rechercher les écoles locales');
+  assert.ok(handleSecureLoginFn.includes('allUsers'), 'index.html doit rechercher les utilisateurs locaux');
+
+  // Vérifier login.html
+  assert.ok(loginHtml.includes('responseText = await res.text()'), 'login.html doit lire le texte brut avant de parser');
+  assert.ok(loginHtml.includes('data = responseText ? JSON.parse(responseText) : null'), 'login.html doit parser le JSON de manière sécurisée');
+});

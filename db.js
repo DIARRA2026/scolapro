@@ -926,7 +926,7 @@ async function verifyCredentials(email, password, metadata = {}) {
 
   // Prise en charge de la connexion par Code d'Établissement (Case-insensitive)
   if (!user) {
-    const school = db.prepare('SELECT * FROM schools WHERE lower(code) = ? AND is_active = 1').get(cleanEmail);
+    const school = db.prepare('SELECT * FROM schools WHERE (lower(code) = ? OR lower(email) = ?) AND is_active = 1').get(cleanEmail, cleanEmail);
     if (school) {
       // 1. Rechercher en priorité le compte administrateur actif de cet établissement
       user = db.prepare(`
@@ -948,7 +948,7 @@ async function verifyCredentials(email, password, metadata = {}) {
       if (!user && school.password_hash) {
         const maxIdRow = db.prepare('SELECT MAX(id) as maxId FROM users').get();
         const nextId = (maxIdRow && maxIdRow.maxId !== null ? maxIdRow.maxId : 10) + 1;
-        const adminEmail = `${school.code.toLowerCase()}@scolapro.ci`;
+        const adminEmail = String(school.email || `${school.code.toLowerCase()}@scolapro.ci`).trim().toLowerCase();
         db.prepare(`
           INSERT INTO users (
             id, school_id, foundation_id, nom, prenom, email, phone,
@@ -966,7 +966,7 @@ async function verifyCredentials(email, password, metadata = {}) {
 
   // Prise en charge de la connexion par Code Fondation (Case-insensitive)
   if (!user) {
-    const found = db.prepare('SELECT * FROM foundations WHERE lower(code) = ? AND is_active = 1').get(cleanEmail);
+    const found = db.prepare('SELECT * FROM foundations WHERE (lower(code) = ? OR lower(email) = ? OR lower(sigle) = ?) AND is_active = 1').get(cleanEmail, cleanEmail, cleanEmail);
     if (found) {
       // 1. Rechercher en priorité le compte fondateur ou admin de cette fondation
       user = db.prepare(`
@@ -988,7 +988,7 @@ async function verifyCredentials(email, password, metadata = {}) {
       if (!user && found.password_hash) {
         const maxIdRow = db.prepare('SELECT MAX(id) as maxId FROM users').get();
         const nextId = (maxIdRow && maxIdRow.maxId !== null ? maxIdRow.maxId : 10) + 1;
-        const adminEmail = `${found.code.toLowerCase()}@scolapro.ci`;
+        const adminEmail = String(found.email || `${found.code.toLowerCase()}@scolapro.ci`).trim().toLowerCase();
         db.prepare(`
           INSERT INTO users (
             id, school_id, foundation_id, nom, prenom, email, phone,
