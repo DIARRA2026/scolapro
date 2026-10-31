@@ -5331,7 +5331,7 @@
           </div>
 
           <!-- 2. Synthèse Express (4 Mini-KPIs Métier) -->
-          <div class="grid grid-cols-2 lg:grid-cols-4 gap-3">
+          <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
             <div class="bg-white rounded-xl p-3 border border-slate-200/80 shadow-2xs flex items-center gap-3">
               <div class="w-8 h-8 rounded-lg bg-indigo-50 text-indigo-600 flex items-center justify-center font-black text-xs shrink-0">🎓</div>
               <div class="min-w-0">
@@ -5351,13 +5351,6 @@
               <div class="min-w-0">
                 <span class="text-[10px] uppercase font-bold text-slate-400 block tracking-wider truncate">Moyenne Option NAFF</span>
                 <strong id="kpi-costs-avg-naff" class="text-sm font-black text-amber-700 font-mono">-- XOF</strong>
-              </div>
-            </div>
-            <div class="bg-white rounded-xl p-3 border border-slate-200/80 shadow-2xs flex items-center gap-3">
-              <div class="w-8 h-8 rounded-lg bg-sky-50 text-sky-600 flex items-center justify-center font-black text-xs shrink-0">🏛️</div>
-              <div class="min-w-0">
-                <span class="text-[10px] uppercase font-bold text-slate-400 block tracking-wider truncate">Prise en Charge Moy.</span>
-                <strong id="kpi-costs-avg-subvention" class="text-sm font-black text-sky-700 font-mono">-- XOF</strong>
               </div>
             </div>
           </div>
@@ -5424,7 +5417,6 @@
                     <th class="p-3.5 text-right whitespace-nowrap">Frais Examen</th>
                     <th class="p-3.5 text-right text-emerald-300 font-mono whitespace-nowrap">Total Dû AFF</th>
                     <th class="p-3.5 text-right text-amber-300 font-mono whitespace-nowrap">Total Dû NAFF</th>
-                    <th class="p-3.5 text-right text-sky-300 font-mono whitespace-nowrap">Prise en Charge État</th>
                     <th class="p-3.5 text-center whitespace-nowrap">Action</th>
                   </tr>
                 </thead>
@@ -14232,17 +14224,14 @@
       const kpiCount = document.getElementById('kpi-costs-count');
       const kpiAvgAff = document.getElementById('kpi-costs-avg-aff');
       const kpiAvgNaff = document.getElementById('kpi-costs-avg-naff');
-      const kpiAvgSub = document.getElementById('kpi-costs-avg-subvention');
       if (!appState || !Array.isArray(appState.costsByLevel)) return;
       const count = appState.costsByLevel.length;
       if (kpiCount) kpiCount.textContent = count > 0 ? `${count} niveau${count > 1 ? 'x' : ''}` : '0 niveau';
       if (count > 0) {
         const avgAff = Math.round(appState.costsByLevel.reduce((acc, c) => acc + (Number(c.baseAff) || 0), 0) / count);
         const avgNaff = Math.round(appState.costsByLevel.reduce((acc, c) => acc + (Number(c.baseNaff) || 0), 0) / count);
-        const avgSub = Math.max(0, avgNaff - avgAff);
         if (kpiAvgAff) kpiAvgAff.textContent = avgAff > 0 ? `${avgAff.toLocaleString('fr-FR')} XOF` : '0 XOF';
         if (kpiAvgNaff) kpiAvgNaff.textContent = avgNaff > 0 ? `${avgNaff.toLocaleString('fr-FR')} XOF` : '0 XOF';
-        if (kpiAvgSub) kpiAvgSub.textContent = avgSub > 0 ? `+${avgSub.toLocaleString('fr-FR')} XOF` : '0 XOF';
       }
     }
 
@@ -14365,15 +14354,7 @@
               <!-- Champ rétrocompatibilité pour cost-base-${idx} -->
               <input type="hidden" id="cost-base-${idx}" value="${c.baseNaff}">
 
-              <!-- Économie / Prise en charge État -->
-              <div class="flex items-center justify-between px-3 py-1.5 rounded-xl bg-gradient-to-r from-sky-50 to-indigo-50/40 border border-sky-200/60 text-xs">
-                <span class="text-[11px] font-bold text-sky-900 flex items-center gap-1.5 whitespace-nowrap">
-                  <span>🏛️</span> Économie / Prise en charge État :
-                </span>
-                <span id="card-prise-en-charge-${idx}" class="font-mono font-black text-xs text-sky-800 bg-white/80 px-2 py-0.5 rounded-md border border-sky-100 shadow-2xs whitespace-nowrap">
-                  +${priseEnCharge.toLocaleString('fr-FR')} XOF
-                </span>
-              </div>
+
             </div>
 
             <!-- Frais d'examen : Uniquement pour les classes d'examen officiel (3ème BEPC et Terminale BAC) -->
@@ -14399,7 +14380,7 @@
       // 3. Rendu du Tableau Synthétique Comparatif AFF vs NAFF
       if (tableBody) {
         if (appState.costsByLevel.length === 0) {
-          tableBody.innerHTML = `<tr><td colspan="9" class="p-6 text-center text-slate-400 italic">Aucun niveau d'étude enregistré. Cliquez sur "+ Ajouter un Niveau" pour configurer votre premier barème.</td></tr>`;
+          tableBody.innerHTML = `<tr><td colspan="8" class="p-6 text-center text-slate-400 italic">Aucun niveau d'étude enregistré. Cliquez sur "+ Ajouter un Niveau" pour configurer votre premier barème.</td></tr>`;
         } else {
           tableBody.innerHTML = appState.costsByLevel.map(c => {
             const priseEnCharge = Math.max(0, (c.baseNaff || 0) - (c.baseAff || 0));
@@ -14414,7 +14395,6 @@
                 <td class="p-3.5 text-right font-mono text-slate-600 whitespace-nowrap">${examText}</td>
                 <td class="p-3.5 text-right font-mono font-black text-emerald-800 bg-emerald-100/50 whitespace-nowrap">${(c.totalAff || 0).toLocaleString('fr-FR')} XOF</td>
                 <td class="p-3.5 text-right font-mono font-black text-amber-800 bg-amber-100/50 whitespace-nowrap">${(c.totalNaff || 0).toLocaleString('fr-FR')} XOF</td>
-                <td class="p-3.5 text-right font-mono text-sky-700 font-bold bg-sky-50/60 whitespace-nowrap">+${priseEnCharge.toLocaleString('fr-FR')} XOF</td>
                 <td class="p-3.5 text-center space-x-1.5 whitespace-nowrap">
                   <button type="button" onclick="editCostLevel('${esc(c.level)}')" class="px-2.5 py-1.5 bg-indigo-50 hover:bg-indigo-100 text-indigo-700 rounded-lg text-xs font-bold transition cursor-pointer">✏️ Modifier</button>
                   <button type="button" onclick="deleteCostLevel('${esc(c.level)}')" class="px-2.5 py-1.5 bg-rose-50 hover:bg-rose-100 text-rose-700 rounded-lg text-xs font-bold transition cursor-pointer">🗑️</button>
@@ -14886,7 +14866,6 @@
               <th class="p-3 text-right whitespace-nowrap">Frais d'Examen</th>
               <th class="p-3 text-right text-emerald-300 font-mono whitespace-nowrap">Total Dû AFF</th>
               <th class="p-3 text-right text-amber-300 font-mono whitespace-nowrap">Total Dû NAFF</th>
-              <th class="p-3 text-right text-sky-300 font-mono whitespace-nowrap">Prise en Charge État</th>
             </tr>
           </thead>
           <tbody class="divide-y divide-slate-100 bg-white">
@@ -14903,7 +14882,6 @@
                   <td class="p-3 text-right font-mono text-slate-600 whitespace-nowrap">${examText}</td>
                   <td class="p-3 text-right font-mono font-black text-emerald-800 bg-emerald-50/50 whitespace-nowrap">${(c.totalAff || 0).toLocaleString('fr-FR')} XOF</td>
                   <td class="p-3 text-right font-mono font-black text-amber-800 bg-amber-50/50 whitespace-nowrap">${(c.totalNaff || 0).toLocaleString('fr-FR')} XOF</td>
-                  <td class="p-3 text-right font-mono text-sky-700 font-bold whitespace-nowrap">+${priseEnCharge.toLocaleString('fr-FR')} XOF</td>
                 </tr>
               `;
             }).join('')}
