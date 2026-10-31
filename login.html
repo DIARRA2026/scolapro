@@ -263,6 +263,29 @@
   <script>
     'use strict';
 
+    // Purge de l'ancienne mémoire locale du navigateur (anciens comptes, écoles, fondations)
+    try {
+      const PURGE_TAG = 'scolapro_purged_20261031';
+      if (!localStorage.getItem(PURGE_TAG)) {
+        [
+          'scolapro_payments',
+          'scolapro_students',
+          'scolapro_cashdesks',
+          'scolapro_costs_by_level',
+          'scolapro_import_batches',
+          'scolapro_foundations',
+          'scolapro_schools',
+          'scolapro_users',
+          'scolapro_authenticated',
+          'scolapro_auth_user'
+        ].forEach(function(k) {
+          localStorage.removeItem(k);
+        });
+        sessionStorage.clear();
+        localStorage.setItem(PURGE_TAG, '1');
+      }
+    } catch (_) {}
+
     let currentMode = 'code';
     function setLoginMode(mode) {
       currentMode = mode;

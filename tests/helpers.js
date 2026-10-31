@@ -60,10 +60,7 @@ const FIXTURE_USERS = [
 
 let passwordsInitialized = false;
 
-async function initTestCredentials() {
-  if (passwordsInitialized) return;
-  const adminSystem = { id: 0, role: 'concepteur', rank: 1 };
-
+function initSyncFixtures() {
   // S'assurer que le compte Souverain existe dans la base de test avec le nom DIARRA Dolourou
   const sov = db.db.prepare("SELECT id FROM users WHERE id = 0 OR role = 'concepteur'").get();
   if (!sov) {
@@ -88,7 +85,7 @@ async function initTestCredentials() {
     INSERT OR REPLACE INTO schools (id, code, name, short_name, foundation_id, school_type, city, is_active)
     VALUES (?, ?, ?, ?, ?, ?, ?, 1)
   `);
-  insertSchool.run(1, 'lyc-sainte-marie', "Lycée Sainte-Marie d'Abidjan", 'Lycée Sainte-Marie', 1, 'COLLÈGE & LYCÉE', 'Abidjan Cocody');
+  insertSchool.run(1, '071246', "Lycée Sainte-Marie d'Abidjan", 'Lycée Sainte-Marie', 1, 'COLLÈGE & LYCÉE', 'Abidjan Cocody');
   insertSchool.run(2, 'col-sainte-anne', 'Collège Sainte-Anne de Treichville', 'Collège Sainte-Anne', 1, 'PREMIER CYCLE (COLLÈGE)', 'Abidjan Treichville');
   insertSchool.run(3, 'ep-les-lauriers', "École Primaire d'Application Les Lauriers", 'Les Lauriers', 1, 'PRIMAIRE', 'Abidjan Marcory');
 
@@ -135,6 +132,15 @@ async function initTestCredentials() {
     INSERT OR REPLACE INTO students (id, school_id, matricule, nom_prenom, sexe, niveau, classe, fee_due, fee_paid, is_absent)
     VALUES (2, 2, 'MAT-002', 'Traoré Fatou', 'F', '5EME', '5EME 1', 120000, 30000, 0)
   `).run();
+}
+
+// Initialisation immédiate des structures relationnelles dans la base temporaire
+initSyncFixtures();
+
+async function initTestCredentials() {
+  if (passwordsInitialized) return;
+  initSyncFixtures();
+  const adminSystem = { id: 0, role: 'concepteur', rank: 1 };
 
   const allUsers = db.db.prepare('SELECT id, email FROM users').all();
   for (const u of allUsers) {

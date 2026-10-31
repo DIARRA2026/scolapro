@@ -10,7 +10,7 @@ const assert = require('node:assert/strict');
 const fs = require('node:fs');
 const path = require('node:path');
 
-const db = require('../db');
+const { db } = require('./helpers');
 
 describe('SUITE : Persistance des données, Quittances et Synchronisation Tableau de Bord', () => {
   const htmlPath = path.join(__dirname, '..', 'index.html');

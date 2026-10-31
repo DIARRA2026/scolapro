@@ -2,7 +2,7 @@ const test = require('node:test');
 const assert = require('node:assert/strict');
 const fs = require('fs');
 const path = require('path');
-const db = require('../db.js');
+const { db } = require('./helpers.js');
 
 test('RCPT-01 : Conversion des montants FCFA en toutes lettres françaises conformes', () => {
   assert.strictEqual(db.numberToFrenchWordsFCFA(0), 'Zéro Franc CFA');

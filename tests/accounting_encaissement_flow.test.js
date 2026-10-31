@@ -10,7 +10,7 @@ const assert = require('node:assert/strict');
 const fs = require('node:fs');
 const path = require('node:path');
 
-const db = require('../db');
+const { db } = require('./helpers');
 const { hasPermission, getRolePermissions } = require('../lib/rbac');
 
 describe('SUITE : Logique Métier Encaissement, Listes et Tableaux de Bord (École & Fondation)', () => {
